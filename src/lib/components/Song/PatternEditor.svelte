@@ -1,27 +1,30 @@
 <script lang="ts">
-	import type { Effect, Pattern } from '../../models/song';
-	import { NoteName } from '../../models/song';
-	import type { Song } from '../../models/song';
+	import type { Pattern } from '../../models/song';
+	import type { ChipProcessor } from '../../core/chip-processor';
+	import type { AudioService } from '../../services/audio-service';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
+	import { getRowData } from '../../utils/pattern-format';
 	import PatternOrder from './PatternOrder.svelte';
 	import Timeline from './Timeline.svelte';
 	import { getContext } from 'svelte';
+	import { PATTERN_EDITOR_CONSTANTS } from './types';
 
 	let {
 		patterns = $bindable(),
 		patternOrder = $bindable(),
-		song
+		ayProcessor,
+		tuningTable,
+		speed
 	}: {
 		patterns: Pattern[];
 		patternOrder: number[];
-		song?: Song;
+		ayProcessor: ChipProcessor;
+		tuningTable: number[];
+		speed: number;
 	} = $props();
 
-	const audio: { context: AudioContext | null; node: AudioWorkletNode | null } =
-		getContext('audio');
-
-	const FONT_SIZE = 14;
+	const services: { audioService: AudioService } = getContext('container');
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
@@ -29,9 +32,10 @@
 	let COLORS = getColors();
 	let FONTS = getFonts();
 
-	let canvasWidth = $state(800);
-	let canvasHeight = $state(600);
-	let lineHeight = FONT_SIZE * 1.8;
+	let canvasWidth = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH);
+	let canvasHeight = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_HEIGHT);
+	let lineHeight =
+		PATTERN_EDITOR_CONSTANTS.FONT_SIZE * PATTERN_EDITOR_CONSTANTS.LINE_HEIGHT_MULTIPLIER;
 
 	let selectedColumn = $state(0);
 	let currentPatternOrderIndex = $state(0);
@@ -44,51 +48,33 @@
 	export function onSongChange() {
 		selectedRow = 0;
 		currentPatternOrderIndex = 0;
+		ayProcessor.stop();
 	}
 
-	let messageHandler: ((event: MessageEvent) => void) | null = null;
-
 	async function togglePlayback() {
-		if (!audio.context || !audio.node) return;
+		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
+			console.warn('Audio processor not available or not initialized');
+			return;
+		}
 
-		if (isPlaying) {
-			audio.node.port.postMessage({
-				type: 'stop'
-			});
-			if (audio.context.state !== 'suspended') {
-				await audio.context.suspend();
+		try {
+			if (!services.audioService.playing) {
+				if (!currentPattern) {
+					console.warn('No pattern selected');
+					return;
+				}
+
+				ayProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
+				ayProcessor.sendInitTuningTable(tuningTable);
+				ayProcessor.sendInitSpeed(speed);
+				services.audioService.updateOrder(patternOrder);
+				services.audioService.play();
+			} else {
+				services.audioService.stop();
 			}
-			isPlaying = false;
-		} else {
-			if (audio.context.state === 'suspended') {
-				await audio.context.resume();
-			}
-
-			if (song?.tuningTable) {
-				audio.node.port.postMessage({
-					type: 'set_tuning_table',
-					tuningTable: song.tuningTable
-				});
-			}
-
-			audio.node.port.postMessage({
-				type: 'set_pattern_order',
-				patternOrderData: patternOrder
-			});
-
-			if (currentPattern) {
-				audio.node.port.postMessage({
-					type: 'set_pattern_data',
-					pattern: currentPattern
-				});
-			}
-
-			audio.node.port.postMessage({
-				type: 'play',
-				initialSpeed: song?.initialSpeed || 3,
-				startPatternOrderIndex: currentPatternOrderIndex
-			});
-			isPlaying = true;
+		} catch (error) {
+			console.error('Error during playback toggle:', error);
+			services.audioService.stop();
 		}
 	}
 
@@ -170,69 +156,6 @@
 		}
 
 		return count;
-	}
-
-	function formatNote(noteName: NoteName, octave: number): string {
-		const notes = [
-			'---',
-			'R--',
-			'C-',
-			'C#',
-			'D-',
-			'D#',
-			'E-',
-			'F-',
-			'F#',
-			'G-',
-			'G#',
-			'A-',
-			'A#',
-			'B-'
-		];
-		if (noteName === NoteName.None) return '---';
-		if (noteName === NoteName.Off) return 'R--';
-		return notes[noteName] + octave;
-	}
-
-	function formatHex(value: number, digits: number): string {
-		if (value === 0) return '.'.repeat(digits);
-		return value.toString(16).toUpperCase().padStart(digits, '0');
-	}
-
-	function formatInstrument(value: number): string {
-		if (value === 0) return '.';
-		return value <= 9 ? value.toString() : String.fromCharCode(65 + value - 10);
-	}
-
-	function formatEffect(effect: Effect | null): string {
-		if (!effect) return '....';
-		const type = effect.effect === 0 ? '.' : effect.effect.toString(16).toUpperCase();
-		const delay = effect.delay === 0 ? '.' : effect.delay.toString(16).toUpperCase();
-		const param = formatHex(effect.parameter, 2);
-		return type + delay + param;
-	}
-
-	function getRowData(pattern: Pattern, rowIndex: number): string {
-		const row = pattern.patternRows[rowIndex];
-		const rowNum = rowIndex.toString(16).toUpperCase().padStart(2, '0');
-		const envelope = formatHex(row.envelopeValue, 4);
-		const envEffect = formatEffect(row.envelopeEffect);
-		const noise = formatHex(row.noiseValue, 2);
-
-		let channelData = '';
-		for (let i = 0; i < 3; i++) {
-			const ch = pattern.channels[i].rows[rowIndex];
-			const note = formatNote(ch.note.name, ch.note.octave);
-			const inst = formatInstrument(ch.instrument);
-			const shape =
-				ch.envelopeShape === 0 ? '.' : ch.envelopeShape.toString(16).toUpperCase();
-			const orn = formatInstrument(ch.ornament);
-			const vol = ch.volume === 0 ? '.' : ch.volume.toString(16).toUpperCase();
-			const fx = formatEffect(ch.effects[0]);
-			channelData += ` ${note} ${inst}${shape}${orn}${vol} ${fx}`;
-		}
-
-		return `${rowNum} ${envelope} ${envEffect} ${noise}${channelData}`;
 	}
 
 	function getVisibleRows() {
@@ -317,17 +240,21 @@
 
 		ctx = canvas.getContext('2d')!;
 
-		updateSize();
+		try {
+			updateSize();
 
-		const dpr = window.devicePixelRatio || 1;
-		canvas.width = canvasWidth * dpr;
-		canvas.height = canvasHeight * dpr;
-		canvas.style.width = canvasWidth + 'px';
-		canvas.style.height = canvasHeight + 'px';
+			const dpr = window.devicePixelRatio || 1;
+			canvas.width = canvasWidth * dpr;
+			canvas.height = canvasHeight * dpr;
+			canvas.style.width = canvasWidth + 'px';
+			canvas.style.height = canvasHeight + 'px';
 
-		ctx.scale(dpr, dpr);
-		ctx.font = `${FONT_SIZE}px ${FONTS.mono}`;
-		ctx.textBaseline = 'middle';
+			ctx.scale(dpr, dpr);
+			ctx.font = `${PATTERN_EDITOR_CONSTANTS.FONT_SIZE}px ${FONTS.mono}`;
+			ctx.textBaseline = 'middle';
+		} catch (error) {
+			console.error('Error during canvas setup:', error);
+		}
 	}
 
 	function drawRow(rowData: string, y: number, isSelected: boolean, rowIndex: number) {
@@ -513,16 +440,25 @@
 	}
 
 	function handleWheel(event: WheelEvent) {
+		if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+			return;
+		}
+
+		event.preventDefault();
 		moveRow(Math.sign(event.deltaY));
 	}
 
 	function updateSize() {
-		canvasHeight = Math.max(100, window.innerHeight - 200);
+		canvasHeight = Math.max(
+			PATTERN_EDITOR_CONSTANTS.MIN_CANVAS_HEIGHT,
+			window.innerHeight - PATTERN_EDITOR_CONSTANTS.CANVAS_TOP_MARGIN
+		);
 		if (ctx && currentPattern) {
 			const sampleRowData = getRowData(currentPattern, 0);
-			canvasWidth = ctx.measureText(sampleRowData).width + 20;
+			canvasWidth =
+				ctx.measureText(sampleRowData).width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
 		} else {
-			canvasWidth = 800;
+			canvasWidth = PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH;
 		}
 	}
 
@@ -530,65 +466,78 @@
 		if (canvas) {
 			setupCanvas();
 			draw();
+
+			// Focus management
+			const handleFocus = () => {
+				canvas.classList.add('focused');
+			};
+
+			const handleBlur = () => {
+				canvas.classList.remove('focused');
+			};
+
+			canvas.addEventListener('focus', handleFocus);
+			canvas.addEventListener('blur', handleBlur);
+
+			return () => {
+				canvas.removeEventListener('focus', handleFocus);
+				canvas.removeEventListener('blur', handleBlur);
+			};
 		}
 	});
 
 	$effect(() => {
 		const handleResize = () => {
+			if (document.hidden) return;
 			updateSize();
+			setupCanvas();
+			draw();
+		};
+
+		const handleVisibilityChange = () => {
+			if (!document.hidden) {
+				updateSize();
+				setupCanvas();
+				draw();
+			}
 		};
 
 		window.addEventListener('resize', handleResize);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
 	});
 
 	$effect(() => {
-		if (audio.node && !messageHandler) {
-			console.log('Setting up message listener on audio node');
-			messageHandler = (event: MessageEvent) => {
-				console.log('Received message from audio processor:', event.data);
-				if (event.data.type === 'position_update') {
-					console.log('Position update:', event.data.currentRow, 'isPlaying:', isPlaying);
-					if (isPlaying) {
-						selectedRow = event.data.currentRow;
-						if (event.data.currentPatternOrderIndex !== undefined) {
-							currentPatternOrderIndex = event.data.currentPatternOrderIndex;
-						}
-					}
-				} else if (event.data.type === 'request_pattern') {
-					const requestedOrderIndex = event.data.patternOrderIndex;
+		if (!ayProcessor) return;
 
-					if (requestedOrderIndex >= 0 && requestedOrderIndex < patternOrder.length) {
-						const patternIndex = patternOrder[requestedOrderIndex];
-						const requestedPattern = patterns[patternIndex];
-
-						if (requestedPattern && audio.node) {
-							console.log(
-								`Sending pattern ${patternIndex} for order ${requestedOrderIndex}`
-							);
-							audio.node.port.postMessage({
-								type: 'set_pattern_data',
-								pattern: requestedPattern
-							});
-						} else {
-							console.error(
-								`Pattern not found for order index ${requestedOrderIndex}, pattern index ${patternIndex}`
-							);
-						}
-					} else {
-						console.error(
-							`Invalid pattern order index: ${requestedOrderIndex}, pattern order length: ${patternOrder.length}`
-						);
-					}
+		const handlePatternUpdate = (
+			currentRow: number,
+			currentPatternOrderIndexUpdate?: number
+		) => {
+			if (services.audioService.playing) {
+				selectedRow = currentRow;
+				if (currentPatternOrderIndexUpdate !== undefined) {
+					currentPatternOrderIndex = currentPatternOrderIndexUpdate;
 				}
-			};
+			}
+		};
 
-			audio.node.port.onmessage = messageHandler;
-			console.log('Message listener set up');
-		}
+		const handlePatternRequest = (requestedOrderIndex: number) => {
+			if (requestedOrderIndex >= 0 && requestedOrderIndex < patternOrder.length) {
+				const patternIndex = patternOrder[requestedOrderIndex];
+				const requestedPattern = patterns[patternIndex];
+
+				if (requestedPattern) {
+					ayProcessor.sendRequestedPattern(requestedPattern);
+				}
+			}
+		};
+
+		ayProcessor.setCallbacks(handlePatternUpdate, handlePatternRequest);
 	});
 </script>
 
@@ -598,7 +547,6 @@
 		<button
 			onclick={togglePlayback}
 			class="rounded bg-blue-500 p-2 text-white transition-colors hover:bg-blue-600 focus:ring-2 focus:ring-blue-500/50 focus:outline-none disabled:opacity-50"
-			disabled={!audio.context || !audio.node}
 			title={isPlaying ? 'Pause' : 'Play'}>
 			{#if isPlaying}
 				<!-- Pause icon -->

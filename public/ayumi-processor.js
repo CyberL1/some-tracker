@@ -1,157 +1,134 @@
-const AYUMI_STRUCT_SIZE = 22904;
-const AYUMI_STRUCT_LEFT_OFFSET = AYUMI_STRUCT_SIZE - 16;
-const AYUMI_STRUCT_RIGHT_OFFSET = AYUMI_STRUCT_SIZE - 8;
-
-let wasmModule = null;
-let ayumiPtr = null;
-let currentPattern = null;
-let currentOrder = null;
-let currentRowIndex = 0;
-let currentTuningTable = [];
-
-let patternOrder = [];
-let currentPatternOrderIndex = 0;
-
-let songHz = 50;
-let samplesPerTick = 0;
-let sampleCounter = 0;
-let currentRow = 0;
-let currentTick = 0;
-let currentSpeed = 3;
-
-let channelVolumes = [15, 15, 15];
+import {
+	AYUMI_STRUCT_SIZE,
+	AYUMI_STRUCT_LEFT_OFFSET,
+	AYUMI_STRUCT_RIGHT_OFFSET,
+	PAN_SETTINGS
+} from './ayumi-constants.js';
+import AyumiState from './ayumi-state.js';
+import AyumiPatternProcessor from './ayumi-pattern-processor.js';
 
 class AyumiProcessor extends AudioWorkletProcessor {
 	constructor() {
 		super();
 		this.initialized = false;
+		this.state = new AyumiState();
+		this.patternProcessor = new AyumiPatternProcessor(this.state);
 		this.port.onmessage = this.handleMessage.bind(this);
 	}
 
 	async handleMessage(event) {
-		const {
-			type,
-			pattern,
-			wasmBuffer,
-			initialSpeed,
-			patternOrderData,
-			startPatternOrderIndex
-		} = event.data;
+		const { type, ...data } = event.data;
 
-		if (type === 'init' && wasmBuffer && !wasmModule) {
-			try {
-				const result = await WebAssembly.instantiate(wasmBuffer, {
-					env: {
-						emscripten_notify_memory_growth: () => {}
-					}
-				});
-
-				wasmModule = result.instance.exports;
-
-				ayumiPtr = wasmModule.malloc(AYUMI_STRUCT_SIZE);
-
-				wasmModule.ayumi_configure(ayumiPtr, 0, 1773400, sampleRate);
-				wasmModule.ayumi_set_pan(ayumiPtr, 0, 0.35, 0);
-				wasmModule.ayumi_set_pan(ayumiPtr, 1, 0.5, 0);
-				wasmModule.ayumi_set_pan(ayumiPtr, 2, 0.75, 0);
-
-				samplesPerTick = Math.floor(sampleRate / songHz);
-
-				this.initialized = true;
-			} catch (error) {
-				console.error('Failed to initialize Ayumi:', error);
-			}
-		} else if (type === 'play' && wasmModule && this.initialized) {
-			wasmModule.ayumi_set_mixer(ayumiPtr, 0, 1, 1, 0);
-			wasmModule.ayumi_set_mixer(ayumiPtr, 1, 1, 1, 0);
-			wasmModule.ayumi_set_mixer(ayumiPtr, 2, 1, 1, 0);
-
-			sampleCounter = 0;
-			currentRow = 0;
-			currentTick = 0;
-			channelVolumes = [0, 0, 0];
-
-			if (startPatternOrderIndex !== undefined) {
-				currentPatternOrderIndex = startPatternOrderIndex;
-			}
-
-			if (initialSpeed !== undefined) {
-				currentSpeed = initialSpeed;
-			}
-		} else if (type === 'stop') {
-			wasmModule.ayumi_set_mixer(ayumiPtr, 0, 1, 1, 0);
-			wasmModule.ayumi_set_mixer(ayumiPtr, 1, 1, 1, 0);
-			wasmModule.ayumi_set_mixer(ayumiPtr, 2, 1, 1, 0);
-			wasmModule.ayumi_set_volume(ayumiPtr, 0, 0);
-			wasmModule.ayumi_set_volume(ayumiPtr, 1, 0);
-			wasmModule.ayumi_set_volume(ayumiPtr, 2, 0);
-			channelVolumes = [0, 0, 0];
-			sampleCounter = 0;
-			currentRow = 0;
-			currentTick = 0;
-		} else if (type === 'set_pattern_data') {
-			currentPattern = pattern;
-		} else if (type === 'set_pattern_order') {
-			patternOrder = patternOrderData || [];
-		} else if (type === 'set_tuning_table') {
-			currentTuningTable = event.data.tuningTable || [];
+		switch (type) {
+			case 'init':
+				console.log('Initializing Ayumi processor');
+				await this.handleInit(data);
+				break;
+			case 'play':
+				console.log('Starting playback');
+				this.handlePlay(data);
+				break;
+			case 'stop':
+				console.log('Stopping playback');
+				this.handleStop();
+				break;
+			case 'init_pattern':
+				console.log('Initializing pattern');
+				this.handleInitPattern(data);
+				break;
+			case 'update_order':
+				console.log('Updating pattern order');
+				this.handleUpdateOrder(data);
+				break;
+			case 'set_pattern_data':
+				console.log('Setting pattern data');
+				this.handleSetPatternData(data);
+				break;
+			case 'init_tuning_table':
+				console.log('Initializing tuning table');
+				this.handleInitTuningTable(data);
+				break;
+			case 'init_speed':
+				console.log('Initializing speed');
+				this.handleInitSpeed(data);
+				break;
 		}
 	}
 
-	parsePatternRow(pattern, rowIndex) {
-		if (!pattern || rowIndex >= pattern.length || rowIndex < 0) return;
+	async handleInit({ wasmBuffer }) {
+		if (!wasmBuffer || this.state.wasmModule) return;
 
-		const patternRow = pattern.patternRows[rowIndex];
-		if (!patternRow) return;
+		try {
+			const result = await WebAssembly.instantiate(wasmBuffer, {
+				env: { emscripten_notify_memory_growth: () => {} }
+			});
 
-		for (let channelIndex = 0; channelIndex < pattern.channels.length; channelIndex++) {
-			const channel = pattern.channels[channelIndex];
-			const row = channel.rows[rowIndex];
+			const wasmModule = result.instance.exports;
+			const ayumiPtr = wasmModule.malloc(AYUMI_STRUCT_SIZE);
 
-			if (row.note.name === 1) {
-				wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, 0);
-			} else if (row.note.name !== 0) {
-				// NoteName enum starts at 2 for C, so subtract 2 to get correct semitone offset
-				const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
+			wasmModule.ayumi_configure(ayumiPtr, 0, 1773400, sampleRate);
 
-				if (noteValue >= 0 && noteValue < currentTuningTable.length) {
-					const regValue = currentTuningTable[noteValue];
-					wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, regValue);
-				}
-			}
+			PAN_SETTINGS.forEach(({ channel, left, right }) => {
+				wasmModule.ayumi_set_pan(ayumiPtr, channel, left, right);
+			});
 
-			//replace with proper parsing when instruments will be implemented
-			wasmModule.ayumi_set_mixer(ayumiPtr, 0, 0, 1, 0);
-			wasmModule.ayumi_set_mixer(ayumiPtr, 1, 0, 1, 0);
-			wasmModule.ayumi_set_mixer(ayumiPtr, 2, 0, 1, 0);
-
-			if (row.volume > 0) {
-				wasmModule.ayumi_set_volume(ayumiPtr, channelIndex, row.volume);
-				channelVolumes[channelIndex] = row.volume;
-			} else {
-				wasmModule.ayumi_set_volume(ayumiPtr, channelIndex, channelVolumes[channelIndex]);
-			}
-
-			if (patternRow.noiseValue > 0) {
-				wasmModule.ayumi_set_noise(ayumiPtr, patternRow.noiseValue);
-			}
-
-			if (patternRow.envelopeValue > 0) {
-				wasmModule.ayumi_set_envelope(ayumiPtr, patternRow.envelopeValue);
-			}
-
-			// Check for speed effect (Effect type 5 - ehhh change it later..)
-			if (row.effects[0] && row.effects[0].effect === 5) {
-				const newSpeed = row.effects[0].parameter;
-				if (newSpeed > 0) {
-					currentSpeed = newSpeed;
-				}
-			}
+			this.state.setWasmModule(wasmModule, ayumiPtr);
+			this.state.updateSamplesPerTick(sampleRate);
+			this.initialized = true;
+		} catch (error) {
+			console.error('Failed to initialize Ayumi:', error);
 		}
+	}
+
+	handleInitTuningTable(data) {
+		this.state.setTuningTable(data.tuningTable);
+	}
+
+	handleInitSpeed(data) {
+		this.state.setSpeed(data.speed);
+	}
+
+	handleInitPattern(data) {
+		this.state.setPattern(data.pattern, data.patternOrderIndex);
+	}
+
+	handleUpdateOrder(data) {
+		this.state.setPatternOrder(data.order);
+	}
+
+	handleSetPatternData(data) {
+		this.state.setPattern(data.pattern);
+	}
+
+	handlePlay({ startPatternOrderIndex, initialSpeed }) {
+		if (!this.state.wasmModule || !this.initialized) return;
+
+		for (let i = 0; i < 3; i++) {
+			this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, i, 1, 1, 0);
+		}
+
+		this.state.reset();
+
+		if (startPatternOrderIndex !== undefined) {
+			this.state.currentPatternOrderIndex = startPatternOrderIndex;
+		}
+		if (initialSpeed !== undefined) {
+			this.state.setSpeed(initialSpeed);
+		}
+	}
+
+	handleStop() {
+		const { wasmModule, ayumiPtr } = this.state;
+		for (let i = 0; i < 3; i++) {
+			wasmModule.ayumi_set_mixer(ayumiPtr, i, 1, 1, 0);
+			wasmModule.ayumi_set_volume(ayumiPtr, i, 0);
+		}
+		this.state.reset();
 	}
 
 	process(_inputs, outputs, _parameters) {
-		if (!this.initialized || !wasmModule || !ayumiPtr) {
+		if (!this.initialized || !this.state.wasmModule || !this.state.ayumiPtr) {
+			console.error('Processor not initialized or missing dependencies');
 			return true;
 		}
 
@@ -163,43 +140,36 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 			for (let i = 0; i < numSamples; i++) {
 				if (
-					currentPattern &&
-					currentPattern.length > 0 &&
-					sampleCounter >= samplesPerTick
+					this.state.currentPattern &&
+					this.state.currentPattern.length > 0 &&
+					this.state.sampleCounter >= this.state.samplesPerTick
 				) {
-					if (currentTick === 0) {
-						this.parsePatternRow(currentPattern, currentRow);
+					if (this.state.currentTick === 0) {
+						this.patternProcessor.parsePatternRow(
+							this.state.currentPattern,
+							this.state.currentRow
+						);
 
 						this.port.postMessage({
 							type: 'position_update',
-							currentRow: currentRow,
-							currentTick: currentTick,
-							currentPatternOrderIndex: currentPatternOrderIndex
+							currentRow: this.state.currentRow,
+							currentTick: this.state.currentTick,
+							currentPatternOrderIndex: this.state.currentPatternOrderIndex
 						});
 					}
 
-					currentTick++;
-					if (currentTick >= currentSpeed) {
-						currentTick = 0;
-						currentRow++;
-						if (currentRow >= currentPattern.length) {
-							currentRow = 0;
-
-							currentPatternOrderIndex++;
-							if (currentPatternOrderIndex >= patternOrder.length) {
-								currentPatternOrderIndex = 0;
-							}
-
-							this.port.postMessage({
-								type: 'request_pattern',
-								patternOrderIndex: currentPatternOrderIndex
-							});
-						}
+					const needsPatternChange = this.state.advancePosition();
+					if (needsPatternChange) {
+						this.port.postMessage({
+							type: 'request_pattern',
+							patternOrderIndex: this.state.currentPatternOrderIndex
+						});
 					}
 
-					sampleCounter = 0;
+					this.state.sampleCounter = 0;
 				}
 
+				const { wasmModule, ayumiPtr } = this.state;
 				wasmModule.ayumi_process(ayumiPtr);
 				wasmModule.ayumi_remove_dc(ayumiPtr);
 
@@ -212,8 +182,10 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				leftChannel[i] = leftValue;
 				rightChannel[i] = rightValue;
 
-				sampleCounter++;
+				this.state.sampleCounter++;
 			}
+		} else {
+			console.log('Invalid output configuration');
 		}
 		return true;
 	}

@@ -89,6 +89,7 @@
 		onMenuClose?.(data);
 	}
 
+	//TODO: this is not a correct .root() usage, cleanup this later
 	$effect.root(() => {
 		return () => {
 			if (!menuPanelContext) {
