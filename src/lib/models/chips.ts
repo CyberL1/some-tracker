@@ -1,4 +1,5 @@
-import { AYProcessor, type ChipProcessor } from '../core/ay-processor';
+import { AYProcessor } from '../core/ay-processor';
+import type { ChipProcessor } from '../core/chip-processor';
 
 export interface Chip {
 	type: 'ay' | 'fm';
