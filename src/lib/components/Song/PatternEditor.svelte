@@ -466,23 +466,6 @@
 		if (canvas) {
 			setupCanvas();
 			draw();
-
-			// Focus management
-			const handleFocus = () => {
-				canvas.classList.add('focused');
-			};
-
-			const handleBlur = () => {
-				canvas.classList.remove('focused');
-			};
-
-			canvas.addEventListener('focus', handleFocus);
-			canvas.addEventListener('blur', handleBlur);
-
-			return () => {
-				canvas.removeEventListener('focus', handleFocus);
-				canvas.removeEventListener('blur', handleBlur);
-			};
 		}
 	});
 
