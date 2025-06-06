@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { playbackStore } from '../../stores/playback.svelte';
 	import MenuButton from './MenuButton.svelte';
 	import type { MenuItem } from './types';
+	import IconCarbonPlayFilledAlt from '~icons/carbon/play-filled-alt';
+	import IconCarbonPauseFilled from '~icons/carbon/pause-filled';
 
 	let activeMenu = $state('');
 	let {
@@ -38,4 +41,16 @@
 			onMenuOpen={handleMenuOpen}
 			onMenuClose={handleMenuClose} />
 	{/each}
+
+	<button
+		class=" absolute top-3.5 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
+		onclick={() => {
+			playbackStore.isPlaying = !playbackStore.isPlaying;
+		}}>
+		{#if !playbackStore.isPlaying}
+			<IconCarbonPlayFilledAlt class="h-4 w-4" />
+		{:else}
+			<IconCarbonPauseFilled class="h-4 w-4" />
+		{/if}
+	</button>
 </div>

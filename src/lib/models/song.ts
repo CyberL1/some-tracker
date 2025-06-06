@@ -39,6 +39,18 @@ class Note {
 	}
 }
 
+class Ornament {
+	id: number;
+	rows: number[];
+	loop: number;
+
+	constructor(id: number, rows: number[], loop: number) {
+		this.id = id;
+		this.rows = rows;
+		this.loop = loop;
+	}
+}
+
 class Effect {
 	effect: EffectType;
 	delay: number;
@@ -113,11 +125,13 @@ class Song {
 	public patterns: Pattern[];
 	public tuningTable: number[];
 	public initialSpeed: number;
+	public ornaments: Ornament[];
 
 	constructor() {
 		this.initialSpeed = 3;
 		this.patterns = [new Pattern(0)];
 		this.tuningTable = PT3TuneTables[2]; // Default to most common table from VT2 nowadays
+		this.ornaments = [];
 	}
 
 	addPattern(): Pattern {
@@ -128,4 +142,4 @@ class Song {
 	}
 }
 
-export { Song, Pattern, Channel, Row, Note, Effect, NoteName, EffectType };
+export { Song, Pattern, Channel, Row, Note, Effect, NoteName, EffectType, Ornament };

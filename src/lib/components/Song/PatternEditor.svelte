@@ -1,27 +1,29 @@
 <script lang="ts">
-	import type { Pattern } from '../../models/song';
+	import type { Pattern, Ornament } from '../../models/song';
 	import type { ChipProcessor } from '../../core/chip-processor';
 	import type { AudioService } from '../../services/audio-service';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
 	import { getRowData } from '../../utils/pattern-format';
 	import PatternOrder from './PatternOrder.svelte';
-	import Timeline from './Timeline.svelte';
 	import { getContext } from 'svelte';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
+	import { playbackStore } from '../../stores/playback.svelte';
 
 	let {
 		patterns = $bindable(),
 		patternOrder = $bindable(),
 		ayProcessor,
 		tuningTable,
-		speed
+		speed,
+		ornaments
 	}: {
 		patterns: Pattern[];
 		patternOrder: number[];
 		ayProcessor: ChipProcessor;
 		tuningTable: number[];
 		speed: number;
+		ornaments: Ornament[];
 	} = $props();
 
 	const services: { audioService: AudioService } = getContext('container');
@@ -42,8 +44,6 @@
 	let selectedRow = $state(0);
 
 	let currentPattern = $derived(patterns[patternOrder[currentPatternOrderIndex]]);
-
-	let isPlaying = $state(false);
 
 	export function onSongChange() {
 		selectedRow = 0;
@@ -67,15 +67,18 @@
 				ayProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
 				ayProcessor.sendInitTuningTable(tuningTable);
 				ayProcessor.sendInitSpeed(speed);
+				ayProcessor.sendInitOrnaments(ornaments);
 				services.audioService.updateOrder(patternOrder);
 				services.audioService.play();
-			} else {
-				services.audioService.stop();
 			}
 		} catch (error) {
 			console.error('Error during playback toggle:', error);
 			services.audioService.stop();
 		}
+	}
+
+	function pausePlayback() {
+		services.audioService.stop();
 	}
 
 	function getCellPositions(
@@ -392,7 +395,7 @@
 		switch (event.key) {
 			case ' ':
 				event.preventDefault();
-				togglePlayback();
+				playbackStore.isPlaying = !playbackStore.isPlaying;
 				break;
 			case 'ArrowUp':
 				event.preventDefault();
@@ -495,6 +498,14 @@
 	});
 
 	$effect(() => {
+		if (playbackStore.isPlaying) {
+			togglePlayback();
+		} else {
+			pausePlayback();
+		}
+	});
+
+	$effect(() => {
 		if (!ayProcessor) return;
 
 		const handlePatternUpdate = (
@@ -525,37 +536,6 @@
 </script>
 
 <div class="flex flex-col gap-2">
-	<!-- Play/Pause Button -->
-	<div class="flex justify-center">
-		<button
-			onclick={togglePlayback}
-			class="rounded bg-blue-500 p-2 text-white transition-colors hover:bg-blue-600 focus:ring-2 focus:ring-blue-500/50 focus:outline-none disabled:opacity-50"
-			title={isPlaying ? 'Pause' : 'Play'}>
-			{#if isPlaying}
-				<!-- Pause icon -->
-				<svg
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="currentColor"
-					xmlns="http://www.w3.org/2000/svg">
-					<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-				</svg>
-			{:else}
-				<!-- Play icon -->
-				<svg
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="currentColor"
-					xmlns="http://www.w3.org/2000/svg">
-					<path d="M8 5v14l11-7z" />
-				</svg>
-			{/if}
-		</button>
-	</div>
-
-	<!-- Pattern Editor -->
 	<div class="flex" style="max-height: {canvasHeight}px">
 		<PatternOrder
 			bind:currentPatternOrderIndex
@@ -572,13 +552,5 @@
 			onwheel={handleWheel}
 			class="block rounded-l-md border-[var(--pattern-empty)] focus:ring-1 focus:ring-[var(--pattern-header)]/50 focus:outline-none">
 		</canvas>
-
-		<Timeline
-			{patterns}
-			{patternOrder}
-			bind:currentPatternOrderIndex
-			bind:selectedRow
-			{canvasHeight}
-			{lineHeight} />
 	</div>
 </div>

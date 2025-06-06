@@ -1,5 +1,5 @@
 import { AY_CHIP, type Chip } from '../models/chips';
-import type { Pattern } from '../models/song';
+import type { Pattern, Ornament } from '../models/song';
 import type { ChipProcessor } from './chip-processor';
 
 type PositionUpdateMessage = {
@@ -23,7 +23,8 @@ type WorkletCommand =
 	| { type: 'init_pattern'; pattern: Pattern; patternOrderIndex: number }
 	| { type: 'init_tuning_table'; tuningTable: number[] }
 	| { type: 'init_speed'; speed: number }
-	| { type: 'set_pattern_data'; pattern: Pattern };
+	| { type: 'set_pattern_data'; pattern: Pattern }
+	| { type: 'init_ornaments'; ornaments: Ornament[] };
 
 export class AYProcessor implements ChipProcessor {
 	chip: Chip;
@@ -85,6 +86,10 @@ export class AYProcessor implements ChipProcessor {
 
 	sendInitSpeed(speed: number): void {
 		this.sendCommand({ type: 'init_speed', speed });
+	}
+
+	sendInitOrnaments(ornaments: Ornament[]): void {
+		this.sendCommand({ type: 'init_ornaments', ornaments });
 	}
 
 	sendRequestedPattern(pattern: Pattern): void {

@@ -16,6 +16,7 @@ class AyumiPatternProcessor {
 			const row = channel.rows[rowIndex];
 
 			this._processNote(channelIndex, row);
+			this._processOrnament(channelIndex, row);
 			this._processMixer(channelIndex);
 			this._processVolume(channelIndex, row);
 
@@ -36,13 +37,66 @@ class AyumiPatternProcessor {
 
 		if (row.note.name === 1) {
 			wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, 0);
+			this.state.channelOrnaments[channelIndex] = null;
+			this.state.channelBaseNotes[channelIndex] = 0;
 		} else if (row.note.name !== 0) {
-			// NoteName enum starts at 2 for C, so subtract 2 to get correct semitone offset
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
+			this.state.channelBaseNotes[channelIndex] = noteValue;
 
 			if (noteValue >= 0 && noteValue < currentTuningTable.length) {
 				const regValue = currentTuningTable[noteValue];
 				wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, regValue);
+			}
+		}
+	}
+
+	_processOrnament(channelIndex, row) {
+		if (row.ornament > 0) {
+			const ornament = this.state.ornaments[row.ornament - 1];
+			if (ornament) {
+				this.state.channelOrnaments[channelIndex] = ornament;
+				this.state.ornamentPositions[channelIndex] = 0;
+				this.state.ornamentCounters[channelIndex] = 0;
+			}
+		} else if (row.ornament === 0 && row.note.name !== 0) {
+			// Clear ornament when ornament 0 is specified with a note
+			// at least for now. find a way to clear ornaments
+			// maybe specifically use 0 instead of empty ?
+
+			this.state.channelOrnaments[channelIndex] = null;
+		}
+	}
+
+	processOrnaments() {
+		const { wasmModule, ayumiPtr, currentTuningTable } = this.state;
+
+		for (let channelIndex = 0; channelIndex < 3; channelIndex++) {
+			const ornament = this.state.channelOrnaments[channelIndex];
+			if (!ornament || !ornament.rows || ornament.rows.length === 0) continue;
+
+			const baseNote = this.state.channelBaseNotes[channelIndex];
+			if (baseNote === 0) continue;
+
+			const ornamentOffset = ornament.rows[this.state.ornamentPositions[channelIndex]];
+			const finalNote = baseNote + ornamentOffset;
+
+			if (finalNote >= 0 && finalNote < currentTuningTable.length) {
+				const regValue = currentTuningTable[finalNote];
+				wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, regValue);
+			}
+
+			this.state.ornamentCounters[channelIndex]++;
+			if (this.state.ornamentCounters[channelIndex] >= 1) {
+				this.state.ornamentCounters[channelIndex] = 0;
+				this.state.ornamentPositions[channelIndex]++;
+
+				if (this.state.ornamentPositions[channelIndex] >= ornament.rows.length) {
+					if (ornament.loop > 0 && ornament.loop < ornament.rows.length) {
+						this.state.ornamentPositions[channelIndex] = ornament.loop;
+					} else {
+						this.state.ornamentPositions[channelIndex] = 0;
+					}
+				}
 			}
 		}
 	}

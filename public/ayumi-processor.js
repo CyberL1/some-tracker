@@ -52,6 +52,10 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				console.log('Initializing speed');
 				this.handleInitSpeed(data);
 				break;
+			case 'init_ornaments':
+				console.log('Initializing ornaments');
+				this.handleInitOrnaments(data);
+				break;
 		}
 	}
 
@@ -86,6 +90,10 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 	handleInitSpeed(data) {
 		this.state.setSpeed(data.speed);
+	}
+
+	handleInitOrnaments(data) {
+		this.state.setOrnaments(data.ornaments);
 	}
 
 	handleInitPattern(data) {
@@ -157,6 +165,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 							currentPatternOrderIndex: this.state.currentPatternOrderIndex
 						});
 					}
+
+					this.patternProcessor.processOrnaments();
 
 					const needsPatternChange = this.state.advancePosition();
 					if (needsPatternChange) {

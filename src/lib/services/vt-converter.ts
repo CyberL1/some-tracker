@@ -1,5 +1,5 @@
 import { Project } from '../models/project';
-import { Song, Pattern, Note, Effect, NoteName, EffectType } from '../models/song';
+import { Song, Pattern, Note, Effect, NoteName, EffectType, Ornament } from '../models/song';
 import { PT3TuneTables } from '../models/pt3/tuning-tables';
 
 interface VT2Module {
@@ -87,6 +87,10 @@ class VT2Converter {
 		if (module.noteTable >= 0 && module.noteTable < PT3TuneTables.length) {
 			song.tuningTable = PT3TuneTables[module.noteTable];
 		}
+
+		song.ornaments = ornaments.map((ornament) => {
+			return new Ornament(ornament.id, ornament.data, ornament.loop ? ornament.loopPoint : 0);
+		});
 
 		song.patterns = patterns.map((vt2Pattern) => {
 			const pattern = new Pattern(vt2Pattern.id, vt2Pattern.rows.length);
@@ -353,8 +357,11 @@ class VT2Converter {
 	}
 
 	private parseNote(noteStr: string): { noteName: NoteName; octave: number } {
-		if (!noteStr || ['---', 'R--', '...'].includes(noteStr)) {
+		if (!noteStr || noteStr === '---') {
 			return { noteName: NoteName.None, octave: 0 };
+		}
+		if (noteStr === 'R--') {
+			return { noteName: NoteName.Off, octave: 0 };
 		}
 
 		let notePart = '';

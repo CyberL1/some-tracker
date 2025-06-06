@@ -44,7 +44,7 @@
 <div class="menu-button-container relative">
 	<button
 		onclick={handleClick}
-		class="menu-button px-2 pt-2 pb-1 text-[0.8rem] hover:bg-neutral-600"
+		class="menu-button px-2 pt-2 pb-1 text-[0.8rem] hover:cursor-pointer hover:bg-neutral-600"
 		class:bg-neutral-600={showPanel}>
 		{label}
 	</button>

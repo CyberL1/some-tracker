@@ -18,6 +18,12 @@ class AyumiState {
 		this.currentSpeed = DEFAULT_SPEED;
 
 		this.channelVolumes = [...DEFAULT_CHANNEL_VOLUMES];
+
+		this.ornaments = [];
+		this.channelOrnaments = [null, null, null];
+		this.ornamentPositions = [0, 0, 0];
+		this.ornamentCounters = [0, 0, 0];
+		this.channelBaseNotes = [0, 0, 0];
 	}
 
 	reset() {
@@ -25,6 +31,10 @@ class AyumiState {
 		this.currentRow = 0;
 		this.currentTick = 0;
 		this.channelVolumes = [0, 0, 0];
+		this.channelOrnaments = [null, null, null];
+		this.ornamentPositions = [0, 0, 0];
+		this.ornamentCounters = [0, 0, 0];
+		this.channelBaseNotes = [0, 0, 0];
 	}
 
 	updateSamplesPerTick(sampleRate) {
@@ -53,6 +63,10 @@ class AyumiState {
 
 	setPatternOrder(order) {
 		this.patternOrder = order;
+	}
+
+	setOrnaments(ornaments) {
+		this.ornaments = ornaments;
 	}
 
 	advancePosition() {

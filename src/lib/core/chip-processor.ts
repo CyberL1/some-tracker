@@ -1,5 +1,5 @@
 import type { Chip } from '../models/chips';
-import type { Pattern } from '../models/song';
+import type { Pattern, Ornament } from '../models/song';
 
 export interface ChipProcessor {
 	chip: Chip;
@@ -10,6 +10,7 @@ export interface ChipProcessor {
 	sendInitPattern(pattern: Pattern, patternOrderIndex: number): void;
 	sendRequestedPattern(pattern: Pattern): void;
 	sendInitTuningTable(tuningTable: number[]): void;
+	sendInitOrnaments(ornaments: Ornament[]): void;
 	setCallbacks(
 		onPositionUpdate: (currentRow: number, currentPatternOrderIndex?: number) => void,
 		onPatternRequest: (patternOrderIndex: number) => void

@@ -52,7 +52,7 @@
 <main
 	class="flex h-screen flex-col overflow-x-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
-	<div class="flex flex-col gap-3 overflow-x-auto p-3">
+	<div class="mx-auto flex flex-col gap-3 overflow-x-auto p-3">
 		<div class="ml-0 w-full max-w-2xl rounded bg-neutral-700 p-3 shadow-md">
 			<div class="flex flex-wrap items-center gap-3">
 				<div class="flex min-w-0 flex-1 items-center gap-1">
@@ -80,6 +80,7 @@
 					bind:patternOrder
 					speed={song.initialSpeed}
 					tuningTable={song.tuningTable}
+					ornaments={song.ornaments}
 					ayProcessor={container.audioService.chipProcessors[i]} />
 			{/each}
 		</div>
