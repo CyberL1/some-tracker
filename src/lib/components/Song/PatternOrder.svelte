@@ -488,6 +488,8 @@
 			previousHoveredButton = hoveredButton;
 			draw();
 		}
+
+		canvas.style.cursor = isOverPattern ? 'pointer' : 'default';
 	}
 
 	function switchPattern(index: number): void {
