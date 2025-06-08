@@ -30,6 +30,8 @@ class AyumiState {
 		this.ornamentPositions = [0, 0, 0];
 		this.ornamentCounters = [0, 0, 0];
 		this.channelBaseNotes = [0, 0, 0];
+
+		this.wasmBuffer = null;
 	}
 
 	reset() {
@@ -47,9 +49,10 @@ class AyumiState {
 		this.samplesPerTick = Math.floor(sampleRate / this.intFrequency);
 	}
 
-	setWasmModule(module, ptr) {
+	setWasmModule(module, ptr, wasmBuffer) {
 		this.wasmModule = module;
 		this.ayumiPtr = ptr;
+		this.wasmBuffer = wasmBuffer;
 	}
 
 	setPattern(pattern, orderIndex) {

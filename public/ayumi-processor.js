@@ -69,7 +69,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	}
 
 	async handleInit({ wasmBuffer }) {
-		if (!wasmBuffer || this.state.wasmModule) return;
+		console.log('Initializing Ayumi processor', wasmBuffer);
+		if (!wasmBuffer) return;
 
 		try {
 			const result = await WebAssembly.instantiate(wasmBuffer, {
@@ -86,7 +87,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				wasmModule.ayumi_set_pan(ayumiPtr, channel, left, right);
 			});
 
-			this.state.setWasmModule(wasmModule, ayumiPtr);
+			this.state.setWasmModule(wasmModule, ayumiPtr, wasmBuffer);
 			this.state.updateSamplesPerTick(sampleRate);
 			this.initialized = true;
 		} catch (error) {
@@ -120,6 +121,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 	handleUpdateAyFrequency(data) {
 		this.state.setAymFrequency(data.aymFrequency);
+		this.handleInit({ wasmBuffer: this.state.wasmBuffer });
 	}
 
 	handleUpdateIntFrequency(data) {
@@ -165,15 +167,6 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const numSamples = leftChannel.length;
 
 			for (let i = 0; i < numSamples; i++) {
-				if (this.state.aymFrequency !== this.aymFrequency) {
-					this.aymFrequency = this.state.aymFrequency;
-					this.state.wasmModule.ayumi_configure(
-						this.state.ayumiPtr,
-						0,
-						this.aymFrequency,
-						sampleRate
-					);
-				}
 				if (
 					this.state.currentPattern &&
 					this.state.currentPattern.length > 0 &&
