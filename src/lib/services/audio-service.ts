@@ -61,6 +61,18 @@ export class AudioService {
 		});
 	}
 
+	updateAyFrequency(aymFrequency: number) {
+		this.chipProcessors.forEach((chipProcessor) => {
+			chipProcessor.sendUpdateAyFrequency(aymFrequency);
+		});
+	}
+
+	updateIntFrequency(intFrequency: number) {
+		this.chipProcessors.forEach((chipProcessor) => {
+			chipProcessor.sendUpdateIntFrequency(intFrequency);
+		});
+	}
+
 	async dispose() {
 		if (this._isPlaying) {
 			await this.stop();

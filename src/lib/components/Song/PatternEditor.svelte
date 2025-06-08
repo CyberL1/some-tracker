@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Pattern, Ornament } from '../../models/song';
+	import type { Pattern, Ornament, Instrument } from '../../models/song';
 	import type { ChipProcessor } from '../../core/chip-processor';
 	import type { AudioService } from '../../services/audio-service';
 	import { getColors } from '../../utils/colors';
@@ -16,7 +16,8 @@
 		ayProcessor,
 		tuningTable,
 		speed,
-		ornaments
+		ornaments,
+		instruments
 	}: {
 		patterns: Pattern[];
 		patternOrder: number[];
@@ -24,6 +25,7 @@
 		tuningTable: number[];
 		speed: number;
 		ornaments: Ornament[];
+		instruments: Instrument[];
 	} = $props();
 
 	const services: { audioService: AudioService } = getContext('container');
@@ -68,6 +70,8 @@
 				ayProcessor.sendInitTuningTable(tuningTable);
 				ayProcessor.sendInitSpeed(speed);
 				ayProcessor.sendInitOrnaments(ornaments);
+				ayProcessor.sendInitInstruments(instruments);
+
 				services.audioService.updateOrder(patternOrder);
 				services.audioService.play();
 			}

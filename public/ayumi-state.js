@@ -1,4 +1,9 @@
-import { DEFAULT_SONG_HZ, DEFAULT_SPEED, DEFAULT_CHANNEL_VOLUMES } from './ayumi-constants.js';
+import {
+	DEFAULT_SONG_HZ,
+	DEFAULT_SPEED,
+	DEFAULT_CHANNEL_VOLUMES,
+	DEFAULT_AYM_FREQUENCY
+} from './ayumi-constants.js';
 
 class AyumiState {
 	constructor() {
@@ -10,7 +15,8 @@ class AyumiState {
 		this.patternOrder = [];
 		this.currentPatternOrderIndex = 0;
 
-		this.songHz = DEFAULT_SONG_HZ;
+		this.intFrequency = DEFAULT_SONG_HZ;
+		this.aymFrequency = DEFAULT_AYM_FREQUENCY;
 		this.samplesPerTick = 0;
 		this.sampleCounter = 0;
 		this.currentRow = 0;
@@ -38,7 +44,7 @@ class AyumiState {
 	}
 
 	updateSamplesPerTick(sampleRate) {
-		this.samplesPerTick = Math.floor(sampleRate / this.songHz);
+		this.samplesPerTick = Math.floor(sampleRate / this.intFrequency);
 	}
 
 	setWasmModule(module, ptr) {
@@ -67,6 +73,15 @@ class AyumiState {
 
 	setOrnaments(ornaments) {
 		this.ornaments = ornaments;
+	}
+
+	setAymFrequency(frequency) {
+		this.aymFrequency = frequency;
+	}
+
+	setIntFrequency(frequency, sampleRate) {
+		this.intFrequency = frequency;
+		this.updateSamplesPerTick(sampleRate);
 	}
 
 	advancePosition() {

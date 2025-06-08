@@ -7,7 +7,9 @@ class Project {
 		public songs: Song[] = [new Song()],
 		public loopPointId: number = 0,
 		public patternOrder: number[] = [0],
-		public aymChipType: 'AY' | 'YM' = 'AY'
+		public aymChipType: 'AY' | 'YM' = 'AY',
+		public aymFrequency: number = 1773400,
+		public intFrequency: number = 50
 	) {}
 }
 

@@ -9,6 +9,7 @@
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio-service';
 	import { AY_CHIP } from './lib/models/chips';
+	import { ProjectCard, OrnamentsCard } from './lib/components/AppLayout';
 
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
@@ -23,6 +24,13 @@
 	let aymChipType = $state(newProject.aymChipType);
 	let songs = $state(newProject.songs);
 	let patternOrder = $state(newProject.patternOrder);
+	let aymFrequency = $state(newProject.aymFrequency);
+	let intFrequency = $state(newProject.intFrequency);
+
+	$effect(() => {
+		container.audioService.updateAyFrequency(aymFrequency);
+		container.audioService.updateIntFrequency(intFrequency);
+	});
 
 	let patternEditor: PatternEditor | null = $state(null);
 
@@ -35,15 +43,13 @@
 				aymChipType = importedProject.aymChipType;
 				songs = importedProject.songs;
 				patternOrder = importedProject.patternOrder;
+				aymFrequency = importedProject.aymFrequency;
+				intFrequency = importedProject.intFrequency;
 				patternEditor?.onSongChange();
 			}
 		} catch (error) {
 			console.error('Failed to handle menu action:', error);
 		}
-	}
-
-	async function changeAymChipType() {
-		aymChipType = aymChipType === 'AY' ? 'YM' : 'AY';
 	}
 
 	setContext('container', container);
@@ -52,27 +58,16 @@
 <main
 	class="flex h-screen flex-col overflow-x-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
-	<div class="mx-auto flex flex-col gap-3 overflow-x-auto p-3">
-		<div class="ml-0 w-full max-w-2xl rounded bg-neutral-700 p-3 shadow-md">
-			<div class="flex flex-wrap items-center gap-3">
-				<div class="flex min-w-0 flex-1 items-center gap-1">
-					<span class="shrink-0">Title:</span>
-					<input
-						type="text"
-						bind:value={title}
-						class="min-w-0 flex-1 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none" />
-				</div>
-				<div class="flex min-w-0 flex-1 items-center gap-1">
-					<span class="shrink-0">Author:</span>
-					<input
-						type="text"
-						bind:value={author}
-						class="min-w-0 flex-1 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none" />
-				</div>
-				<Button onclick={changeAymChipType}>{aymChipType}</Button>
-			</div>
+	<div class="flex min-h-0 flex-1 gap-3 overflow-x-auto p-3">
+		<div class="flex-1">
+			<ProjectCard
+				bind:title
+				bind:author
+				bind:aymChipType
+				bind:aymFrequency
+				bind:intFrequency />
 		</div>
-		<div class="mx-auto">
+		<div class="flex-shrink-0">
 			{#each songs as song, i}
 				<PatternEditor
 					bind:this={patternEditor}
@@ -81,8 +76,14 @@
 					speed={song.initialSpeed}
 					tuningTable={song.tuningTable}
 					ornaments={song.ornaments}
-					ayProcessor={container.audioService.chipProcessors[i]} />
+					instruments={song.instruments}
+					ayProcessor={container.audioService.chipProcessors[i]}
+					{aymFrequency}
+					{intFrequency} />
 			{/each}
+		</div>
+		<div class="flex-1">
+			<OrnamentsCard bind:ornaments={songs[0].ornaments} />
 		</div>
 	</div>
 </main>

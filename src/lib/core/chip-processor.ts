@@ -1,5 +1,5 @@
 import type { Chip } from '../models/chips';
-import type { Pattern, Ornament } from '../models/song';
+import type { Pattern, Ornament, Instrument } from '../models/song';
 
 export interface ChipProcessor {
 	chip: Chip;
@@ -11,10 +11,13 @@ export interface ChipProcessor {
 	sendRequestedPattern(pattern: Pattern): void;
 	sendInitTuningTable(tuningTable: number[]): void;
 	sendInitOrnaments(ornaments: Ornament[]): void;
+	sendInitInstruments(instruments: Instrument[]): void;
 	setCallbacks(
 		onPositionUpdate: (currentRow: number, currentPatternOrderIndex?: number) => void,
 		onPatternRequest: (patternOrderIndex: number) => void
 	): void;
 	isAudioNodeAvailable(): boolean;
 	sendInitSpeed(speed: number): void;
+	sendUpdateAyFrequency(aymFrequency: number): void;
+	sendUpdateIntFrequency(intFrequency: number): void;
 }

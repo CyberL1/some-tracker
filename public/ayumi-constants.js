@@ -5,6 +5,7 @@ export const AYUMI_STRUCT_RIGHT_OFFSET = AYUMI_STRUCT_SIZE - 8;
 export const DEFAULT_SONG_HZ = 50;
 export const DEFAULT_SPEED = 3;
 export const DEFAULT_CHANNEL_VOLUMES = [15, 15, 15];
+export const DEFAULT_AYM_FREQUENCY = 1773400;
 
 export const PAN_SETTINGS = [
 	{ channel: 0, left: 0.35, right: 0 },

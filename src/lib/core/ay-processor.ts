@@ -1,5 +1,5 @@
 import { AY_CHIP, type Chip } from '../models/chips';
-import type { Pattern, Ornament } from '../models/song';
+import type { Pattern, Ornament, Instrument } from '../models/song';
 import type { ChipProcessor } from './chip-processor';
 
 type PositionUpdateMessage = {
@@ -24,13 +24,17 @@ type WorkletCommand =
 	| { type: 'init_tuning_table'; tuningTable: number[] }
 	| { type: 'init_speed'; speed: number }
 	| { type: 'set_pattern_data'; pattern: Pattern }
-	| { type: 'init_ornaments'; ornaments: Ornament[] };
+	| { type: 'init_ornaments'; ornaments: Ornament[] }
+	| { type: 'init_instruments'; instruments: Instrument[] }
+	| { type: 'update_ay_frequency'; aymFrequency: number }
+	| { type: 'update_int_frequency'; intFrequency: number };
 
 export class AYProcessor implements ChipProcessor {
 	chip: Chip;
 	audioNode: AudioWorkletNode | null = null;
 	private onPositionUpdate?: (currentRow: number, currentPatternOrderIndex?: number) => void;
 	private onPatternRequest?: (patternOrderIndex: number) => void;
+	private commandQueue: WorkletCommand[] = [];
 
 	constructor() {
 		this.chip = AY_CHIP;
@@ -51,8 +55,17 @@ export class AYProcessor implements ChipProcessor {
 
 	private sendCommand(command: WorkletCommand): void {
 		if (!this.audioNode) {
-			throw new Error('Audio node not available');
+			this.commandQueue.push(command);
+			return;
 		}
+
+		while (this.commandQueue.length > 0) {
+			const queuedCommand = this.commandQueue.shift();
+			if (queuedCommand) {
+				this.audioNode.port.postMessage(queuedCommand);
+			}
+		}
+
 		this.audioNode.port.postMessage(command);
 	}
 
@@ -92,8 +105,20 @@ export class AYProcessor implements ChipProcessor {
 		this.sendCommand({ type: 'init_ornaments', ornaments });
 	}
 
+	sendInitInstruments(instruments: Instrument[]): void {
+		this.sendCommand({ type: 'init_instruments', instruments });
+	}
+
 	sendRequestedPattern(pattern: Pattern): void {
 		this.sendCommand({ type: 'set_pattern_data', pattern });
+	}
+
+	sendUpdateAyFrequency(aymFrequency: number): void {
+		this.sendCommand({ type: 'update_ay_frequency', aymFrequency });
+	}
+
+	sendUpdateIntFrequency(intFrequency: number): void {
+		this.sendCommand({ type: 'update_int_frequency', intFrequency });
 	}
 
 	private handleWorkletMessage(event: MessageEvent<WorkletMessage>): void {

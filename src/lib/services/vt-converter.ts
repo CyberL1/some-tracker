@@ -1,5 +1,15 @@
 import { Project } from '../models/project';
-import { Song, Pattern, Note, Effect, NoteName, EffectType, Ornament } from '../models/song';
+import {
+	Song,
+	Pattern,
+	Note,
+	Effect,
+	NoteName,
+	EffectType,
+	Ornament,
+	Instrument,
+	InstrumentRow
+} from '../models/song';
 import { PT3TuneTables } from '../models/pt3/tuning-tables';
 
 interface VT2Module {
@@ -10,6 +20,8 @@ interface VT2Module {
 	playOrder: number[];
 	loopPoint?: number;
 	noteTable: number;
+	chipFrequency: number;
+	interruptFrequency: number;
 }
 
 interface VT2Ornament {
@@ -92,6 +104,33 @@ class VT2Converter {
 			return new Ornament(ornament.id, ornament.data, ornament.loop ? ornament.loopPoint : 0);
 		});
 
+		song.instruments = samples.map((sample) => {
+			// Find the loop point - the first row with loop flag set
+			let loopPoint = 0;
+			for (let i = 0; i < sample.data.length; i++) {
+				if (sample.data[i].loop) {
+					loopPoint = i;
+					break;
+				}
+			}
+
+			return new Instrument(
+				sample.id,
+				sample.data.map((line) => {
+					return new InstrumentRow(
+						line.tone,
+						line.noise,
+						line.envelope,
+						line.toneAdd,
+						line.noiseAdd,
+						line.volume,
+						line.loop
+					);
+				}),
+				loopPoint
+			);
+		});
+
 		song.patterns = patterns.map((vt2Pattern) => {
 			const pattern = new Pattern(vt2Pattern.id, vt2Pattern.rows.length);
 			this.convertPattern(vt2Pattern, pattern);
@@ -117,7 +156,9 @@ class VT2Converter {
 			[song],
 			module.loopPoint || 0,
 			module.playOrder,
-			chipType
+			chipType,
+			module.chipFrequency,
+			module.interruptFrequency
 		);
 
 		return project;
@@ -131,7 +172,9 @@ class VT2Converter {
 			speed: 3,
 			playOrder: [],
 			loopPoint: 0,
-			noteTable: 0
+			noteTable: 0,
+			chipFrequency: 1773400,
+			interruptFrequency: 50
 		};
 
 		const moduleLines = this.extractSection(lines, '[Module]');
@@ -158,6 +201,12 @@ class VT2Converter {
 					break;
 				case 'NoteTable':
 					module.noteTable = parseInt(value) || 0;
+					break;
+				case 'ChipFreq':
+					module.chipFrequency = parseInt(value) || 1773400;
+					break;
+				case 'IntFreq':
+					module.interruptFrequency = (parseInt(value) || 50000) / 1000;
 					break;
 			}
 		}

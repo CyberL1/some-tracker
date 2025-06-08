@@ -14,6 +14,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.state = new AyumiState();
 		this.patternProcessor = new AyumiPatternProcessor(this.state);
 		this.port.onmessage = this.handleMessage.bind(this);
+		this.aymFrequency = 1773400;
 	}
 
 	async handleMessage(event) {
@@ -56,6 +57,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				console.log('Initializing ornaments');
 				this.handleInitOrnaments(data);
 				break;
+			case 'update_ay_frequency':
+				console.log('Updating AY frequency');
+				this.handleUpdateAyFrequency(data);
+				break;
+			case 'update_int_frequency':
+				console.log('Updating interrupt frequency');
+				this.handleUpdateIntFrequency(data);
+				break;
 		}
 	}
 
@@ -70,7 +79,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const wasmModule = result.instance.exports;
 			const ayumiPtr = wasmModule.malloc(AYUMI_STRUCT_SIZE);
 
-			wasmModule.ayumi_configure(ayumiPtr, 0, 1773400, sampleRate);
+			this.aymFrequency = this.state.aymFrequency ?? DEFAULT_AYM_FREQUENCY;
+			wasmModule.ayumi_configure(ayumiPtr, 0, this.aymFrequency, sampleRate);
 
 			PAN_SETTINGS.forEach(({ channel, left, right }) => {
 				wasmModule.ayumi_set_pan(ayumiPtr, channel, left, right);
@@ -106,6 +116,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 	handleSetPatternData(data) {
 		this.state.setPattern(data.pattern);
+	}
+
+	handleUpdateAyFrequency(data) {
+		this.state.setAymFrequency(data.aymFrequency);
+	}
+
+	handleUpdateIntFrequency(data) {
+		this.state.setIntFrequency(data.intFrequency, sampleRate);
 	}
 
 	handlePlay({ startPatternOrderIndex, initialSpeed }) {
@@ -147,6 +165,15 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const numSamples = leftChannel.length;
 
 			for (let i = 0; i < numSamples; i++) {
+				if (this.state.aymFrequency !== this.aymFrequency) {
+					this.aymFrequency = this.state.aymFrequency;
+					this.state.wasmModule.ayumi_configure(
+						this.state.ayumiPtr,
+						0,
+						this.aymFrequency,
+						sampleRate
+					);
+				}
 				if (
 					this.state.currentPattern &&
 					this.state.currentPattern.length > 0 &&

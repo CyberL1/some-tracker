@@ -19,3 +19,21 @@
 	--pattern-row-num: theme('colors.teal.500');
 	--pattern-alternate: theme('colors.zinc.900');
 }
+
+/* Hide number input spinners/steppers */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+input[type='number'] {
+	-moz-appearance: textfield;
+}
+
+/* Hide default select dropdown arrow */
+select {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+}

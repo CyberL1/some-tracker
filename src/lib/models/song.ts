@@ -51,6 +51,46 @@ class Ornament {
 	}
 }
 
+class Instrument {
+	id: number;
+	rows: InstrumentRow[] = [];
+	loop: number = 0;
+
+	constructor(id: number, rows: InstrumentRow[], loop: number = 0) {
+		this.id = id;
+		this.rows = rows;
+		this.loop = loop;
+	}
+}
+
+class InstrumentRow {
+	tone: boolean = false;
+	noise: boolean = false;
+	envelope: boolean = false;
+	toneAdd: number = 0;
+	noiseAdd: number = 0;
+	volume: number = 0;
+	loop: boolean = false;
+
+	constructor(
+		tone: boolean,
+		noise: boolean,
+		envelope: boolean,
+		toneAdd: number,
+		noiseAdd: number,
+		volume: number,
+		loop: boolean
+	) {
+		this.tone = tone;
+		this.noise = noise;
+		this.envelope = envelope;
+		this.toneAdd = toneAdd;
+		this.noiseAdd = noiseAdd;
+		this.volume = volume;
+		this.loop = loop;
+	}
+}
+
 class Effect {
 	effect: EffectType;
 	delay: number;
@@ -126,12 +166,14 @@ class Song {
 	public tuningTable: number[];
 	public initialSpeed: number;
 	public ornaments: Ornament[];
+	public instruments: Instrument[];
 
 	constructor() {
 		this.initialSpeed = 3;
 		this.patterns = [new Pattern(0)];
 		this.tuningTable = PT3TuneTables[2]; // Default to most common table from VT2 nowadays
 		this.ornaments = [];
+		this.instruments = [];
 	}
 
 	addPattern(): Pattern {
@@ -142,4 +184,16 @@ class Song {
 	}
 }
 
-export { Song, Pattern, Channel, Row, Note, Effect, NoteName, EffectType, Ornament };
+export {
+	Song,
+	Pattern,
+	Channel,
+	Row,
+	Note,
+	Effect,
+	NoteName,
+	EffectType,
+	Ornament,
+	Instrument,
+	InstrumentRow
+};
