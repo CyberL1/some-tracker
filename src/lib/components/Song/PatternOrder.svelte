@@ -324,16 +324,11 @@
 				}
 			} else if (x <= PADDING + CELL_WIDTH) {
 				if (x >= PADDING && x <= PADDING + CELL_WIDTH) {
-					if (editingPatternIndex === clickedIndex) {
-						// Already editing this pattern, do nothing
-						return;
-					} else {
-						finishPatternEdit();
-						switchPattern(clickedIndex);
-						editingPatternIndex = clickedIndex;
-						editingPatternValue = '';
-						draw();
-					}
+					finishPatternEdit();
+					switchPattern(clickedIndex);
+					editingPatternIndex = clickedIndex;
+					editingPatternValue = '';
+					draw();
 				} else {
 					finishPatternEdit();
 					switchPattern(clickedIndex);
