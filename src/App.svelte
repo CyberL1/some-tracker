@@ -45,10 +45,10 @@
 				}
 
 				if (patternEditor) {
+					playbackStore.isPlaying = true;
 					patternEditor.resetToBeginning();
 				}
 
-				playbackStore.isPlaying = true;
 				return;
 			}
 
@@ -58,10 +58,10 @@
 				}
 
 				if (patternEditor) {
-					patternEditor.playFromCursor();
+					playbackStore.isPlaying = true;
+					await patternEditor.playFromCursor();
 				}
 
-				playbackStore.isPlaying = true;
 				return;
 			}
 

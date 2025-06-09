@@ -58,7 +58,7 @@
 		currentPatternOrderIndex = 0;
 	}
 
-	export function playFromCursor() {
+	export async function playFromCursor() {
 		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
 			console.warn('Audio processor not available or not initialized');
 			return;
@@ -73,10 +73,10 @@
 			initPlayback();
 
 			services.audioService.updateOrder(patternOrder);
-			services.audioService.playFromRow(selectedRow);
+			await services.audioService.playFromRow(selectedRow);
 		} catch (error) {
 			console.error('Error during playback from cursor:', error);
-			services.audioService.stop();
+			await services.audioService.stop();
 		}
 	}
 
@@ -96,11 +96,11 @@
 				initPlayback();
 
 				services.audioService.updateOrder(patternOrder);
-				services.audioService.play();
+				await services.audioService.play();
 			}
 		} catch (error) {
 			console.error('Error during playback toggle:', error);
-			services.audioService.stop();
+			await services.audioService.stop();
 		}
 	}
 
