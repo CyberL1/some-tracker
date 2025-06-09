@@ -4,6 +4,7 @@
 	import type { MenuItem } from './types';
 	import IconCarbonPlayFilledAlt from '~icons/carbon/play-filled-alt';
 	import IconCarbonPauseFilled from '~icons/carbon/pause-filled';
+	import IconCarbonSkipBackFilled from '~icons/carbon/skip-back-filled';
 
 	let activeMenu = $state('');
 	let {
@@ -42,15 +43,27 @@
 			onMenuClose={handleMenuClose} />
 	{/each}
 
-	<button
-		class=" absolute top-3.5 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
-		onclick={() => {
-			playbackStore.isPlaying = !playbackStore.isPlaying;
-		}}>
-		{#if !playbackStore.isPlaying}
-			<IconCarbonPlayFilledAlt class="h-4 w-4" />
-		{:else}
-			<IconCarbonPauseFilled class="h-4 w-4" />
-		{/if}
-	</button>
+	<div class="absolute top-3.5 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1">
+		<button
+			class="rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
+			title="Play from beginning"
+			onclick={() => {
+				onAction?.({ action: 'playFromBeginning' });
+			}}>
+			<IconCarbonSkipBackFilled class="h-4 w-4" />
+		</button>
+
+		<button
+			class="rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
+			title={playbackStore.isPlaying ? 'Pause' : 'Play/Resume'}
+			onclick={() => {
+				onAction?.({ action: 'togglePlayback' });
+			}}>
+			{#if !playbackStore.isPlaying}
+				<IconCarbonPlayFilledAlt class="h-4 w-4" />
+			{:else}
+				<IconCarbonPauseFilled class="h-4 w-4" />
+			{/if}
+		</button>
+	</div>
 </div>

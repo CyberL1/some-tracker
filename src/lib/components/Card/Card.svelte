@@ -22,7 +22,7 @@
 		{/if}
 	</h2>
 	<div class="rounded-b-sm bg-neutral-700 {props.fullHeight ? 'min-h-0 flex-1' : ''}">
-		<div class="p-4 {props.fullHeight ? 'h-full' : ''} {props.class}">
+		<div class="{props.fullHeight ? 'h-full' : ''} {props.class}">
 			{@render props.children?.()}
 		</div>
 	</div>

@@ -519,6 +519,12 @@
 		}
 	}
 
+	function handleMouseEnter(): void {
+		if (canvas) {
+			canvas.focus();
+		}
+	}
+
 	function addPatternAtIndex(index: number): void {
 		const result = PatternService.addPatternAfter(patterns, patternOrder, index);
 
@@ -590,5 +596,6 @@
 	onkeydown={handleKeyDown}
 	onmousemove={handleMouseMove}
 	onmouseleave={handleMouseLeave}
-	class="block border border-[var(--pattern-empty)] bg-[var(--pattern-bg)] focus:ring-1 focus:ring-[var(--pattern-header)]/50 focus:outline-none"
+	onmouseenter={handleMouseEnter}
+	class="focus:border-opacity-50 block border border-[var(--pattern-empty)] bg-[var(--pattern-bg)] transition-colors duration-150 focus:border-[var(--pattern-text)] focus:outline-none"
 	style="width: {canvasWidth}px; height: {canvasHeight}px;"></canvas>

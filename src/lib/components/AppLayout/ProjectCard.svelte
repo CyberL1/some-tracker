@@ -39,7 +39,7 @@
 	];
 </script>
 
-<Card title="Project" icon={IconCarbonFolders} class="flex w-full flex-col gap-2">
+<Card title="Project" icon={IconCarbonFolders} class="flex w-full flex-col gap-2 p-3">
 	<CardElement label="Title">
 		<input
 			type="text"

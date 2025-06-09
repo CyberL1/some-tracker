@@ -3,6 +3,7 @@ import type { ChipProcessor } from '../core/chip-processor';
 
 export interface Chip {
 	type: 'ay' | 'fm';
+	name: string;
 	wasmUrl: string;
 	processorName: string;
 	processorMap: () => ChipProcessor;
@@ -10,6 +11,7 @@ export interface Chip {
 
 export const AY_CHIP: Chip = {
 	type: 'ay',
+	name: 'AY-3-8910 / YM2149F',
 	wasmUrl: 'ayumi.wasm',
 	processorName: 'ayumi-processor',
 	processorMap: () => new AYProcessor()
@@ -18,6 +20,7 @@ export const AY_CHIP: Chip = {
 //TODO: implement FM chip
 export const FM_CHIP: Chip = {
 	type: 'fm',
+	name: 'FM',
 	wasmUrl: 'fm.wasm',
 	processorName: 'fm-processor',
 	processorMap: () => {

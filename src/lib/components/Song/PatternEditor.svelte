@@ -53,6 +53,11 @@
 		ayProcessor.stop();
 	}
 
+	export function resetToBeginning() {
+		selectedRow = 0;
+		currentPatternOrderIndex = 0;
+	}
+
 	async function togglePlayback() {
 		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
 			console.warn('Audio processor not available or not initialized');
@@ -455,6 +460,12 @@
 		moveRow(Math.sign(event.deltaY));
 	}
 
+	function handleMouseEnter(): void {
+		if (canvas) {
+			canvas.focus();
+		}
+	}
+
 	function updateSize() {
 		canvasHeight = Math.max(
 			PATTERN_EDITOR_CONSTANTS.MIN_CANVAS_HEIGHT,
@@ -554,7 +565,8 @@
 			tabindex="0"
 			onkeydown={handleKeyDown}
 			onwheel={handleWheel}
-			class="block rounded-l-md border-[var(--pattern-empty)] focus:ring-1 focus:ring-[var(--pattern-header)]/50 focus:outline-none">
+			onmouseenter={handleMouseEnter}
+			class="focus:border-opacity-50 block border border-[var(--pattern-empty)] transition-colors duration-150 focus:border-[var(--pattern-text)] focus:outline-none">
 		</canvas>
 	</div>
 </div>

@@ -4,12 +4,14 @@
 	import { menuItems } from './lib/config/app-menu';
 	import { handleFileImport } from './lib/services/file-import';
 	import { Project } from './lib/models/project';
-	import Button from './lib/components/Button/Button.svelte';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio-service';
 	import { AY_CHIP } from './lib/models/chips';
 	import { ProjectCard, OrnamentsCard } from './lib/components/AppLayout';
+	import Card from './lib/components/Card/Card.svelte';
+	import IconCarbonChip from '~icons/carbon/chip';
+	import { playbackStore } from './lib/stores/playback.svelte';
 
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
@@ -36,6 +38,25 @@
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
+			if (data.action === 'playFromBeginning') {
+				if (playbackStore.isPlaying) {
+					playbackStore.isPlaying = false;
+					await container.audioService.stop();
+				}
+
+				if (patternEditor) {
+					patternEditor.resetToBeginning();
+				}
+
+				playbackStore.isPlaying = true;
+				return;
+			}
+
+			if (data.action === 'togglePlayback') {
+				playbackStore.isPlaying = !playbackStore.isPlaying;
+				return;
+			}
+
 			const importedProject = await handleFileImport(data.action);
 			if (importedProject) {
 				title = importedProject.name;
@@ -69,17 +90,23 @@
 		</div>
 		<div class="flex-shrink-0">
 			{#each songs as song, i}
-				<PatternEditor
-					bind:this={patternEditor}
-					bind:patterns={song.patterns}
-					bind:patternOrder
-					speed={song.initialSpeed}
-					tuningTable={song.tuningTable}
-					ornaments={song.ornaments}
-					instruments={song.instruments}
-					ayProcessor={container.audioService.chipProcessors[i]}
-					{aymFrequency}
-					{intFrequency} />
+				<Card
+					title={`${container.audioService.chipProcessors[i].chip.name} - (${i + 1})`}
+					fullHeight
+					icon={IconCarbonChip}
+					class="p-0">
+					<PatternEditor
+						bind:this={patternEditor}
+						bind:patterns={song.patterns}
+						bind:patternOrder
+						speed={song.initialSpeed}
+						tuningTable={song.tuningTable}
+						ornaments={song.ornaments}
+						instruments={song.instruments}
+						ayProcessor={container.audioService.chipProcessors[i]}
+						{aymFrequency}
+						{intFrequency} />
+				</Card>
 			{/each}
 		</div>
 		<div class="flex-1">
