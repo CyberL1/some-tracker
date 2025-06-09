@@ -23,58 +23,45 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 		switch (type) {
 			case 'init':
-				console.log('Initializing Ayumi processor');
 				await this.handleInit(data);
 				break;
 			case 'play':
-				console.log('Starting playback');
 				this.handlePlay(data);
 				break;
 			case 'play_from_row':
-				console.log('Starting playback from row');
 				this.handlePlayFromRow(data);
 				break;
 			case 'stop':
-				console.log('Stopping playback');
 				this.handleStop();
 				break;
 			case 'init_pattern':
-				console.log('Initializing pattern');
 				this.handleInitPattern(data);
 				break;
 			case 'update_order':
-				console.log('Updating pattern order');
 				this.handleUpdateOrder(data);
 				break;
 			case 'set_pattern_data':
-				console.log('Setting pattern data');
 				this.handleSetPatternData(data);
 				break;
 			case 'init_tuning_table':
-				console.log('Initializing tuning table');
 				this.handleInitTuningTable(data);
 				break;
 			case 'init_speed':
-				console.log('Initializing speed');
 				this.handleInitSpeed(data);
 				break;
 			case 'init_ornaments':
-				console.log('Initializing ornaments');
 				this.handleInitOrnaments(data);
 				break;
 			case 'update_ay_frequency':
-				console.log('Updating AY frequency');
 				this.handleUpdateAyFrequency(data);
 				break;
 			case 'update_int_frequency':
-				console.log('Updating interrupt frequency');
 				this.handleUpdateIntFrequency(data);
 				break;
 		}
 	}
 
 	async handleInit({ wasmBuffer }) {
-		console.log('Initializing Ayumi processor', wasmBuffer);
 		if (!wasmBuffer) return;
 
 		try {
@@ -134,7 +121,10 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	}
 
 	handlePlay({ startPatternOrderIndex, initialSpeed }) {
-		if (!this.state.wasmModule || !this.initialized) return;
+		if (!this.state.wasmModule || !this.initialized) {
+			console.warn('Play aborted: wasmModule not initialized');
+			return;
+		}
 
 		for (let i = 0; i < 3; i++) {
 			this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, i, 1, 1, 0);
@@ -148,21 +138,13 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		if (initialSpeed !== undefined) {
 			this.state.setSpeed(initialSpeed);
 		}
-
-		if (this.state.currentPattern && this.state.currentPattern.length > 0) {
-			this.patternProcessor.parsePatternRow(this.state.currentPattern, this.state.currentRow);
-
-			this.port.postMessage({
-				type: 'position_update',
-				currentRow: this.state.currentRow,
-				currentTick: this.state.currentTick,
-				currentPatternOrderIndex: this.state.currentPatternOrderIndex
-			});
-		}
 	}
 
 	handlePlayFromRow({ row }) {
-		if (!this.state.wasmModule || !this.initialized) return;
+		if (!this.state.wasmModule || !this.initialized) {
+			console.warn('Play aborted: wasmModule not initialized');
+			return;
+		}
 
 		for (let i = 0; i < 3; i++) {
 			this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, i, 1, 1, 0);
@@ -170,17 +152,6 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 		this.state.reset();
 		this.state.currentRow = row;
-
-		if (this.state.currentPattern && this.state.currentPattern.length > 0) {
-			this.patternProcessor.parsePatternRow(this.state.currentPattern, this.state.currentRow);
-
-			this.port.postMessage({
-				type: 'position_update',
-				currentRow: this.state.currentRow,
-				currentTick: this.state.currentTick,
-				currentPatternOrderIndex: this.state.currentPatternOrderIndex
-			});
-		}
 	}
 
 	handleStop() {
@@ -253,7 +224,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				this.state.sampleCounter++;
 			}
 		} else {
-			console.log('Invalid output configuration');
+			console.error('Invalid output configuration');
 		}
 		return true;
 	}
