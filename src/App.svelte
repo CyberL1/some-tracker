@@ -52,6 +52,19 @@
 				return;
 			}
 
+			if (data.action === 'playFromCursor') {
+				if (playbackStore.isPlaying) {
+					return;
+				}
+
+				if (patternEditor) {
+					patternEditor.playFromCursor();
+				}
+
+				playbackStore.isPlaying = true;
+				return;
+			}
+
 			if (data.action === 'togglePlayback') {
 				playbackStore.isPlaying = !playbackStore.isPlaying;
 				return;

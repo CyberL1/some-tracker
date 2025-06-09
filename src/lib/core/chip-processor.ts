@@ -5,6 +5,7 @@ export interface ChipProcessor {
 	chip: Chip;
 	initialize(wasmBuffer: ArrayBuffer, audioNode: AudioWorkletNode): void;
 	play(): void;
+	playFromRow(row: number): void;
 	stop(): void;
 	updateOrder(order: number[]): void;
 	sendInitPattern(pattern: Pattern, patternOrderIndex: number): void;

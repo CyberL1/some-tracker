@@ -18,6 +18,7 @@ type WorkletMessage = PositionUpdateMessage | RequestPatternMessage;
 type WorkletCommand =
 	| { type: 'init'; wasmBuffer: ArrayBuffer }
 	| { type: 'play' }
+	| { type: 'play_from_row'; row: number }
 	| { type: 'stop' }
 	| { type: 'update_order'; order: number[] }
 	| { type: 'init_pattern'; pattern: Pattern; patternOrderIndex: number }
@@ -79,6 +80,10 @@ export class AYProcessor implements ChipProcessor {
 
 	play(): void {
 		this.sendCommand({ type: 'play' });
+	}
+
+	playFromRow(row: number): void {
+		this.sendCommand({ type: 'play_from_row', row });
 	}
 
 	stop(): void {

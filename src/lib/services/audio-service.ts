@@ -43,6 +43,20 @@ export class AudioService {
 		}
 	}
 
+	playFromRow(row: number) {
+		if (this._isPlaying) return;
+
+		this._isPlaying = true;
+
+		this.chipProcessors.forEach((chipProcessor) => {
+			chipProcessor.playFromRow(row);
+		});
+
+		if (this._audioContext?.state === 'suspended') {
+			return this._audioContext.resume();
+		}
+	}
+
 	stop() {
 		if (!this._isPlaying) return;
 

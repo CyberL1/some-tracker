@@ -5,6 +5,7 @@
 	import IconCarbonPlayFilledAlt from '~icons/carbon/play-filled-alt';
 	import IconCarbonPauseFilled from '~icons/carbon/pause-filled';
 	import IconCarbonSkipBackFilled from '~icons/carbon/skip-back-filled';
+	import IconCarbonPlay from '~icons/carbon/play';
 
 	let activeMenu = $state('');
 	let {
@@ -64,6 +65,15 @@
 			{:else}
 				<IconCarbonPauseFilled class="h-4 w-4" />
 			{/if}
+		</button>
+
+		<button
+			class="rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
+			title="Play from cursor position"
+			onclick={() => {
+				onAction?.({ action: 'playFromCursor' });
+			}}>
+			<IconCarbonPlay class="h-4 w-4" />
 		</button>
 	</div>
 </div>

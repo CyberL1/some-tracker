@@ -58,6 +58,28 @@
 		currentPatternOrderIndex = 0;
 	}
 
+	export function playFromCursor() {
+		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
+			console.warn('Audio processor not available or not initialized');
+			return;
+		}
+
+		try {
+			if (!currentPattern) {
+				console.warn('No pattern selected');
+				return;
+			}
+
+			initPlayback();
+
+			services.audioService.updateOrder(patternOrder);
+			services.audioService.playFromRow(selectedRow);
+		} catch (error) {
+			console.error('Error during playback from cursor:', error);
+			services.audioService.stop();
+		}
+	}
+
 	async function togglePlayback() {
 		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
 			console.warn('Audio processor not available or not initialized');
@@ -71,11 +93,7 @@
 					return;
 				}
 
-				ayProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
-				ayProcessor.sendInitTuningTable(tuningTable);
-				ayProcessor.sendInitSpeed(speed);
-				ayProcessor.sendInitOrnaments(ornaments);
-				ayProcessor.sendInitInstruments(instruments);
+				initPlayback();
 
 				services.audioService.updateOrder(patternOrder);
 				services.audioService.play();
@@ -84,6 +102,14 @@
 			console.error('Error during playback toggle:', error);
 			services.audioService.stop();
 		}
+	}
+
+	function initPlayback() {
+		ayProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
+		ayProcessor.sendInitTuningTable(tuningTable);
+		ayProcessor.sendInitSpeed(speed);
+		ayProcessor.sendInitOrnaments(ornaments);
+		ayProcessor.sendInitInstruments(instruments);
 	}
 
 	function pausePlayback() {

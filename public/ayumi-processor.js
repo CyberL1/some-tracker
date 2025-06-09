@@ -2,7 +2,8 @@ import {
 	AYUMI_STRUCT_SIZE,
 	AYUMI_STRUCT_LEFT_OFFSET,
 	AYUMI_STRUCT_RIGHT_OFFSET,
-	PAN_SETTINGS
+	PAN_SETTINGS,
+	DEFAULT_AYM_FREQUENCY
 } from './ayumi-constants.js';
 import AyumiState from './ayumi-state.js';
 import AyumiPatternProcessor from './ayumi-pattern-processor.js';
@@ -28,6 +29,10 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			case 'play':
 				console.log('Starting playback');
 				this.handlePlay(data);
+				break;
+			case 'play_from_row':
+				console.log('Starting playback from row');
+				this.handlePlayFromRow(data);
 				break;
 			case 'stop':
 				console.log('Stopping playback');
@@ -142,6 +147,39 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 		if (initialSpeed !== undefined) {
 			this.state.setSpeed(initialSpeed);
+		}
+
+		if (this.state.currentPattern && this.state.currentPattern.length > 0) {
+			this.patternProcessor.parsePatternRow(this.state.currentPattern, this.state.currentRow);
+
+			this.port.postMessage({
+				type: 'position_update',
+				currentRow: this.state.currentRow,
+				currentTick: this.state.currentTick,
+				currentPatternOrderIndex: this.state.currentPatternOrderIndex
+			});
+		}
+	}
+
+	handlePlayFromRow({ row }) {
+		if (!this.state.wasmModule || !this.initialized) return;
+
+		for (let i = 0; i < 3; i++) {
+			this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, i, 1, 1, 0);
+		}
+
+		this.state.reset();
+		this.state.currentRow = row;
+
+		if (this.state.currentPattern && this.state.currentPattern.length > 0) {
+			this.patternProcessor.parsePatternRow(this.state.currentPattern, this.state.currentRow);
+
+			this.port.postMessage({
+				type: 'position_update',
+				currentRow: this.state.currentRow,
+				currentTick: this.state.currentTick,
+				currentPatternOrderIndex: this.state.currentPatternOrderIndex
+			});
 		}
 	}
 
