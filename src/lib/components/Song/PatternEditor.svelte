@@ -47,18 +47,12 @@
 
 	let currentPattern = $derived(patterns[patternOrder[currentPatternOrderIndex]]);
 
-	export function onSongChange() {
-		selectedRow = 0;
-		currentPatternOrderIndex = 0;
-		ayProcessor.stop();
-	}
-
 	export function resetToBeginning() {
 		selectedRow = 0;
 		currentPatternOrderIndex = 0;
 	}
 
-	export async function playFromCursor() {
+	export function playFromCursor() {
 		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
 			console.warn('Audio processor not available or not initialized');
 			return;
@@ -73,14 +67,14 @@
 			initPlayback();
 
 			services.audioService.updateOrder(patternOrder);
-			await services.audioService.playFromRow(selectedRow);
+			services.audioService.playFromRow(selectedRow);
 		} catch (error) {
 			console.error('Error during playback from cursor:', error);
-			await services.audioService.stop();
+			services.audioService.stop();
 		}
 	}
 
-	async function togglePlayback() {
+	export function togglePlayback() {
 		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
 			console.warn('Audio processor not available or not initialized');
 			return;
@@ -96,11 +90,11 @@
 				initPlayback();
 
 				services.audioService.updateOrder(patternOrder);
-				await services.audioService.play();
+				services.audioService.play();
 			}
 		} catch (error) {
 			console.error('Error during playback toggle:', error);
-			await services.audioService.stop();
+			services.audioService.stop();
 		}
 	}
 
@@ -431,6 +425,11 @@
 			case ' ':
 				event.preventDefault();
 				playbackStore.isPlaying = !playbackStore.isPlaying;
+				if (playbackStore.isPlaying) {
+					togglePlayback();
+				} else {
+					pausePlayback();
+				}
 				break;
 			case 'ArrowUp':
 				event.preventDefault();
@@ -536,14 +535,6 @@
 			window.removeEventListener('resize', handleResize);
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
-	});
-
-	$effect(() => {
-		if (playbackStore.isPlaying) {
-			togglePlayback();
-		} else {
-			pausePlayback();
-		}
 	});
 
 	$effect(() => {

@@ -41,12 +41,13 @@
 			if (data.action === 'playFromBeginning') {
 				if (playbackStore.isPlaying) {
 					playbackStore.isPlaying = false;
-					await container.audioService.stop();
+					container.audioService.stop();
 				}
 
 				if (patternEditor) {
 					playbackStore.isPlaying = true;
 					patternEditor.resetToBeginning();
+					patternEditor.togglePlayback();
 				}
 
 				return;
@@ -59,7 +60,7 @@
 
 				if (patternEditor) {
 					playbackStore.isPlaying = true;
-					await patternEditor.playFromCursor();
+					patternEditor.playFromCursor();
 				}
 
 				return;
@@ -67,6 +68,12 @@
 
 			if (data.action === 'togglePlayback') {
 				playbackStore.isPlaying = !playbackStore.isPlaying;
+
+				if (playbackStore.isPlaying) {
+					patternEditor?.togglePlayback();
+				} else {
+					container.audioService.stop();
+				}
 				return;
 			}
 
@@ -79,7 +86,10 @@
 				patternOrder = importedProject.patternOrder;
 				aymFrequency = importedProject.aymFrequency;
 				intFrequency = importedProject.intFrequency;
-				patternEditor?.onSongChange();
+
+				playbackStore.isPlaying = false;
+				container.audioService.stop();
+				patternEditor?.resetToBeginning();
 			}
 		} catch (error) {
 			console.error('Failed to handle menu action:', error);
@@ -116,9 +126,7 @@
 						tuningTable={song.tuningTable}
 						ornaments={song.ornaments}
 						instruments={song.instruments}
-						ayProcessor={container.audioService.chipProcessors[i]}
-						{aymFrequency}
-						{intFrequency} />
+						ayProcessor={container.audioService.chipProcessors[i]} />
 				</Card>
 			{/each}
 		</div>
