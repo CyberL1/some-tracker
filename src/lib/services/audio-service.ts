@@ -9,6 +9,25 @@ export class AudioService {
 	//they will all be mixed together in single audio context
 	chipProcessors: ChipProcessor[] = [];
 
+	constructor() {
+		// Web browsers like to disable audio contexts when they first exist to prevent auto-play video/audio ads.
+		// We explicitly re-enable it whenever the user does something on the page.
+		if (this._audioContext) {
+			document.addEventListener('keydown', () => this._audioContext?.resume(), {
+				once: true
+			});
+			document.addEventListener('mousedown', () => this._audioContext?.resume(), {
+				once: true
+			});
+			document.addEventListener('touchstart', () => this._audioContext?.resume(), {
+				once: true
+			});
+			document.addEventListener('touchend', () => this._audioContext?.resume(), {
+				once: true
+			});
+		}
+	}
+
 	async addChipProcessor(chip: Chip) {
 		if (!this._audioContext) {
 			throw new Error('Audio context not initialized');
@@ -37,10 +56,6 @@ export class AudioService {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.play();
 		});
-
-		if (this._audioContext?.state === 'suspended') {
-			return this._audioContext.resume();
-		}
 	}
 
 	playFromRow(row: number) {
@@ -51,10 +66,6 @@ export class AudioService {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.playFromRow(row);
 		});
-
-		if (this._audioContext?.state === 'suspended') {
-			return this._audioContext.resume();
-		}
 	}
 
 	stop() {
@@ -65,8 +76,6 @@ export class AudioService {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.stop();
 		});
-
-		return this._audioContext?.suspend();
 	}
 
 	updateOrder(order: number[]) {
@@ -89,7 +98,7 @@ export class AudioService {
 
 	async dispose() {
 		if (this._isPlaying) {
-			await this.stop();
+			this.stop();
 		}
 
 		if (this._audioContext) {

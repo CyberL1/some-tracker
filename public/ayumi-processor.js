@@ -16,6 +16,9 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.patternProcessor = new AyumiPatternProcessor(this.state);
 		this.port.onmessage = this.handleMessage.bind(this);
 		this.aymFrequency = 1773400;
+		this.paused = false;
+		this.fadeInSamples = 0;
+		this.fadeInDuration = 0.01; // 10ms fade-in
 	}
 
 	async handleMessage(event) {
@@ -126,6 +129,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			return;
 		}
 
+		this.paused = false;
+		this.fadeInSamples = Math.floor(sampleRate * this.fadeInDuration);
 		for (let i = 0; i < 3; i++) {
 			this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, i, 1, 1, 0);
 		}
@@ -146,6 +151,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			return;
 		}
 
+		this.paused = false;
+		this.fadeInSamples = Math.floor(sampleRate * this.fadeInDuration);
 		for (let i = 0; i < 3; i++) {
 			this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, i, 1, 1, 0);
 		}
@@ -155,12 +162,17 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	}
 
 	handleStop() {
+		this.paused = true;
 		const { wasmModule, ayumiPtr } = this.state;
 		for (let i = 0; i < 3; i++) {
 			wasmModule.ayumi_set_mixer(ayumiPtr, i, 1, 1, 0);
 			wasmModule.ayumi_set_volume(ayumiPtr, i, 0);
 		}
-		this.state.reset();
+		this.state.channelVolumes = [0, 0, 0];
+		this.state.channelOrnaments = [null, null, null];
+		this.state.ornamentPositions = [0, 0, 0];
+		this.state.ornamentCounters = [0, 0, 0];
+		this.state.channelBaseNotes = [0, 0, 0];
 	}
 
 	process(_inputs, outputs, _parameters) {
@@ -174,6 +186,15 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const leftChannel = output[0];
 			const rightChannel = output[1];
 			const numSamples = leftChannel.length;
+
+			// Fill output with silence if paused
+			if (this.paused) {
+				for (let i = 0; i < numSamples; i++) {
+					leftChannel[i] = 0;
+					rightChannel[i] = 0;
+				}
+				return true;
+			}
 
 			for (let i = 0; i < numSamples; i++) {
 				if (
@@ -218,8 +239,17 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				const leftValue = new Float64Array(wasmModule.memory.buffer, leftOffset, 1)[0];
 				const rightValue = new Float64Array(wasmModule.memory.buffer, rightOffset, 1)[0];
 
-				leftChannel[i] = leftValue;
-				rightChannel[i] = rightValue;
+				// Apply fade-in if needed
+				if (this.fadeInSamples > 0) {
+					const fadeInFactor =
+						1 - this.fadeInSamples / (sampleRate * this.fadeInDuration);
+					leftChannel[i] = leftValue * fadeInFactor;
+					rightChannel[i] = rightValue * fadeInFactor;
+					this.fadeInSamples--;
+				} else {
+					leftChannel[i] = leftValue;
+					rightChannel[i] = rightValue;
+				}
 
 				this.state.sampleCounter++;
 			}
