@@ -2,18 +2,22 @@ export function getColors() {
 	const style = getComputedStyle(document.documentElement);
 
 	return {
-		patternBg: style.getPropertyValue('--pattern-bg').trim(),
-		patternText: style.getPropertyValue('--pattern-text').trim(),
-		patternEmpty: style.getPropertyValue('--pattern-empty').trim(),
-		patternNote: style.getPropertyValue('--pattern-note').trim(),
-		patternInstrument: style.getPropertyValue('--pattern-instrument').trim(),
-		patternEffect: style.getPropertyValue('--pattern-effect').trim(),
-		patternEnvelope: style.getPropertyValue('--pattern-envelope').trim(),
-		patternNoise: style.getPropertyValue('--pattern-noise').trim(),
-		patternHeader: style.getPropertyValue('--pattern-header').trim(),
-		patternSelected: style.getPropertyValue('--pattern-selected').trim(),
-		patternCellSelected: style.getPropertyValue('--pattern-cell-selected').trim(),
-		patternRowNum: style.getPropertyValue('--pattern-row-num').trim(),
-		patternAlternate: style.getPropertyValue('--pattern-alternate').trim()
+		patternBg: style.getPropertyValue('--color-pattern-bg').trim(),
+		patternText: style.getPropertyValue('--color-pattern-text').trim(),
+		patternEmpty: style.getPropertyValue('--color-pattern-empty').trim(),
+		patternEmptySelected: style.getPropertyValue('--color-pattern-empty-selected').trim(),
+		patternNote: style.getPropertyValue('--color-pattern-note').trim(),
+		patternInstrument: style.getPropertyValue('--color-pattern-instrument').trim(),
+		patternEffect: style.getPropertyValue('--color-pattern-effect').trim(),
+		patternEnvelope: style.getPropertyValue('--color-pattern-envelope').trim(),
+		patternNoise: style.getPropertyValue('--color-pattern-noise').trim(),
+		patternHeader: style.getPropertyValue('--color-pattern-header').trim(),
+		patternSelected: style.getPropertyValue('--color-pattern-selected').trim(),
+		patternCellSelected: style.getPropertyValue('--color-pattern-cell-selected').trim(),
+		patternRowNum: style.getPropertyValue('--color-pattern-row-num').trim(),
+		patternAlternate: style.getPropertyValue('--color-pattern-alternate').trim(),
+		patternAlternateEmpty: style.getPropertyValue('--color-pattern-alternate-empty').trim(),
+		patternOrnament: style.getPropertyValue('--color-pattern-ornament').trim(),
+		patternRowNumAlternate: style.getPropertyValue('--color-pattern-row-num-alternate').trim()
 	};
 }

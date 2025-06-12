@@ -597,5 +597,5 @@
 	onmousemove={handleMouseMove}
 	onmouseleave={handleMouseLeave}
 	onmouseenter={handleMouseEnter}
-	class="focus:border-opacity-50 block border border-[var(--pattern-empty)] bg-[var(--pattern-bg)] transition-colors duration-150 focus:border-[var(--pattern-text)] focus:outline-none"
+	class="focus:border-opacity-50 border-pattern-empty bg-pattern-bg focus:border-pattern-text block border transition-colors duration-150 focus:outline-none"
 	style="width: {canvasWidth}px; height: {canvasHeight}px;"></canvas>

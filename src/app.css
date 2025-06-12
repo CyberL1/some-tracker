@@ -5,19 +5,24 @@
 	--font-sans: 'Fira Code', sans-serif;
 	--font-mono: 'Fira Code', monospace;
 
-	--pattern-bg: theme('colors.zinc.950');
-	--pattern-text: theme('colors.zinc.100');
-	--pattern-empty: theme('colors.zinc.500');
-	--pattern-note: theme('colors.teal.400');
-	--pattern-instrument: theme('colors.teal.500');
-	--pattern-effect: theme('colors.teal.300');
-	--pattern-envelope: theme('colors.teal.200');
-	--pattern-noise: theme('colors.teal.600');
-	--pattern-header: theme('colors.zinc.800');
-	--pattern-selected: theme('colors.zinc.700');
-	--pattern-cell-selected: theme('colors.zinc.400');
-	--pattern-row-num: theme('colors.teal.500');
-	--pattern-alternate: theme('colors.zinc.900');
+	/* Base theme colors - Blue Depths variant */
+	--color-pattern-bg: #0d1117;
+	--color-pattern-text: #c9d1d9;
+	--color-pattern-empty: #161b22;
+	--color-pattern-empty-selected: #1f2937;
+	--color-pattern-note: #58a6ff;
+	--color-pattern-instrument: #79c0ff;
+	--color-pattern-effect: #a5d6ff;
+	--color-pattern-envelope: #388bfd;
+	--color-pattern-noise: #1f2937;
+	--color-pattern-header: #30363d;
+	--color-pattern-selected: #161b22;
+	--color-pattern-cell-selected: #1f2937;
+	--color-pattern-row-num: #58a6ff;
+	--color-pattern-row-num-alternate: #79c0ff;
+	--color-pattern-alternate: #090d13;
+	--color-pattern-alternate-empty: #161b22;
+	--color-pattern-ornament: #1f6feb;
 }
 
 /* Hide number input spinners/steppers */

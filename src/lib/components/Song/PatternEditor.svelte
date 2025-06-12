@@ -4,7 +4,11 @@
 	import type { AudioService } from '../../services/audio-service';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
-	import { getRowData } from '../../utils/pattern-format';
+	import {
+		getRowDataStructured,
+		type RowPart,
+		type NoteParameterField
+	} from '../../utils/pattern-format';
 	import PatternOrder from './PatternOrder.svelte';
 	import { getContext } from 'svelte';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
@@ -111,82 +115,74 @@
 	}
 
 	function getCellPositions(
-		rowData: string
-	): { x: number; width: number; char: string; partIndex: number; charIndex: number }[] {
-		const parts = rowData.split(' ');
+		parts: RowPart[]
+	): { x: number; width: number; partIndex: number; fieldIndex: number; charIndex: number }[] {
 		const positions: {
 			x: number;
 			width: number;
-			char: string;
 			partIndex: number;
+			fieldIndex: number;
 			charIndex: number;
 		}[] = [];
 		let x = 10;
 
 		for (let partIndex = 0; partIndex < parts.length; partIndex++) {
 			const part = parts[partIndex];
-			if (!part) continue;
 
-			// Skip row number (partIndex 0) - it's not selectable
-			if (partIndex === 0) {
-				x += ctx.measureText(part).width;
-				if (partIndex < parts.length - 1) {
-					x += ctx.measureText(' ').width;
-				}
+			if (part.type === 'rowNum') {
+				x += ctx.measureText(part.value as string).width;
+				x += ctx.measureText(' ').width;
 				continue;
 			}
 
-			// Check if this is a note column (partIndex 4, 7, 10 for channels 1, 2, 3)
-			const isNoteColumn = partIndex >= 4 && (partIndex - 4) % 3 === 0;
-
-			if (isNoteColumn) {
-				// Treat entire note as a single cell
-				const width = ctx.measureText(part).width;
-				positions.push({ x, width, char: part, partIndex, charIndex: 0 });
+			if (part.type === 'note') {
+				const value = part.value as string;
+				const width = ctx.measureText(value).width;
+				positions.push({ x, width, partIndex, fieldIndex: -1, charIndex: 0 });
 				x += width;
-			} else {
-				// Add each character as a separate cell
-				for (let charIndex = 0; charIndex < part.length; charIndex++) {
-					const char = part[charIndex];
-					const width = ctx.measureText(char).width;
-					positions.push({ x, width, char, partIndex, charIndex });
-					x += width;
-				}
+				x += ctx.measureText(' ').width;
+				continue;
 			}
 
-			if (partIndex < parts.length - 1) {
+			if (part.type === 'noteParameters') {
+				const fields = part.value as NoteParameterField[];
+				for (let fieldIndex = 0; fieldIndex < fields.length; fieldIndex++) {
+					const field = fields[fieldIndex];
+					for (let charIndex = 0; charIndex < field.value.length; charIndex++) {
+						const width = ctx.measureText(field.value[charIndex]).width;
+						positions.push({ x, width, partIndex, fieldIndex, charIndex });
+						x += width;
+					}
+				}
 				x += ctx.measureText(' ').width;
+				continue;
 			}
+
+			const value = part.value as string;
+			for (let charIndex = 0; charIndex < value.length; charIndex++) {
+				const width = ctx.measureText(value[charIndex]).width;
+				positions.push({ x, width, partIndex, fieldIndex: -1, charIndex });
+				x += width;
+			}
+			x += ctx.measureText(' ').width;
 		}
 
 		return positions;
 	}
 
-	function getTotalCellCount(rowData: string): number {
-		const parts = rowData.split(' ');
+	function getTotalCellCount(parts: RowPart[]): number {
 		let count = 0;
-
-		for (let partIndex = 0; partIndex < parts.length; partIndex++) {
-			const part = parts[partIndex];
-			if (!part) continue;
-
-			// Skip row number (partIndex 0) - it's not selectable
-			if (partIndex === 0) {
-				continue;
-			}
-
-			// Check if this is a note column (partIndex 4, 7, 10 for channels 1, 2, 3)
-			const isNoteColumn = partIndex >= 4 && (partIndex - 4) % 3 === 0;
-
-			if (isNoteColumn) {
-				// Note column counts as 1 cell
-				count += 1;
+		for (const part of parts) {
+			if (part.type === 'noteParameters') {
+				const fields = part.value as NoteParameterField[];
+				for (const field of fields) {
+					count += field.value.length;
+				}
 			} else {
-				// Other columns: each character is a cell
-				count += part.length;
+				count += (part.value as string).length;
 			}
+			count += 1; // for space between parts
 		}
-
 		return count;
 	}
 
@@ -289,8 +285,8 @@
 		}
 	}
 
-	function drawRow(rowData: string, y: number, isSelected: boolean, rowIndex: number) {
-		if (rowIndex % 8 >= 4) {
+	function drawRowStructured(parts: RowPart[], y: number, isSelected: boolean, rowIndex: number) {
+		if (rowIndex % 4 === 0) {
 			ctx.fillStyle = COLORS.patternAlternate;
 			ctx.fillRect(0, y, canvasWidth, lineHeight);
 		}
@@ -300,60 +296,104 @@
 			ctx.fillRect(0, y, canvasWidth, lineHeight);
 		}
 
-		const cellPositions = getCellPositions(rowData);
-
+		const cellPositions = getCellPositions(parts);
 		if (isSelected && selectedColumn < cellPositions.length) {
 			const cellPos = cellPositions[selectedColumn];
 			ctx.fillStyle = COLORS.patternCellSelected;
 			ctx.fillRect(cellPos.x - 1, y, cellPos.width + 2, lineHeight);
 		}
 
-		const parts = rowData.split(' ');
 		let x = 10;
-
 		for (let i = 0; i < parts.length; i++) {
 			const part = parts[i];
-			if (!part) continue;
-
-			let baseColor = COLORS.patternText;
-			if (i === 0) {
-				baseColor = COLORS.patternRowNum;
-			} else if (i >= 4 && (i - 4) % 3 === 0) {
-				baseColor = COLORS.patternNote;
-			} else if (i >= 4 && (i - 4) % 3 === 1) {
-				baseColor = COLORS.patternInstrument;
-			} else if (i >= 4 && (i - 4) % 3 === 2) {
-				baseColor = COLORS.patternEffect;
-			} else if (i === 1) {
-				baseColor = COLORS.patternEnvelope;
-			} else if (i === 2) {
-				baseColor = COLORS.patternEffect;
-			} else if (i === 3) {
-				baseColor = COLORS.patternNoise;
-			}
-
-			const isNote = i >= 4 && (i - 4) % 3 === 0;
-
-			if (isNote && part === '---') {
-				ctx.fillStyle = COLORS.patternEmpty;
-				ctx.fillText(part, x, y + lineHeight / 2);
-				x += ctx.measureText(part).width;
-			} else if (isNote) {
-				ctx.fillStyle = baseColor;
-				ctx.fillText(part, x, y + lineHeight / 2);
-				x += ctx.measureText(part).width;
+			if (part.type === 'noteParameters') {
+				const fields = part.value as NoteParameterField[];
+				for (let f = 0; f < fields.length; f++) {
+					const field = fields[f];
+					let color;
+					switch (field.type) {
+						case 'instrument':
+							color = COLORS.patternInstrument;
+							break;
+						case 'shape':
+							color = COLORS.patternEnvelope;
+							break;
+						case 'ornament':
+							color = COLORS.patternOrnament;
+							break;
+						case 'volume':
+							color = COLORS.patternText;
+							break;
+					}
+					for (let c = 0; c < field.value.length; c++) {
+						const char = field.value[c];
+						if (char === '.') {
+							ctx.fillStyle = isSelected
+								? COLORS.patternEmptySelected
+								: rowIndex % 4 === 0
+									? COLORS.patternAlternateEmpty
+									: COLORS.patternEmpty;
+						} else {
+							ctx.fillStyle = color;
+						}
+						ctx.fillText(char, x, y + lineHeight / 2);
+						x += ctx.measureText(char).width;
+					}
+				}
+				x += ctx.measureText(' ').width;
 			} else {
-				for (let charIndex = 0; charIndex < part.length; charIndex++) {
-					const char = part[charIndex];
-					const color = char === '.' || char === '-' ? COLORS.patternEmpty : baseColor;
-
-					ctx.fillStyle = color;
+				let color = COLORS.patternText;
+				switch (part.type) {
+					case 'rowNum':
+						color =
+							rowIndex % 4 === 0
+								? COLORS.patternRowNumAlternate
+								: COLORS.patternRowNum;
+						break;
+					case 'envelope':
+						color = COLORS.patternEnvelope;
+						break;
+					case 'envEffect':
+						color = COLORS.patternEffect;
+						break;
+					case 'noise':
+						color = COLORS.patternNoise;
+						break;
+					case 'note':
+						const value = part.value as string;
+						ctx.fillStyle =
+							value === '---'
+								? isSelected
+									? COLORS.patternEmptySelected
+									: rowIndex % 4 === 0
+										? COLORS.patternAlternateEmpty
+										: COLORS.patternEmpty
+								: COLORS.patternNote;
+						ctx.fillText(value, x, y + lineHeight / 2);
+						x += ctx.measureText(value).width;
+						x += ctx.measureText(' ').width;
+						continue;
+					case 'fx':
+						color = COLORS.patternEffect;
+						break;
+				}
+				const value = part.value as string;
+				for (let c = 0; c < value.length; c++) {
+					const char = value[c];
+					if (char === '.' || char === '-') {
+						ctx.fillStyle = isSelected
+							? COLORS.patternEmptySelected
+							: rowIndex % 4 === 0
+								? COLORS.patternAlternateEmpty
+								: COLORS.patternEmpty;
+					} else {
+						ctx.fillStyle = color;
+					}
 					ctx.fillText(char, x, y + lineHeight / 2);
 					x += ctx.measureText(char).width;
 				}
+				x += ctx.measureText(' ').width;
 			}
-
-			x += ctx.measureText(' ').width;
 		}
 	}
 
@@ -379,8 +419,8 @@
 
 			const pattern = patterns[row.patternIndex];
 			if (pattern) {
-				const rowData = getRowData(pattern, row.rowIndex);
-				drawRow(rowData, y, row.isSelected, row.rowIndex);
+				const parts = getRowDataStructured(pattern, row.rowIndex);
+				drawRowStructured(parts, y, row.isSelected, row.rowIndex);
 			}
 		});
 
@@ -400,8 +440,9 @@
 		}
 
 		if (currentPattern) {
-			const rowData = getRowData(currentPattern, selectedRow);
-			const maxCells = getTotalCellCount(rowData);
+			const parts = getRowDataStructured(currentPattern, selectedRow);
+			const cellPositions = getCellPositions(parts);
+			const maxCells = cellPositions.length;
 			if (selectedColumn >= maxCells) {
 				selectedColumn = Math.max(0, maxCells - 1);
 			}
@@ -411,13 +452,15 @@
 	function moveColumn(delta: number) {
 		if (!currentPattern) return;
 
-		const rowData = getRowData(currentPattern, selectedRow);
-		const maxCells = getTotalCellCount(rowData);
-		const newColumn = selectedColumn + delta;
+		const parts = getRowDataStructured(currentPattern, selectedRow);
+		const cellPositions = getCellPositions(parts);
+		const maxCells = cellPositions.length;
+		let newColumn = selectedColumn + delta;
 
-		if (newColumn >= 0 && newColumn < maxCells) {
-			selectedColumn = newColumn;
-		}
+		if (newColumn < 0) newColumn = 0;
+		if (newColumn >= maxCells) newColumn = maxCells - 1;
+
+		selectedColumn = newColumn;
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -468,8 +511,9 @@
 				if (event.ctrlKey) {
 					selectedRow = currentPattern.length - 1;
 				} else {
-					const rowData = getRowData(currentPattern, selectedRow);
-					const maxCells = getTotalCellCount(rowData);
+					const parts = getRowDataStructured(currentPattern, selectedRow);
+					const cellPositions = getCellPositions(parts);
+					const maxCells = cellPositions.length;
 					selectedColumn = Math.max(0, maxCells - 1);
 				}
 				break;
@@ -497,9 +541,20 @@
 			window.innerHeight - PATTERN_EDITOR_CONSTANTS.CANVAS_TOP_MARGIN
 		);
 		if (ctx && currentPattern) {
-			const sampleRowData = getRowData(currentPattern, 0);
-			canvasWidth =
-				ctx.measureText(sampleRowData).width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
+			const parts = getRowDataStructured(currentPattern, 0);
+			let width = 10; // starting x position
+			for (const part of parts) {
+				if (part.type === 'noteParameters') {
+					const fields = part.value as NoteParameterField[];
+					for (const field of fields) {
+						width += ctx.measureText(field.value).width;
+					}
+				} else {
+					width += ctx.measureText(part.value as string).width;
+				}
+				width += ctx.measureText(' ').width; // space between parts
+			}
+			canvasWidth = width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
 		} else {
 			canvasWidth = PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH;
 		}
@@ -583,7 +638,7 @@
 			onkeydown={handleKeyDown}
 			onwheel={handleWheel}
 			onmouseenter={handleMouseEnter}
-			class="focus:border-opacity-50 block border border-[var(--pattern-empty)] transition-colors duration-150 focus:border-[var(--pattern-text)] focus:outline-none">
+			class="focus:border-opacity-50 border-pattern-empty focus:border-pattern-text block border transition-colors duration-150 focus:outline-none">
 		</canvas>
 	</div>
 </div>
