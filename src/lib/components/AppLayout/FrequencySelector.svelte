@@ -9,12 +9,10 @@
 
 	let {
 		value = $bindable(),
-		options,
-		placeholder = 'Select frequency'
+		options
 	}: {
 		value: number;
 		options: FrequencyOption[];
-		placeholder?: string;
 	} = $props();
 
 	let selectedOption = $state<string>('');
