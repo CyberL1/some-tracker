@@ -112,7 +112,7 @@
 				bind:intFrequency />
 			<OrnamentsCard bind:ornaments={songs[0].ornaments} />
 		</div>
-		<div class="flex-shrink-0">
+		<div class="shrink-0">
 			{#each songs as song, i}
 				<Card
 					title={`${container.audioService.chipProcessors[i].chip.name} - (${i + 1})`}
@@ -131,6 +131,8 @@
 				</Card>
 			{/each}
 		</div>
-		<div class="flex-1"></div>
+		<div class="flex-1">
+			some example container here, we can use it to display instruments later
+		</div>
 	</div>
 </main>

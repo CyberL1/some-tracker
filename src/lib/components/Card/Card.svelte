@@ -31,7 +31,7 @@
 			<div class="flex items-center gap-1">
 				{#each props.actions as action}
 					<button
-						class="flex items-center gap-1 rounded px-2 py-1 text-xs text-neutral-400 transition-colors duration-200 hover:bg-neutral-700/80 hover:text-neutral-200 active:bg-neutral-600"
+						class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-neutral-400 transition-colors duration-200 hover:bg-neutral-700/80 hover:text-neutral-200 active:bg-neutral-600"
 						onclick={action.onClick}
 						title={action.label}>
 						<action.icon class="h-3 w-3" />
