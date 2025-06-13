@@ -42,3 +42,18 @@ select {
 	-moz-appearance: none;
 	appearance: none;
 }
+
+::-webkit-scrollbar {
+	@apply h-2.5 w-2;
+}
+
+::-webkit-scrollbar-track {
+	@apply !bg-neutral-900;
+}
+::-webkit-scrollbar-thumb {
+	@apply rounded-sm !bg-neutral-500;
+}
+
+html {
+	scrollbar-color: hsl(215.4 16.3% 46.9% / 0.3);
+}

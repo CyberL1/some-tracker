@@ -1,38 +1,25 @@
 <script lang="ts">
 	import Card from '../Card/Card.svelte';
-	import Input from '../Input/Input.svelte';
 	import type { Ornament } from '../../models/song';
 	import IconCarbonMusic from '~icons/carbon/music';
 	import IconCarbonHexagonSolid from '~icons/carbon/hexagon-solid';
 	import IconCarbonHexagonOutline from '~icons/carbon/hexagon-outline';
 
 	let asHex = $state(false);
+	let selectedOrnamentIndex = $state(0);
 
 	let {
 		ornaments = $bindable()
 	}: {
-		ornaments: Ornament[];
+		ornaments: Ornament[]
 	} = $props();
-
-	function handleOrnamentChange(event: Event, ornament: Ornament, index: number) {
-		const target = event.target as HTMLInputElement;
-		const value = target.value;
-		ornaments[index].rows = value
-			.split(' ')
-			.map((row) => (asHex ? parseInt(row, 16) || 0 : parseInt(row, 10) || 0));
-	}
-
-	function handleLoopPointChange(event: Event, ornament: Ornament) {
-		const target = event.target as HTMLInputElement;
-		const value = parseInt(target.value);
-		ornament.loop = isNaN(value) ? 0 : value;
-	}
 </script>
 
 <Card
 	title="Ornaments (Arpeggios)"
 	icon={IconCarbonMusic}
 	fullHeight={true}
+	class="flex flex-col w-full relative"
 	actions={[
 		{
 			label: 'Hex',
@@ -40,43 +27,31 @@
 			onClick: () => (asHex = !asHex)
 		}
 	]}>
-	<div class="relative h-full">
-		<div class="absolute inset-0 overflow-y-auto p-2">
-			<div class="grid gap-1.5">
+	{#if ornaments.length}
+		<div class="h-16 relative">
+			<div class="absolute inset-0 overflow-x-scroll overflow-y-hidden flex items-center border-neutral-600/50 bg-neutral-800">
 				{#each ornaments as ornament, index}
-					<div
-						class="grid grid-cols-[1.75rem_minmax(4rem,1fr)_minmax(6rem,1.5fr)_1.75rem] items-center gap-1.5 rounded-lg border border-neutral-600/50 p-1.5">
-						<span class="font-mono text-xs text-neutral-400">
-							{(ornament.id + 1).toString(16).toUpperCase().padStart(2, '0')}
-						</span>
-						<Input
-							value={ornament.name}
-							props={{ placeholder: 'Enter ornament name' }} />
-						<Input
-							value={ornament.rows
-								.flat()
-								.map((row) =>
-									asHex ? row.toString(16).toUpperCase() : row.toString(10)
-								)
-								.join(' ')}
-							class="font-mono"
-							props={{
-								placeholder: asHex ? 'Enter hex values' : 'Enter decimal values',
-								onchange: (event) => handleOrnamentChange(event, ornament, index)
-							}} />
-						<Input
-							value={ornament.loop.toString()}
-							class="font-mono text-xs"
-							props={{
-								placeholder: 'L',
-								type: 'number',
-								min: 0,
-								max: 9,
-								onchange: (event) => handleLoopPointChange(event, ornament)
-							}} />
-					</div>
+					<button
+						class="group flex shrink-0 cursor-pointer flex-col items-center p-2 transition-colors"
+						onclick={() => (selectedOrnamentIndex = index)}>
+					<span
+						class="font-mono text-xs {selectedOrnamentIndex === index
+							? 'text-neutral-100'
+							: 'text-neutral-400 group-hover:text-neutral-200'}">
+						{(ornament.id + 1).toString(16).toUpperCase().padStart(2, '0')}
+					</span>
+						<span
+							class="text-sm {selectedOrnamentIndex === index
+							? 'text-neutral-300'
+							: 'text-neutral-500 group-hover:text-neutral-400'}">
+						{ornament.name}
+					</span>
+					</button>
 				{/each}
 			</div>
 		</div>
+	{/if}
+	<div class="grow-1 flex flex-col justify-center items-center">
+		INSERT Ornament editor here
 	</div>
 </Card>
