@@ -8,13 +8,13 @@
 	/* Base theme colors - Blue Depths variant */
 	--color-pattern-bg: #0d1117;
 	--color-pattern-text: #c9d1d9;
-	--color-pattern-empty: #161b22;
+	--color-pattern-empty: #1a1f2a;
 	--color-pattern-empty-selected: #1f2937;
 	--color-pattern-note: #58a6ff;
 	--color-pattern-instrument: #79c0ff;
 	--color-pattern-effect: #a5d6ff;
 	--color-pattern-envelope: #388bfd;
-	--color-pattern-noise: #1f2937;
+	--color-pattern-noise: #4b5563;
 	--color-pattern-header: #30363d;
 	--color-pattern-selected: #161b22;
 	--color-pattern-cell-selected: #1f2937;

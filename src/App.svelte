@@ -100,16 +100,17 @@
 </script>
 
 <main
-	class="flex h-screen flex-col overflow-x-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
+	class="flex h-screen flex-col overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
-	<div class="flex min-h-0 flex-1 gap-3 overflow-x-auto p-3">
-		<div class="flex-1">
+	<div class="flex min-h-0 flex-1 gap-3 p-3">
+		<div class="flex min-h-0 flex-1 flex-col gap-3">
 			<ProjectCard
 				bind:title
 				bind:author
 				bind:aymChipType
 				bind:aymFrequency
 				bind:intFrequency />
+			<OrnamentsCard bind:ornaments={songs[0].ornaments} />
 		</div>
 		<div class="flex-shrink-0">
 			{#each songs as song, i}
@@ -130,8 +131,6 @@
 				</Card>
 			{/each}
 		</div>
-		<div class="flex-1">
-			<OrnamentsCard bind:ornaments={songs[0].ornaments} />
-		</div>
+		<div class="flex-1"></div>
 	</div>
 </main>

@@ -43,11 +43,13 @@ class Ornament {
 	id: number;
 	rows: number[];
 	loop: number;
+	name: string;
 
-	constructor(id: number, rows: number[], loop: number) {
+	constructor(id: number, rows: number[], loop: number, name: string = `Ornament ${id + 1}`) {
 		this.id = id;
 		this.rows = rows;
 		this.loop = loop;
+		this.name = name;
 	}
 }
 

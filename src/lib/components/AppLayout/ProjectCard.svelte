@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Card from '../Card/Card.svelte';
 	import CardElement from '../Card/CardElement.svelte';
+	import Input from '../Input/Input.svelte';
 	import Button from '../Button/Button.svelte';
 	import FrequencySelector from './FrequencySelector.svelte';
 	import IconCarbonFolders from '~icons/carbon/folders';
@@ -41,17 +42,11 @@
 
 <Card title="Project" icon={IconCarbonFolders} class="flex w-full flex-col gap-2 p-3">
 	<CardElement label="Title">
-		<input
-			type="text"
-			bind:value={title}
-			class="min-w-0 flex-1 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none" />
+		<Input bind:value={title} />
 	</CardElement>
 
 	<CardElement label="Author">
-		<input
-			type="text"
-			bind:value={author}
-			class="flex-1 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none" />
+		<Input bind:value={author} />
 	</CardElement>
 
 	<div class="flex gap-2">

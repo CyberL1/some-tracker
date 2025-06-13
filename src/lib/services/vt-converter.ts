@@ -101,7 +101,12 @@ class VT2Converter {
 		}
 
 		song.ornaments = ornaments.map((ornament) => {
-			return new Ornament(ornament.id, ornament.data, ornament.loop ? ornament.loopPoint : 0);
+			return new Ornament(
+				ornament.id - 1,
+				ornament.data,
+				ornament.loop ? ornament.loopPoint : 0,
+				`Ornament ${ornament.id}`
+			);
 		});
 
 		song.instruments = samples.map((sample) => {
