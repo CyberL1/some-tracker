@@ -1,5 +1,6 @@
 import { AY_CHIP, type Chip } from '../models/chips';
-import type { Pattern, Ornament, Instrument } from '../models/song';
+import type { Pattern, Instrument } from '../models/song';
+import type { Ornament } from '../models/project';
 import type { ChipProcessor } from './chip-processor';
 
 type PositionUpdateMessage = {
@@ -107,7 +108,13 @@ export class AYProcessor implements ChipProcessor {
 	}
 
 	sendInitOrnaments(ornaments: Ornament[]): void {
-		this.sendCommand({ type: 'init_ornaments', ornaments });
+		const sanitized: Ornament[] = ornaments.map((o) => ({
+			id: o.id,
+			rows: Array.from(o.rows),
+			loop: o.loop,
+			name: o.name
+		}));
+		this.sendCommand({ type: 'init_ornaments', ornaments: sanitized });
 	}
 
 	sendInitInstruments(instruments: Instrument[]): void {

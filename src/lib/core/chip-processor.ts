@@ -1,5 +1,6 @@
 import type { Chip } from '../models/chips';
-import type { Pattern, Ornament, Instrument } from '../models/song';
+import type { Pattern, Instrument } from '../models/song';
+import type { Ornament } from '../models/project';
 
 export interface ChipProcessor {
 	chip: Chip;

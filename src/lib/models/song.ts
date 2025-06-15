@@ -39,20 +39,6 @@ class Note {
 	}
 }
 
-class Ornament {
-	id: number;
-	rows: number[];
-	loop: number;
-	name: string;
-
-	constructor(id: number, rows: number[], loop: number, name: string = `Ornament ${id + 1}`) {
-		this.id = id;
-		this.rows = rows;
-		this.loop = loop;
-		this.name = name;
-	}
-}
-
 class Instrument {
 	id: number;
 	rows: InstrumentRow[] = [];
@@ -167,14 +153,12 @@ class Song {
 	public patterns: Pattern[];
 	public tuningTable: number[];
 	public initialSpeed: number;
-	public ornaments: Ornament[];
 	public instruments: Instrument[];
 
 	constructor() {
 		this.initialSpeed = 3;
 		this.patterns = [new Pattern(0)];
 		this.tuningTable = PT3TuneTables[2]; // Default to most common table from VT2 nowadays
-		this.ornaments = [];
 		this.instruments = [];
 	}
 
@@ -195,7 +179,6 @@ export {
 	Effect,
 	NoteName,
 	EffectType,
-	Ornament,
 	Instrument,
 	InstrumentRow
 };

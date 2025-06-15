@@ -1,5 +1,6 @@
 import type { ChipProcessor } from '../core/chip-processor';
 import type { Chip } from '../models/chips';
+import type { Ornament } from '../models/project';
 
 export class AudioService {
 	private _audioContext: AudioContext | null = new AudioContext();
@@ -93,6 +94,12 @@ export class AudioService {
 	updateIntFrequency(intFrequency: number) {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.sendUpdateIntFrequency(intFrequency);
+		});
+	}
+
+	updateOrnaments(ornaments: Ornament[]) {
+		this.chipProcessors.forEach((chipProcessor) => {
+			chipProcessor.sendInitOrnaments(ornaments);
 		});
 	}
 

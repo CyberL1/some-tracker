@@ -26,7 +26,7 @@ class AyumiState {
 		this.channelVolumes = [...DEFAULT_CHANNEL_VOLUMES];
 
 		this.ornaments = [];
-		this.channelOrnaments = [null, null, null];
+		this.channelOrnaments = [-1, -1, -1];
 		this.ornamentPositions = [0, 0, 0];
 		this.ornamentCounters = [0, 0, 0];
 		this.channelBaseNotes = [0, 0, 0];
@@ -39,7 +39,7 @@ class AyumiState {
 		this.currentRow = 0;
 		this.currentTick = 0;
 		this.channelVolumes = [0, 0, 0];
-		this.channelOrnaments = [null, null, null];
+		this.channelOrnaments = [-1, -1, -1];
 		this.ornamentPositions = [0, 0, 0];
 		this.ornamentCounters = [0, 0, 0];
 		this.channelBaseNotes = [0, 0, 0];
