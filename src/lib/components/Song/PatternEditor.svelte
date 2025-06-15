@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Pattern, Ornament, Instrument } from '../../models/song';
+	import type { Pattern, Instrument } from '../../models/song';
+	import type { Ornament } from '../../models/project';
 	import type { ChipProcessor } from '../../core/chip-processor';
 	import type { AudioService } from '../../services/audio-service';
 	import { getColors } from '../../utils/colors';

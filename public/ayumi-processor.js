@@ -169,7 +169,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			wasmModule.ayumi_set_volume(ayumiPtr, i, 0);
 		}
 		this.state.channelVolumes = [0, 0, 0];
-		this.state.channelOrnaments = [null, null, null];
+		this.state.channelOrnaments = [-1, -1, -1];
 		this.state.ornamentPositions = [0, 0, 0];
 		this.state.ornamentCounters = [0, 0, 0];
 		this.state.channelBaseNotes = [0, 0, 0];

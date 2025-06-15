@@ -28,6 +28,7 @@
 	let patternOrder = $state(newProject.patternOrder);
 	let aymFrequency = $state(newProject.aymFrequency);
 	let intFrequency = $state(newProject.intFrequency);
+	let ornaments = $state(newProject.ornaments);
 
 	$effect(() => {
 		container.audioService.updateAyFrequency(aymFrequency);
@@ -86,6 +87,7 @@
 				patternOrder = importedProject.patternOrder;
 				aymFrequency = importedProject.aymFrequency;
 				intFrequency = importedProject.intFrequency;
+				ornaments = importedProject.ornaments;
 
 				playbackStore.isPlaying = false;
 				container.audioService.stop();
@@ -110,7 +112,7 @@
 				bind:aymChipType
 				bind:aymFrequency
 				bind:intFrequency />
-			<OrnamentsCard bind:ornaments={songs[0].ornaments} />
+			<OrnamentsCard bind:ornaments />
 		</div>
 		<div class="shrink-0">
 			{#each songs as song, i}
@@ -125,7 +127,7 @@
 						bind:patternOrder
 						speed={song.initialSpeed}
 						tuningTable={song.tuningTable}
-						ornaments={song.ornaments}
+						{ornaments}
 						instruments={song.instruments}
 						ayProcessor={container.audioService.chipProcessors[i]} />
 				</Card>

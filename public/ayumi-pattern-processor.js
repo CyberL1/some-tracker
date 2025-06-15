@@ -9,7 +9,7 @@ class AyumiPatternProcessor {
 		const patternRow = pattern.patternRows[rowIndex];
 		if (!patternRow) return;
 
-		const { wasmModule, ayumiPtr, currentTuningTable, channelVolumes } = this.state;
+		const { wasmModule, ayumiPtr } = this.state;
 
 		for (let channelIndex = 0; channelIndex < pattern.channels.length; channelIndex++) {
 			const channel = pattern.channels[channelIndex];
@@ -32,46 +32,14 @@ class AyumiPatternProcessor {
 		}
 	}
 
-	_processNote(channelIndex, row) {
-		const { wasmModule, ayumiPtr, currentTuningTable } = this.state;
-
-		if (row.note.name === 1) {
-			wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, 0);
-			this.state.channelOrnaments[channelIndex] = null;
-			this.state.channelBaseNotes[channelIndex] = 0;
-		} else if (row.note.name !== 0) {
-			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
-			this.state.channelBaseNotes[channelIndex] = noteValue;
-
-			if (noteValue >= 0 && noteValue < currentTuningTable.length) {
-				const regValue = currentTuningTable[noteValue];
-				wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, regValue);
-			}
-		}
-	}
-
-	_processOrnament(channelIndex, row) {
-		if (row.ornament > 0) {
-			const ornament = this.state.ornaments[row.ornament - 1];
-			if (ornament) {
-				this.state.channelOrnaments[channelIndex] = ornament;
-				this.state.ornamentPositions[channelIndex] = 0;
-				this.state.ornamentCounters[channelIndex] = 0;
-			}
-		} else if (row.ornament === 0 && row.note.name !== 0) {
-			// Clear ornament when ornament 0 is specified with a note
-			// at least for now. find a way to clear ornaments
-			// maybe specifically use 0 instead of empty ?
-
-			this.state.channelOrnaments[channelIndex] = null;
-		}
-	}
-
 	processOrnaments() {
 		const { wasmModule, ayumiPtr, currentTuningTable } = this.state;
 
 		for (let channelIndex = 0; channelIndex < 3; channelIndex++) {
-			const ornament = this.state.channelOrnaments[channelIndex];
+			const ornamentIndex = this.state.channelOrnaments[channelIndex];
+			if (ornamentIndex < 0) continue;
+
+			const ornament = this.state.ornaments[ornamentIndex];
 			if (!ornament || !ornament.rows || ornament.rows.length === 0) continue;
 
 			const baseNote = this.state.channelBaseNotes[channelIndex];
@@ -98,6 +66,38 @@ class AyumiPatternProcessor {
 					}
 				}
 			}
+		}
+	}
+
+	_processNote(channelIndex, row) {
+		const { wasmModule, ayumiPtr, currentTuningTable } = this.state;
+
+		if (row.note.name === 1) {
+			wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, 0);
+			this.state.channelOrnaments[channelIndex] = -1;
+			this.state.channelBaseNotes[channelIndex] = 0;
+		} else if (row.note.name !== 0) {
+			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
+			this.state.channelBaseNotes[channelIndex] = noteValue;
+
+			if (noteValue >= 0 && noteValue < currentTuningTable.length) {
+				const regValue = currentTuningTable[noteValue];
+				wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, regValue);
+			}
+		}
+	}
+
+	_processOrnament(channelIndex, row) {
+		if (row.ornament > 0) {
+			const ornamentIndex = row.ornament - 1;
+			if (this.state.ornaments[ornamentIndex]) {
+				this.state.channelOrnaments[channelIndex] = ornamentIndex;
+				this.state.ornamentPositions[channelIndex] = 0;
+				this.state.ornamentCounters[channelIndex] = 0;
+			}
+		} else if (row.ornament === 0 && row.note.name !== 0) {
+			// Clear ornament when ornament 0 is specified with a note
+			this.state.channelOrnaments[channelIndex] = -1;
 		}
 	}
 

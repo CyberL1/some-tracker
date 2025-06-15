@@ -1,4 +1,4 @@
-import { Project } from '../models/project';
+import { Project, Ornament } from '../models/project';
 import {
 	Song,
 	Pattern,
@@ -6,7 +6,6 @@ import {
 	Effect,
 	NoteName,
 	EffectType,
-	Ornament,
 	Instrument,
 	InstrumentRow
 } from '../models/song';
@@ -100,7 +99,7 @@ class VT2Converter {
 			song.tuningTable = PT3TuneTables[module.noteTable];
 		}
 
-		song.ornaments = ornaments.map((ornament) => {
+		const convertedOrnaments = ornaments.map((ornament) => {
 			return new Ornament(
 				ornament.id - 1,
 				ornament.data,
@@ -163,7 +162,8 @@ class VT2Converter {
 			module.playOrder,
 			chipType,
 			module.chipFrequency,
-			module.interruptFrequency
+			module.interruptFrequency,
+			convertedOrnaments
 		);
 
 		return project;

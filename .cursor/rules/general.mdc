@@ -1,0 +1,42 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Project Structure Overview and General Rules
+
+This project is a Svelte 5 + TypeScript + Vite + Tailwind 4 application.
+It's a chiptune tracker made especially for creating AY-8910 tracks for ZX Spectrum. In future it will support other chips as well.
+
+• The application is bootstrapped in [src/main.ts](mdc:src/main.ts), which mounts the root component [src/App.svelte](mdc:src/App.svelte) onto the `#app` element.
+
+• UI components live under [src/lib/components](mdc:src/lib/components). Notable sub-groups:
+  – Menu system: [MenuBar.svelte](mdc:src/lib/components/Menu/MenuBar.svelte) plus helper components in the same folder.
+  – Song editing: [PatternEditor.svelte](mdc:src/lib/components/Song/PatternEditor.svelte) and related song-specific UI.
+  – Layout helpers: [AppLayout](mdc:src/lib/components/AppLayout) contains cards such as `ProjectCard` and `OrnamentsCard`.
+
+• Core domain models are in [src/lib/models](mdc:src/lib/models):
+  – [project.ts](mdc:src/lib/models/project.ts) defines a `Project` consisting of songs and chip settings.
+  – [song.ts](mdc:src/lib/models/song.ts) holds `Song`, `Pattern`, `Instrument`, etc.
+  – [chips.ts](mdc:src/lib/models/chips.ts) lists supported audio chips.
+
+• Audio processing lives in [src/lib/core](mdc:src/lib/core):
+  – [ay-processor.ts](mdc:src/lib/core/ay-processor.ts) implements a Web Audio Worklet processor for the AY/YM chip.
+  – [chip-processor.ts](mdc:src/lib/core/chip-processor.ts) is the common interface.
+
+• High-level services are under [src/lib/services](mdc:src/lib/services):
+  – [audio-service.ts](mdc:src/lib/services/audio-service.ts) manages the `AudioContext` and chip processors.
+  – [file-import.ts](mdc:src/lib/services/file-import.ts) & [vt-converter.ts](mdc:src/lib/services/vt-converter.ts) handle external file conversion/import.
+
+• Reactive application state (writable stores) is placed in [src/lib/stores](mdc:src/lib/stores), e.g. [playback.svelte.ts](mdc:src/lib/stores/playback.svelte.ts).
+
+• Application-wide configuration such as the top menu is defined in [src/lib/config/app-menu.ts](mdc:src/lib/config/app-menu.ts).
+
+• Global styles are kept in [src/app.css](mdc:src/app.css).
+
+Since this project uses Svelte 5, please always use runes and Svelte 5 features. Don't use writable stores, create .svelte.ts with $state instead.
+Don't write comments in code. Instead, write code which is already understandable enough without additional comments. In order to achieve this, follow
+all the good practices like a senior TypeScript developer would do. Follow KISS, DRY, SOLID principles. Focus on writing testable and reusable code.
+
+For styles, prefer using Tailwind 4 unless its impossible to achieve something with it.
+
