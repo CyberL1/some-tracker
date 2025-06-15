@@ -96,8 +96,8 @@ class AyumiPatternProcessor {
 				this.state.ornamentCounters[channelIndex] = 0;
 			}
 		} else if (row.ornament === 0 && row.note.name !== 0) {
-			// Clear ornament when ornament 0 is specified with a note
-			this.state.channelOrnaments[channelIndex] = -1;
+			//todo:  Clear ornament
+			// this.state.channelOrnaments[channelIndex] = -1;
 		}
 	}
 

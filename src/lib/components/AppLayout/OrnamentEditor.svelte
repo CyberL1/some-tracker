@@ -100,6 +100,8 @@
 		if (parsed !== null) {
 			adjustRowOffset(index, parsed);
 		}
+
+		onOrnamentChange({ ...ornament, rows });
 	}
 
 	function handleOffsetKeyDown(event: KeyboardEvent) {
