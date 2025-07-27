@@ -107,7 +107,6 @@
 		ayProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
 		ayProcessor.sendInitTuningTable(tuningTable);
 		ayProcessor.sendInitSpeed(speed);
-		ayProcessor.sendInitOrnaments(ornaments);
 		ayProcessor.sendInitInstruments(instruments);
 	}
 

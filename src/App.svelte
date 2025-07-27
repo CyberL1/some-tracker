@@ -32,7 +32,14 @@
 
 	$effect(() => {
 		container.audioService.updateAyFrequency(aymFrequency);
+	});
+
+	$effect(() => {
 		container.audioService.updateIntFrequency(intFrequency);
+	});
+
+	$effect(() => {
+		container.audioService.updateOrnaments(ornaments);
 	});
 
 	let patternEditor: PatternEditor | null = $state(null);
