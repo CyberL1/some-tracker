@@ -33,6 +33,15 @@
 		}
 	}
 
+	function handleMouseEnter(event: MouseEvent) {
+		event.stopPropagation();
+
+		if (!activeMenu) {
+			return;
+		}
+		onMenuOpen?.({ label });
+	}
+
 	$effect(() => {
 		if (showPanel) {
 			document.addEventListener('click', handleClickOutside as EventListener);
@@ -44,6 +53,7 @@
 <div class="menu-button-container relative">
 	<button
 		onclick={handleClick}
+		onmouseenter={handleMouseEnter}
 		class="menu-button px-2 pt-2 pb-1 text-[0.8rem] hover:cursor-pointer hover:bg-neutral-600"
 		class:bg-neutral-600={showPanel}>
 		{label}
