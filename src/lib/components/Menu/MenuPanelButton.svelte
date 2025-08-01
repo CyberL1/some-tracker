@@ -53,6 +53,34 @@
 		}
 	}
 
+	function handleMouseEnter(event: MouseEvent) {
+		event.stopPropagation();
+
+		if (type !== 'expandable') {
+			return;
+		}
+
+		if (menuPanelContext) {
+			menuPanelContext.setActiveSubmenu(label);
+		} else {
+			localShowSubmenu = !localShowSubmenu;
+		}
+	}
+
+	function handleMouseLeave(event: MouseEvent) {
+		event.stopPropagation();
+
+		if (type !== 'expandable') {
+			return;
+		}
+
+		if (menuPanelContext) {
+			menuPanelContext.setActiveSubmenu(''); // This prevents the menu re-openning if is closed and mouse moves out.
+		} else {
+			localShowSubmenu = false;
+		}
+	}
+
 	function handleKeyDown(event: KeyboardEvent) {
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
@@ -103,6 +131,8 @@
 	class="menu-panel-button relative flex cursor-pointer items-center justify-between px-2 py-1.5 text-[0.8rem] hover:bg-neutral-700"
 	onclick={handleClick}
 	onkeydown={handleKeyDown}
+	onmouseenter={handleMouseEnter}
+	onmouseleave={handleMouseLeave}
 	tabindex="0"
 	role="menuitem"
 	class:bg-neutral-700={isActive}>
