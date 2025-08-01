@@ -128,7 +128,7 @@
 </script>
 
 <div
-	class="menu-panel-button relative flex cursor-pointer items-center justify-between px-2 py-1.5 text-[0.8rem] hover:bg-neutral-700"
+	class="menu-panel-button relative flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs hover:bg-neutral-700"
 	onclick={handleClick}
 	onkeydown={handleKeyDown}
 	onmouseenter={handleMouseEnter}

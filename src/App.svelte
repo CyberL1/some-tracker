@@ -109,10 +109,10 @@
 </script>
 
 <main
-	class="flex h-screen flex-col overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
+	class="flex h-screen flex-col gap-1 overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
-	<div class="flex min-h-0 flex-1 gap-3 p-3">
-		<div class="flex min-h-0 flex-1 flex-col gap-3">
+	<div class="mx-auto">
+		<!-- <div class="flex min-h-0 flex-1 flex-col gap-3">
 			<ProjectCard
 				bind:title
 				bind:author
@@ -120,7 +120,7 @@
 				bind:aymFrequency
 				bind:intFrequency />
 			<OrnamentsCard bind:ornaments />
-		</div>
+		</div> -->
 		<div class="shrink-0">
 			{#each songs as song, i}
 				<Card
@@ -140,8 +140,8 @@
 				</Card>
 			{/each}
 		</div>
-		<div class="flex-1">
+		<!-- <div class="flex-1">
 			some example container here, we can use it to display instruments later
-		</div>
+		</div> -->
 	</div>
 </main>
