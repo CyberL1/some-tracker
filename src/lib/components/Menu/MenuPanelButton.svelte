@@ -41,16 +41,12 @@
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
 
-		if (type === 'normal') {
-			onAction?.({ action: action || label });
-			onMenuClose?.({ all: true });
-		} else if (type === 'expandable') {
-			if (menuPanelContext) {
-				menuPanelContext.setActiveSubmenu(label);
-			} else {
-				localShowSubmenu = !localShowSubmenu;
-			}
+		if (type !== 'normal') {
+			return;
 		}
+
+		onAction?.({ action: action || label });
+		onMenuClose?.({ all: true });
 	}
 
 	function handleMouseEnter(event: MouseEvent) {
