@@ -49,6 +49,8 @@
 		onMenuClose?.({ all: true });
 	}
 
+	let menuHoverTimeout: number;
+
 	function handleMouseEnter(event: MouseEvent) {
 		event.stopPropagation();
 
@@ -56,11 +58,13 @@
 			return;
 		}
 
-		if (menuPanelContext) {
-			menuPanelContext.setActiveSubmenu(label);
-		} else {
-			localShowSubmenu = !localShowSubmenu;
-		}
+		menuHoverTimeout = setTimeout(() => {
+			if (menuPanelContext) {
+				menuPanelContext.setActiveSubmenu(label);
+			} else {
+				localShowSubmenu = !localShowSubmenu;
+			}
+		}, 300);
 	}
 
 	function handleMouseLeave(event: MouseEvent) {
@@ -70,6 +74,7 @@
 			return;
 		}
 
+		clearTimeout(menuHoverTimeout);
 		if (menuPanelContext) {
 			menuPanelContext.setActiveSubmenu(''); // This prevents the menu re-openning if is closed and mouse moves out.
 		} else {
