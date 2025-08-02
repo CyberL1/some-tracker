@@ -41,17 +41,15 @@
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
 
-		if (type === 'normal') {
-			onAction?.({ action: action || label });
-			onMenuClose?.({ all: true });
-		} else if (type === 'expandable') {
-			if (menuPanelContext) {
-				menuPanelContext.setActiveSubmenu(label);
-			} else {
-				localShowSubmenu = !localShowSubmenu;
-			}
+		if (type !== 'normal') {
+			return;
 		}
+
+		onAction?.({ action: action || label });
+		onMenuClose?.({ all: true });
 	}
+
+	let menuHoverTimeout: number;
 
 	function handleMouseEnter(event: MouseEvent) {
 		event.stopPropagation();
@@ -60,11 +58,13 @@
 			return;
 		}
 
-		if (menuPanelContext) {
-			menuPanelContext.setActiveSubmenu(label);
-		} else {
-			localShowSubmenu = !localShowSubmenu;
-		}
+		menuHoverTimeout = setTimeout(() => {
+			if (menuPanelContext) {
+				menuPanelContext.setActiveSubmenu(label);
+			} else {
+				localShowSubmenu = !localShowSubmenu;
+			}
+		}, 300);
 	}
 
 	function handleMouseLeave(event: MouseEvent) {
@@ -74,6 +74,7 @@
 			return;
 		}
 
+		clearTimeout(menuHoverTimeout);
 		if (menuPanelContext) {
 			menuPanelContext.setActiveSubmenu(''); // This prevents the menu re-openning if is closed and mouse moves out.
 		} else {
