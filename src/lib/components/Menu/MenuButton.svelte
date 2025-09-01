@@ -61,7 +61,7 @@
 
 	{#if showPanel && items && items.length > 0}
 		<div class="absolute top-full left-0 z-50">
-			<MenuPanel {items} {onAction} {onMenuOpen} {onMenuClose} />
+			<MenuPanel isFirst={true} {items} {onAction} {onMenuOpen} {onMenuClose} />
 		</div>
 	{/if}
 </div>
