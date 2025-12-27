@@ -12,6 +12,9 @@
 	import Card from './lib/components/Card/Card.svelte';
 	import IconCarbonChip from '~icons/carbon/chip';
 	import { playbackStore } from './lib/stores/playback.svelte';
+	import { settingsStore } from './lib/stores/settings.svelte';
+
+	settingsStore.init();
 
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
