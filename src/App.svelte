@@ -31,11 +31,11 @@
 	let ornaments = $state(newProject.ornaments);
 
 	$effect(() => {
-		container.audioService.updateAyFrequency(aymFrequency);
+		container.audioService.updateChipParameter('ay', 'aymFrequency', aymFrequency);
 	});
 
 	$effect(() => {
-		container.audioService.updateIntFrequency(intFrequency);
+		container.audioService.updateChipParameter('ay', 'intFrequency', intFrequency);
 	});
 
 	$effect(() => {
@@ -134,9 +134,9 @@
 						bind:patternOrder
 						speed={song.initialSpeed}
 						tuningTable={song.tuningTable}
-						{ornaments}
 						instruments={song.instruments}
-						ayProcessor={container.audioService.chipProcessors[i]} />
+						chip={container.audioService.chipProcessors[i].chip}
+						chipProcessor={container.audioService.chipProcessors[i]} />
 				</Card>
 			{/each}
 		</div>

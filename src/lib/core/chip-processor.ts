@@ -20,6 +20,7 @@ export interface ChipProcessor {
 	): void;
 	isAudioNodeAvailable(): boolean;
 	sendInitSpeed(speed: number): void;
+	updateParameter(parameter: string, value: any): void;
 	sendUpdateAyFrequency(aymFrequency: number): void;
 	sendUpdateIntFrequency(intFrequency: number): void;
 }

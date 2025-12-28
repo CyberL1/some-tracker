@@ -133,6 +133,19 @@ export class AYProcessor implements ChipProcessor {
 		this.sendCommand({ type: 'update_int_frequency', intFrequency });
 	}
 
+	updateParameter(parameter: string, value: any): void {
+		switch (parameter) {
+			case 'aymFrequency':
+				this.sendUpdateAyFrequency(value);
+				break;
+			case 'intFrequency':
+				this.sendUpdateIntFrequency(value);
+				break;
+			default:
+				console.warn(`AY processor: unknown parameter "${parameter}"`);
+		}
+	}
+
 	private handleWorkletMessage(event: MessageEvent<WorkletMessage>): void {
 		const message = event.data;
 

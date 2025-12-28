@@ -389,6 +389,10 @@ class VT2Converter {
 		) {
 			const vt2Row = vt2Pattern.rows[rowIndex];
 
+			if (!vt2Row) {
+				continue;
+			}
+
 			if (rowIndex < pattern.patternRows.length) {
 				pattern.patternRows[rowIndex].envelopeValue =
 					vt2Pattern.envelopeValues[rowIndex] || 0;
@@ -399,13 +403,17 @@ class VT2Converter {
 				const vt2ChannelData = vt2Row[channelIndex];
 				const row = pattern.channels[channelIndex].rows[rowIndex];
 
-				const { noteName, octave } = this.parseNote(vt2ChannelData.note);
+				if (!vt2ChannelData) {
+					continue;
+				}
+
+				const { noteName, octave } = this.parseNote(vt2ChannelData.note || '---');
 				row.note = new Note(noteName, octave);
-				row.instrument = vt2ChannelData.instrument;
-				row.volume = vt2ChannelData.volume;
-				row.ornament = vt2ChannelData.ornament;
-				row.envelopeShape = vt2ChannelData.envelopeShape;
-				row.effects = this.parseEffects(vt2ChannelData.effects);
+				row.instrument = vt2ChannelData.instrument || 0;
+				row.volume = vt2ChannelData.volume || 0;
+				row.ornament = vt2ChannelData.ornament || 0;
+				row.envelopeShape = vt2ChannelData.envelopeShape || 0;
+				row.effects = this.parseEffects(vt2ChannelData.effects || '');
 			}
 		}
 	}

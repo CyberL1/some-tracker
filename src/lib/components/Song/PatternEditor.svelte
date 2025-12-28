@@ -1,39 +1,40 @@
 <script lang="ts">
 	import type { Pattern, Instrument } from '../../models/song';
-	import type { Ornament } from '../../models/project';
 	import type { ChipProcessor } from '../../core/chip-processor';
 	import type { AudioService } from '../../services/audio-service';
+	import type { Chip } from '../../models/chips';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
-	import {
-		getRowDataStructured,
-		type RowPart,
-		type NoteParameterField
-	} from '../../utils/pattern-format';
 	import PatternOrder from './PatternOrder.svelte';
 	import { getContext } from 'svelte';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { playbackStore } from '../../stores/playback.svelte';
+	import { getFormatter } from '../../models/formatters/formatter-factory';
+	import { getConverter } from '../../models/adapters/converter-factory';
 
 	let {
 		patterns = $bindable(),
 		patternOrder = $bindable(),
-		ayProcessor,
+		chip,
+		chipProcessor,
 		tuningTable,
 		speed,
-		ornaments,
 		instruments
 	}: {
 		patterns: Pattern[];
 		patternOrder: number[];
-		ayProcessor: ChipProcessor;
+		chip: Chip;
+		chipProcessor: ChipProcessor;
 		tuningTable: number[];
 		speed: number;
-		ornaments: Ornament[];
 		instruments: Instrument[];
 	} = $props();
 
 	const services: { audioService: AudioService } = getContext('container');
+
+	const formatter = getFormatter(chip);
+	const converter = getConverter(chip);
+	const schema = chip.schema;
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
@@ -58,7 +59,7 @@
 	}
 
 	export function playFromCursor() {
-		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
+		if (!chipProcessor || !chipProcessor.isAudioNodeAvailable()) {
 			console.warn('Audio processor not available or not initialized');
 			return;
 		}
@@ -80,7 +81,7 @@
 	}
 
 	export function togglePlayback() {
-		if (!ayProcessor || !ayProcessor.isAudioNodeAvailable()) {
+		if (!chipProcessor || !chipProcessor.isAudioNodeAvailable()) {
 			console.warn('Audio processor not available or not initialized');
 			return;
 		}
@@ -104,86 +105,195 @@
 	}
 
 	function initPlayback() {
-		ayProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
-		ayProcessor.sendInitTuningTable(tuningTable);
-		ayProcessor.sendInitSpeed(speed);
-		ayProcessor.sendInitInstruments(instruments);
+		chipProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
+		chipProcessor.sendInitTuningTable(tuningTable);
+		chipProcessor.sendInitSpeed(speed);
+		chipProcessor.sendInitInstruments(instruments);
 	}
 
 	function pausePlayback() {
 		services.audioService.stop();
 	}
 
-	function getCellPositions(
-		parts: RowPart[]
-	): { x: number; width: number; partIndex: number; fieldIndex: number; charIndex: number }[] {
-		const positions: {
-			x: number;
-			width: number;
-			partIndex: number;
-			fieldIndex: number;
-			charIndex: number;
-		}[] = [];
-		let x = 10;
+	interface FieldSegment {
+		start: number;
+		end: number;
+		fieldKey: string;
+		color: string;
+	}
 
-		for (let partIndex = 0; partIndex < parts.length; partIndex++) {
-			const part = parts[partIndex];
+	function parseRowString(rowString: string, rowIndex: number): FieldSegment[] {
+		const segments: FieldSegment[] = [];
+		let pos = 0;
 
-			if (part.type === 'rowNum') {
-				x += ctx.measureText(part.value as string).width;
-				x += ctx.measureText(' ').width;
-				continue;
+		const skipSpaces = () => {
+			while (pos < rowString.length && rowString[pos] === ' ') {
+				pos++;
 			}
+		};
 
-			if (part.type === 'note') {
-				const value = part.value as string;
-				const width = ctx.measureText(value).width;
-				positions.push({ x, width, partIndex, fieldIndex: -1, charIndex: 0 });
-				x += width;
-				x += ctx.measureText(' ').width;
-				continue;
-			}
+		skipSpaces();
+		const rowNumStart = pos;
+		while (pos < rowString.length && rowString[pos] !== ' ') {
+			pos++;
+		}
+		if (rowNumStart < pos) {
+			const colorKey = rowIndex % 4 === 0 ? 'patternRowNumAlternate' : 'patternRowNum';
+			segments.push({
+				start: rowNumStart,
+				end: pos,
+				fieldKey: 'rowNum',
+				color: COLORS[colorKey as keyof typeof COLORS] || COLORS.patternText
+			});
+		}
+		skipSpaces();
 
-			if (part.type === 'noteParameters') {
-				const fields = part.value as NoteParameterField[];
-				for (let fieldIndex = 0; fieldIndex < fields.length; fieldIndex++) {
-					const field = fields[fieldIndex];
-					for (let charIndex = 0; charIndex < field.value.length; charIndex++) {
-						const width = ctx.measureText(field.value[charIndex]).width;
-						positions.push({ x, width, partIndex, fieldIndex, charIndex });
-						x += width;
+		if (schema.globalTemplate && schema.globalFields) {
+			const globalStart = pos;
+			const globalTemplate = schema.globalTemplate;
+			let templatePos = 0;
+			while (templatePos < globalTemplate.length) {
+				if (globalTemplate[templatePos] === '{') {
+					const end = globalTemplate.indexOf('}', templatePos);
+					if (end !== -1) {
+						const key = globalTemplate.substring(templatePos + 1, end);
+						const field = schema.globalFields[key];
+						if (field) {
+							const colorKey = formatter.getColorForField(key, schema);
+							const color =
+								COLORS[colorKey as keyof typeof COLORS] || COLORS.patternText;
+							segments.push({
+								start: pos,
+								end: pos + field.length,
+								fieldKey: key,
+								color
+							});
+							pos += field.length;
+						}
+						templatePos = end + 1;
+					} else {
+						templatePos++;
 					}
+				} else if (globalTemplate[templatePos] === ' ') {
+					pos++;
+					templatePos++;
+				} else {
+					templatePos++;
 				}
+			}
+			skipSpaces();
+		}
+
+		const template = schema.template;
+		while (pos < rowString.length) {
+			skipSpaces();
+			if (pos >= rowString.length) break;
+
+			const channelStart = pos;
+			let templatePos = 0;
+			let foundField = false;
+			while (templatePos < template.length) {
+				if (template[templatePos] === '{') {
+					const end = template.indexOf('}', templatePos);
+					if (end !== -1) {
+						const key = template.substring(templatePos + 1, end);
+						const field = schema.fields[key];
+						if (field) {
+							const colorKey = formatter.getColorForField(key, schema);
+							const color =
+								COLORS[colorKey as keyof typeof COLORS] || COLORS.patternText;
+							segments.push({
+								start: pos,
+								end: pos + field.length,
+								fieldKey: key,
+								color
+							});
+							pos += field.length;
+							foundField = true;
+						}
+						templatePos = end + 1;
+					} else {
+						break;
+					}
+				} else if (template[templatePos] === ' ') {
+					if (pos < rowString.length && rowString[pos] === ' ') {
+						pos++;
+					}
+					templatePos++;
+				} else {
+					templatePos++;
+				}
+			}
+			if (!foundField) break;
+		}
+		return segments;
+	}
+
+	function getCellPositions(
+		rowString: string,
+		rowIndex: number
+	): { x: number; width: number; charIndex: number; fieldKey?: string }[] {
+		const positions: { x: number; width: number; charIndex: number; fieldKey?: string }[] = [];
+		const segments = parseRowString(rowString, rowIndex);
+		let x = 10;
+		let i = 0;
+
+		while (i < rowString.length) {
+			const char = rowString[i];
+			if (char === ' ') {
 				x += ctx.measureText(' ').width;
+				i++;
 				continue;
 			}
 
-			const value = part.value as string;
-			for (let charIndex = 0; charIndex < value.length; charIndex++) {
-				const width = ctx.measureText(value[charIndex]).width;
-				positions.push({ x, width, partIndex, fieldIndex: -1, charIndex });
+			const segment = segments.find((s) => i >= s.start && i < s.end);
+
+			if (!segment) {
+				const width = ctx.measureText(char).width;
 				x += width;
+				i++;
+				continue;
 			}
-			x += ctx.measureText(' ').width;
+
+			const field =
+				schema.fields[segment.fieldKey] || schema.globalFields?.[segment.fieldKey];
+
+			if (segment.fieldKey === 'rowNum' || field?.skip) {
+				const skipText = rowString.substring(segment.start, segment.end);
+				x += ctx.measureText(skipText).width;
+				i = segment.end;
+				continue;
+			}
+
+			const isAtomic = field?.selectable === 'atomic';
+
+			if (isAtomic && i === segment.start) {
+				const fieldText = rowString.substring(segment.start, segment.end);
+				const width = ctx.measureText(fieldText).width;
+				positions.push({ x, width, charIndex: segment.start, fieldKey: segment.fieldKey });
+				x += width;
+				i = segment.end;
+			} else if (isAtomic && i > segment.start) {
+				const width = ctx.measureText(char).width;
+				x += width;
+				i++;
+			} else if (!isAtomic) {
+				const width = ctx.measureText(char).width;
+				positions.push({ x, width, charIndex: i, fieldKey: segment.fieldKey });
+				x += width;
+				i++;
+			} else {
+				const width = ctx.measureText(char).width;
+				x += width;
+				i++;
+			}
 		}
 
 		return positions;
 	}
 
-	function getTotalCellCount(parts: RowPart[]): number {
-		let count = 0;
-		for (const part of parts) {
-			if (part.type === 'noteParameters') {
-				const fields = part.value as NoteParameterField[];
-				for (const field of fields) {
-					count += field.value.length;
-				}
-			} else {
-				count += (part.value as string).length;
-			}
-			count += 1; // for space between parts
-		}
-		return count;
+	function getTotalCellCount(rowString: string): number {
+		return rowString.replace(/\s/g, '').length;
 	}
 
 	function getVisibleRows() {
@@ -285,7 +395,12 @@
 		}
 	}
 
-	function drawRowStructured(parts: RowPart[], y: number, isSelected: boolean, rowIndex: number) {
+	function drawRowStructured(
+		rowString: string,
+		y: number,
+		isSelected: boolean,
+		rowIndex: number
+	) {
 		if (rowIndex % 4 === 0) {
 			ctx.fillStyle = COLORS.patternAlternate;
 			ctx.fillRect(0, y, canvasWidth, lineHeight);
@@ -296,91 +411,51 @@
 			ctx.fillRect(0, y, canvasWidth, lineHeight);
 		}
 
-		const cellPositions = getCellPositions(parts);
+		const cellPositions = getCellPositions(rowString, rowIndex);
 		if (isSelected && selectedColumn < cellPositions.length) {
 			const cellPos = cellPositions[selectedColumn];
 			ctx.fillStyle = COLORS.patternCellSelected;
 			ctx.fillRect(cellPos.x - 1, y, cellPos.width + 2, lineHeight);
 		}
 
+		const segments = parseRowString(rowString, rowIndex);
 		let x = 10;
-		for (let i = 0; i < parts.length; i++) {
-			const part = parts[i];
-			if (part.type === 'noteParameters') {
-				const fields = part.value as NoteParameterField[];
-				for (let f = 0; f < fields.length; f++) {
-					const field = fields[f];
-					let color;
-					switch (field.type) {
-						case 'instrument':
-							color = COLORS.patternInstrument;
-							break;
-						case 'shape':
-							color = COLORS.patternEnvelope;
-							break;
-						case 'ornament':
-							color = COLORS.patternOrnament;
-							break;
-						case 'volume':
-							color = COLORS.patternText;
-							break;
-					}
-					for (let c = 0; c < field.value.length; c++) {
-						const char = field.value[c];
-						if (char === '.') {
-							ctx.fillStyle = isSelected
-								? COLORS.patternEmptySelected
-								: rowIndex % 4 === 0
-									? COLORS.patternAlternateEmpty
-									: COLORS.patternEmpty;
-						} else {
-							ctx.fillStyle = color;
-						}
-						ctx.fillText(char, x, y + lineHeight / 2);
-						x += ctx.measureText(char).width;
-					}
-				}
+		let segmentIndex = 0;
+		let currentSegment = segments[0];
+
+		for (let i = 0; i < rowString.length; i++) {
+			const char = rowString[i];
+
+			if (char === ' ') {
 				x += ctx.measureText(' ').width;
-			} else {
-				let color = COLORS.patternText;
-				switch (part.type) {
-					case 'rowNum':
-						color =
-							rowIndex % 4 === 0
-								? COLORS.patternRowNumAlternate
-								: COLORS.patternRowNum;
-						break;
-					case 'envelope':
-						color = COLORS.patternEnvelope;
-						break;
-					case 'envEffect':
-						color = COLORS.patternEffect;
-						break;
-					case 'noise':
-						color = COLORS.patternNoise;
-						break;
-					case 'note':
-						const value = part.value as string;
-						ctx.fillStyle =
-							value === '---'
-								? isSelected
-									? COLORS.patternEmptySelected
-									: rowIndex % 4 === 0
-										? COLORS.patternAlternateEmpty
-										: COLORS.patternEmpty
-								: COLORS.patternNote;
-						ctx.fillText(value, x, y + lineHeight / 2);
-						x += ctx.measureText(value).width;
-						x += ctx.measureText(' ').width;
-						continue;
-					case 'fx':
-						color = COLORS.patternEffect;
-						break;
-				}
-				const value = part.value as string;
-				for (let c = 0; c < value.length; c++) {
-					const char = value[c];
-					if (char === '.' || char === '-') {
+				continue;
+			}
+
+			while (currentSegment && i >= currentSegment.end) {
+				segmentIndex++;
+				currentSegment = segments[segmentIndex];
+			}
+
+			let color = COLORS.patternText;
+			if (currentSegment) {
+				color = currentSegment.color;
+			}
+
+			const field =
+				currentSegment &&
+				(schema.fields[currentSegment.fieldKey] ||
+					schema.globalFields?.[currentSegment.fieldKey]);
+			const isAtomic = field?.selectable === 'atomic';
+			const fieldText = currentSegment
+				? rowString.substring(currentSegment.start, currentSegment.end)
+				: '';
+
+			const isEmptyField =
+				fieldText && fieldText.split('').every((c) => c === '.' || c === '-');
+
+			if ((char === '.' || char === '-') && isEmptyField) {
+				if (isAtomic) {
+					if (fieldText === '---') {
 						ctx.fillStyle = isSelected
 							? COLORS.patternEmptySelected
 							: rowIndex % 4 === 0
@@ -389,11 +464,19 @@
 					} else {
 						ctx.fillStyle = color;
 					}
-					ctx.fillText(char, x, y + lineHeight / 2);
-					x += ctx.measureText(char).width;
+				} else {
+					ctx.fillStyle = isSelected
+						? COLORS.patternEmptySelected
+						: rowIndex % 4 === 0
+							? COLORS.patternAlternateEmpty
+							: COLORS.patternEmpty;
 				}
-				x += ctx.measureText(' ').width;
+			} else {
+				ctx.fillStyle = color;
 			}
+
+			ctx.fillText(char, x, y + lineHeight / 2);
+			x += ctx.measureText(char).width;
 		}
 	}
 
@@ -419,8 +502,16 @@
 
 			const pattern = patterns[row.patternIndex];
 			if (pattern) {
-				const parts = getRowDataStructured(pattern, row.rowIndex);
-				drawRowStructured(parts, y, row.isSelected, row.rowIndex);
+				const genericPattern = converter.toGeneric(pattern);
+				const genericPatternRow = genericPattern.patternRows[row.rowIndex];
+				const genericChannels = genericPattern.channels.map((ch) => ch.rows[row.rowIndex]);
+				const rowString = formatter.formatRow(
+					genericPatternRow,
+					genericChannels,
+					row.rowIndex,
+					schema
+				);
+				drawRowStructured(rowString, y, row.isSelected, row.rowIndex);
 			}
 		});
 
@@ -440,8 +531,16 @@
 		}
 
 		if (currentPattern) {
-			const parts = getRowDataStructured(currentPattern, selectedRow);
-			const cellPositions = getCellPositions(parts);
+			const genericPattern = converter.toGeneric(currentPattern);
+			const genericPatternRow = genericPattern.patternRows[selectedRow];
+			const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
+			const rowString = formatter.formatRow(
+				genericPatternRow,
+				genericChannels,
+				selectedRow,
+				schema
+			);
+			const cellPositions = getCellPositions(rowString, selectedRow);
 			const maxCells = cellPositions.length;
 			if (selectedColumn >= maxCells) {
 				selectedColumn = Math.max(0, maxCells - 1);
@@ -452,8 +551,16 @@
 	function moveColumn(delta: number) {
 		if (!currentPattern) return;
 
-		const parts = getRowDataStructured(currentPattern, selectedRow);
-		const cellPositions = getCellPositions(parts);
+		const genericPattern = converter.toGeneric(currentPattern);
+		const genericPatternRow = genericPattern.patternRows[selectedRow];
+		const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
+		const rowString = formatter.formatRow(
+			genericPatternRow,
+			genericChannels,
+			selectedRow,
+			schema
+		);
+		const cellPositions = getCellPositions(rowString, selectedRow);
 		const maxCells = cellPositions.length;
 		let newColumn = selectedColumn + delta;
 
@@ -511,8 +618,18 @@
 				if (event.ctrlKey) {
 					selectedRow = currentPattern.length - 1;
 				} else {
-					const parts = getRowDataStructured(currentPattern, selectedRow);
-					const cellPositions = getCellPositions(parts);
+					const genericPattern = converter.toGeneric(currentPattern);
+					const genericPatternRow = genericPattern.patternRows[selectedRow];
+					const genericChannels = genericPattern.channels.map(
+						(ch) => ch.rows[selectedRow]
+					);
+					const rowString = formatter.formatRow(
+						genericPatternRow,
+						genericChannels,
+						selectedRow,
+						schema
+					);
+					const cellPositions = getCellPositions(rowString, selectedRow);
 					const maxCells = cellPositions.length;
 					selectedColumn = Math.max(0, maxCells - 1);
 				}
@@ -541,19 +658,11 @@
 			window.innerHeight - PATTERN_EDITOR_CONSTANTS.CANVAS_TOP_MARGIN
 		);
 		if (ctx && currentPattern) {
-			const parts = getRowDataStructured(currentPattern, 0);
-			let width = 10; // starting x position
-			for (const part of parts) {
-				if (part.type === 'noteParameters') {
-					const fields = part.value as NoteParameterField[];
-					for (const field of fields) {
-						width += ctx.measureText(field.value).width;
-					}
-				} else {
-					width += ctx.measureText(part.value as string).width;
-				}
-				width += ctx.measureText(' ').width; // space between parts
-			}
+			const genericPattern = converter.toGeneric(currentPattern);
+			const genericPatternRow = genericPattern.patternRows[0];
+			const genericChannels = genericPattern.channels.map((ch) => ch.rows[0]);
+			const rowString = formatter.formatRow(genericPatternRow, genericChannels, 0, schema);
+			const width = ctx.measureText(rowString).width;
 			canvasWidth = width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
 		} else {
 			canvasWidth = PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH;
@@ -593,7 +702,7 @@
 	});
 
 	$effect(() => {
-		if (!ayProcessor) return;
+		if (!chipProcessor) return;
 
 		const handlePatternUpdate = (
 			currentRow: number,
@@ -613,12 +722,12 @@
 				const requestedPattern = patterns[patternIndex];
 
 				if (requestedPattern) {
-					ayProcessor.sendRequestedPattern(requestedPattern);
+					chipProcessor.sendRequestedPattern(requestedPattern);
 				}
 			}
 		};
 
-		ayProcessor.setCallbacks(handlePatternUpdate, handlePatternRequest);
+		chipProcessor.setCallbacks(handlePatternUpdate, handlePatternRequest);
 	});
 </script>
 

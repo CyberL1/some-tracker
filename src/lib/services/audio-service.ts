@@ -85,16 +85,12 @@ export class AudioService {
 		});
 	}
 
-	updateAyFrequency(aymFrequency: number) {
-		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.sendUpdateAyFrequency(aymFrequency);
-		});
-	}
-
-	updateIntFrequency(intFrequency: number) {
-		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.sendUpdateIntFrequency(intFrequency);
-		});
+	updateChipParameter(chipType: string, parameter: string, value: any) {
+		this.chipProcessors
+			.filter((chipProcessor) => chipProcessor.chip.type === chipType)
+			.forEach((chipProcessor) => {
+				chipProcessor.updateParameter(parameter, value);
+			});
 	}
 
 	updateOrnaments(ornaments: Ornament[]) {
