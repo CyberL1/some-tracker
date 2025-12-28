@@ -7,15 +7,16 @@ export interface ChipProcessor {
 	chip: Chip;
 	initialize(wasmBuffer: ArrayBuffer, audioNode: AudioWorkletNode): void;
 	play(): void;
-	playFromRow(row: number): void;
+	playFromRow(row: number, patternOrderIndex?: number, speed?: number | null): void;
 	stop(): void;
 	updateOrder(order: number[]): void;
 	sendInitPattern(pattern: Pattern, patternOrderIndex: number): void;
-	sendRequestedPattern(pattern: Pattern): void;
+	sendRequestedPattern(pattern: Pattern, patternOrderIndex: number): void;
 	sendInitTables(tables: Table[]): void;
 	setCallbacks(
 		onPositionUpdate: (currentRow: number, currentPatternOrderIndex?: number) => void,
-		onPatternRequest: (patternOrderIndex: number) => void
+		onPatternRequest: (patternOrderIndex: number) => void,
+		onSpeedUpdate?: (speed: number) => void
 	): void;
 	isAudioNodeAvailable(): boolean;
 	sendInitSpeed(speed: number): void;

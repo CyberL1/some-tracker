@@ -9,7 +9,6 @@
 	import type { Chip } from '../../models/chips';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
-	import PatternOrder from './PatternOrder.svelte';
 	import { getContext } from 'svelte';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { playbackStore } from '../../stores/playback.svelte';
@@ -17,8 +16,14 @@
 	import { getConverter } from '../../models/adapters/converter-factory';
 
 	let {
-		patterns = $bindable(),
+		patterns,
 		patternOrder = $bindable(),
+		currentPatternOrderIndex = $bindable(0),
+		selectedRow = $bindable(0),
+		isActive = false,
+		onfocus,
+		initAllChips,
+		getSpeedForChip,
 		chip,
 		chipProcessor,
 		tuningTable,
@@ -27,6 +32,12 @@
 	}: {
 		patterns: Pattern[];
 		patternOrder: number[];
+		currentPatternOrderIndex: number;
+		selectedRow: number;
+		isActive?: boolean;
+		onfocus?: () => void;
+		initAllChips?: () => void;
+		getSpeedForChip?: (chipIndex: number) => number | null;
 		chip: Chip;
 		chipProcessor: ChipProcessor;
 		tuningTable: number[];
@@ -53,14 +64,27 @@
 		PATTERN_EDITOR_CONSTANTS.FONT_SIZE * PATTERN_EDITOR_CONSTANTS.LINE_HEIGHT_MULTIPLIER;
 
 	let selectedColumn = $state(0);
-	let currentPatternOrderIndex = $state(0);
-	let selectedRow = $state(0);
 
-	let currentPattern = $derived(patterns[patternOrder[currentPatternOrderIndex]]);
+	let currentPattern = $derived.by(() => {
+		const patternId = patternOrder[currentPatternOrderIndex];
+		return patterns.find((p) => p.id === patternId);
+	});
 
 	export function resetToBeginning() {
 		selectedRow = 0;
 		currentPatternOrderIndex = 0;
+	}
+
+	export function setPatternOrderIndex(index: number) {
+		if (index >= 0 && index < patternOrder.length) {
+			currentPatternOrderIndex = index;
+		}
+	}
+
+	export function setSelectedRow(row: number) {
+		if (currentPattern && row >= 0 && row < currentPattern.length) {
+			selectedRow = row;
+		}
 	}
 
 	export function playFromCursor() {
@@ -75,10 +99,8 @@
 				return;
 			}
 
-			initPlayback();
-
-			services.audioService.updateOrder(patternOrder);
-			services.audioService.playFromRow(selectedRow);
+			initAllChips?.();
+			services.audioService.playFromRow(selectedRow, currentPatternOrderIndex, getSpeedForChip);
 		} catch (error) {
 			console.error('Error during playback from cursor:', error);
 			services.audioService.stop();
@@ -98,9 +120,7 @@
 					return;
 				}
 
-				initPlayback();
-
-				services.audioService.updateOrder(patternOrder);
+				initAllChips?.();
 				services.audioService.play();
 			}
 		} catch (error) {
@@ -511,7 +531,7 @@
 				ctx.globalAlpha = 1.0;
 			}
 
-			const pattern = patterns[row.patternIndex];
+			const pattern = patterns.find((p) => p.id === row.patternIndex);
 			if (pattern) {
 				const genericPattern = converter.toGeneric(pattern);
 				const genericPatternRow = genericPattern.patternRows[row.rowIndex];
@@ -522,7 +542,7 @@
 					row.rowIndex,
 					schema
 				);
-				drawRowStructured(rowString, y, row.isSelected, row.rowIndex);
+				drawRowStructured(rowString, y, row.isSelected && isActive, row.rowIndex);
 			}
 		});
 
@@ -535,7 +555,11 @@
 			selectedRow = newRow;
 		} else if (delta < 0 && currentPatternOrderIndex > 0) {
 			currentPatternOrderIndex--;
-			selectedRow = patterns[patternOrder[currentPatternOrderIndex]].length - 1;
+			const prevPatternId = patternOrder[currentPatternOrderIndex];
+			const prevPattern = patterns.find((p) => p.id === prevPatternId);
+			if (prevPattern) {
+				selectedRow = prevPattern.length - 1;
+			}
 		} else if (delta > 0 && currentPatternOrderIndex < patternOrder.length - 1) {
 			currentPatternOrderIndex++;
 			selectedRow = 0;
@@ -660,6 +684,7 @@
 	function handleMouseEnter(): void {
 		if (canvas) {
 			canvas.focus();
+			onfocus?.();
 		}
 	}
 
@@ -744,6 +769,9 @@
 	$effect(() => {
 		if (!chipProcessor) return;
 
+		const currentPatterns = patterns;
+		const currentPatternOrder = patternOrder;
+
 		const handlePatternUpdate = (
 			currentRow: number,
 			currentPatternOrderIndexUpdate?: number
@@ -757,30 +785,31 @@
 		};
 
 		const handlePatternRequest = (requestedOrderIndex: number) => {
-			if (requestedOrderIndex >= 0 && requestedOrderIndex < patternOrder.length) {
-				const patternIndex = patternOrder[requestedOrderIndex];
-				const requestedPattern = patterns[patternIndex];
+			if (requestedOrderIndex >= 0 && requestedOrderIndex < currentPatternOrder.length) {
+				const patternId = currentPatternOrder[requestedOrderIndex];
+				const requestedPattern = currentPatterns.find((p) => p.id === patternId);
 
 				if (requestedPattern) {
-					chipProcessor.sendRequestedPattern(requestedPattern);
+					chipProcessor.sendRequestedPattern(requestedPattern, requestedOrderIndex);
+				} else {
+					console.warn(
+						`PatternEditor [${chipProcessor.chip.name}]: Pattern with ID ${patternId} not found at order index ${requestedOrderIndex}. Available pattern IDs:`,
+						currentPatterns.map((p) => p.id)
+					);
 				}
 			}
 		};
 
-		chipProcessor.setCallbacks(handlePatternUpdate, handlePatternRequest);
+		const handleSpeedUpdate = (newSpeed: number) => {
+			services.audioService.updateSpeed(newSpeed);
+		};
+
+		chipProcessor.setCallbacks(handlePatternUpdate, handlePatternRequest, handleSpeedUpdate);
 	});
 </script>
 
 <div bind:this={containerDiv} class="flex h-full flex-col gap-2">
 	<div class="flex" style="max-height: {canvasHeight}px">
-		<PatternOrder
-			bind:currentPatternOrderIndex
-			bind:patterns
-			bind:selectedRow
-			bind:patternOrder
-			{canvasHeight}
-			{lineHeight} />
-
 		<canvas
 			bind:this={canvas}
 			tabindex="0"

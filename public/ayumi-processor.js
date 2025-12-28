@@ -6,19 +6,21 @@ import {
 	DEFAULT_AYM_FREQUENCY
 } from './ayumi-constants.js';
 import AyumiState from './ayumi-state.js';
-import AyumiPatternProcessor from './ayumi-pattern-processor.js';
+import TrackerPatternProcessor from './tracker-pattern-processor.js';
+import AYAudioDriver from './ay-audio-driver.js';
 
 class AyumiProcessor extends AudioWorkletProcessor {
 	constructor() {
 		super();
 		this.initialized = false;
 		this.state = new AyumiState();
-		this.patternProcessor = new AyumiPatternProcessor(this.state);
+		this.audioDriver = null;
+		this.patternProcessor = null;
 		this.port.onmessage = this.handleMessage.bind(this);
 		this.aymFrequency = 1773400;
 		this.paused = false;
 		this.fadeInSamples = 0;
-		this.fadeInDuration = 0.01; // 10ms fade-in
+		this.fadeInDuration = 0.01;
 	}
 
 	async handleMessage(event) {
@@ -84,6 +86,12 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 			this.state.setWasmModule(wasmModule, ayumiPtr, wasmBuffer);
 			this.state.updateSamplesPerTick(sampleRate);
+			this.audioDriver = new AYAudioDriver(wasmModule, ayumiPtr);
+			this.patternProcessor = new TrackerPatternProcessor(
+				this.state,
+				this.audioDriver,
+				this.port
+			);
 			this.initialized = true;
 		} catch (error) {
 			console.error('Failed to initialize Ayumi:', error);
@@ -111,7 +119,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	}
 
 	handleSetPatternData(data) {
-		this.state.setPattern(data.pattern);
+		this.state.setPattern(data.pattern, data.patternOrderIndex);
 	}
 
 	handleUpdateAyFrequency(data) {
@@ -136,6 +144,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 
 		this.state.reset();
+		if (!this.audioDriver || !this.patternProcessor) {
+			this.audioDriver = new AYAudioDriver(this.state.wasmModule, this.state.ayumiPtr);
+			this.patternProcessor = new TrackerPatternProcessor(
+				this.state,
+				this.audioDriver,
+				this.port
+			);
+		}
 
 		if (startPatternOrderIndex !== undefined) {
 			this.state.currentPatternOrderIndex = startPatternOrderIndex;
@@ -145,7 +161,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 	}
 
-	handlePlayFromRow({ row }) {
+	handlePlayFromRow({ row, patternOrderIndex, speed }) {
 		if (!this.state.wasmModule || !this.initialized) {
 			console.warn('Play aborted: wasmModule not initialized');
 			return;
@@ -158,7 +174,21 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 
 		this.state.reset();
+		if (!this.audioDriver || !this.patternProcessor) {
+			this.audioDriver = new AYAudioDriver(this.state.wasmModule, this.state.ayumiPtr);
+			this.patternProcessor = new TrackerPatternProcessor(
+				this.state,
+				this.audioDriver,
+				this.port
+			);
+		}
+		if (patternOrderIndex !== undefined) {
+			this.state.currentPatternOrderIndex = patternOrderIndex;
+		}
 		this.state.currentRow = row;
+		if (speed !== undefined && speed !== null && speed > 0) {
+			this.state.setSpeed(speed);
+		}
 	}
 
 	handleStop() {

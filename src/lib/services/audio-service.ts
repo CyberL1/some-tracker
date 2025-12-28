@@ -65,13 +65,18 @@ export class AudioService {
 		});
 	}
 
-	playFromRow(row: number) {
+	playFromRow(
+		row: number,
+		patternOrderIndex?: number,
+		getSpeedForChip?: (chipIndex: number) => number | null
+	) {
 		if (this._isPlaying) return;
 
 		this._isPlaying = true;
 
-		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.playFromRow(row);
+		this.chipProcessors.forEach((chipProcessor, index) => {
+			const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+			chipProcessor.playFromRow(row, patternOrderIndex, speed);
 		});
 	}
 
@@ -95,6 +100,19 @@ export class AudioService {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.sendInitTables(tables);
 		});
+	}
+
+	updateSpeed(speed: number) {
+		this.chipProcessors.forEach((chipProcessor) => {
+			chipProcessor.sendInitSpeed(speed);
+		});
+	}
+
+	clearChipProcessors() {
+		if (this._isPlaying) {
+			this.stop();
+		}
+		this.chipProcessors = [];
 	}
 
 	async dispose() {

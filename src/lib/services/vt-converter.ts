@@ -83,33 +83,155 @@ class VT2Converter {
 	} as const;
 
 	/**
-	 * Converts a VT2 file content to a Song object
+	 * Converts a VT2 file content to a Project object
 	 */
 	convert(vt2Content: string): Project {
 		const lines = vt2Content.split('\n').map((line) => line.trim());
+
+		const moduleSections = this.splitModuleSections(lines);
+		const isTurboSound = moduleSections.length > 1;
+
+		if (isTurboSound) {
+			return this.convertTurboSoundModules(moduleSections);
+		}
 
 		const module = this.parseModule(lines);
 		const tables = this.parseTables(lines);
 		const samples = this.parseSamples(lines);
 		const patterns = this.parsePatterns(lines);
 
-		const song = new Song();
+		const convertedTables = this.convertTables(tables);
 
-		if (module.noteTable >= 0 && module.noteTable < PT3TuneTables.length) {
-			song.tuningTable = PT3TuneTables[module.noteTable];
-		}
+		const convertedInstruments = samples.map((sample) => {
+			let loopPoint = 0;
+			for (let i = 0; i < sample.data.length; i++) {
+				if (sample.data[i].loop) {
+					loopPoint = i;
+					break;
+				}
+			}
 
-		const convertedTables = tables.map((table) => {
-			return new Table(
-				table.id - 1,
-				table.data,
-				table.loop ? table.loopPoint : 0,
-				`Table ${table.id}`
+			return new Instrument(
+				sample.id,
+				sample.data.map((line) => {
+					return new InstrumentRow(
+						line.tone,
+						line.noise,
+						line.envelope,
+						line.toneAdd,
+						line.noiseAdd,
+						line.volume,
+						line.loop
+					);
+				}),
+				loopPoint
 			);
 		});
 
+		const tuningTable =
+			module.noteTable >= 0 && module.noteTable < PT3TuneTables.length
+				? PT3TuneTables[module.noteTable]
+				: PT3TuneTables[2];
+
+		return this.convertSingleChip(
+			module,
+			patterns,
+			convertedInstruments,
+			convertedTables,
+			tuningTable
+		);
+	}
+
+	private splitModuleSections(lines: string[]): string[][] {
+		const sections: string[][] = [];
+		let currentSection: string[] = [];
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			if (line === '[Module]') {
+				if (currentSection.length > 0) {
+					sections.push(currentSection);
+				}
+				currentSection = [line];
+			} else {
+				currentSection.push(line);
+			}
+		}
+
+		if (currentSection.length > 0) {
+			sections.push(currentSection);
+		}
+
+		return sections;
+	}
+
+	private convertTurboSoundModules(moduleSections: string[][]): Project {
+		if (moduleSections.length < 2) {
+			throw new Error('TurboSound file must contain at least 2 modules');
+		}
+
+		const firstModuleLines = moduleSections[0];
+		const secondModuleLines = moduleSections[1];
+
+		const module1 = this.parseModule(firstModuleLines);
+		const module2 = this.parseModule(secondModuleLines);
+
+		const tables1 = this.parseTables(firstModuleLines);
+		const samples1 = this.parseSamples(firstModuleLines);
+		const patterns1 = this.parsePatterns(firstModuleLines);
+
+		const tables2 = this.parseTables(secondModuleLines);
+		const samples2 = this.parseSamples(secondModuleLines);
+		const patterns2 = this.parsePatterns(secondModuleLines);
+
+		const tuningTable =
+			module1.noteTable >= 0 && module1.noteTable < PT3TuneTables.length
+				? PT3TuneTables[module1.noteTable]
+				: PT3TuneTables[2];
+
+		const song1 = this.createSongFromModule(
+			module1,
+			patterns1,
+			samples1,
+			tables1,
+			tuningTable
+		);
+
+		const song2 = this.createSongFromModule(
+			module2,
+			patterns2,
+			samples2,
+			tables2,
+			tuningTable
+		);
+
+		const chipType = this.detectChipType(module1);
+
+		return new Project(
+			module1.title,
+			module1.author,
+			[song1, song2],
+			module1.loopPoint || 0,
+			module1.playOrder,
+			chipType,
+			module1.chipFrequency,
+			module1.interruptFrequency,
+			this.convertTables(tables1)
+		);
+	}
+
+	private createSongFromModule(
+		module: VT2Module,
+		patterns: VT2Pattern[],
+		samples: VT2Sample[],
+		tables: VT2Table[],
+		tuningTable: number[]
+	): Song {
+		const song = new Song();
+		song.tuningTable = tuningTable;
+		song.initialSpeed = module.speed;
+
 		song.instruments = samples.map((sample) => {
-			// Find the loop point - the first row with loop flag set
 			let loopPoint = 0;
 			for (let i = 0; i < sample.data.length; i++) {
 				if (sample.data[i].loop) {
@@ -137,24 +259,45 @@ class VT2Converter {
 
 		song.patterns = patterns.map((vt2Pattern) => {
 			const pattern = new Pattern(vt2Pattern.id, vt2Pattern.rows.length);
-			this.convertPattern(vt2Pattern, pattern);
+			this.convertPattern(vt2Pattern, pattern, 0);
 			return pattern;
 		});
 
+		return song;
+	}
+
+	private convertTables(tables: VT2Table[]): Table[] {
+		return tables.map((table) => {
+			return new Table(
+				table.id - 1,
+				table.data,
+				table.loop ? table.loopPoint : 0,
+				`Table ${table.id}`
+			);
+		});
+	}
+
+	private convertSingleChip(
+		module: VT2Module,
+		patterns: VT2Pattern[],
+		instruments: Instrument[],
+		tables: Table[],
+		tuningTable: number[]
+	): Project {
+		const song = new Song();
+		song.tuningTable = tuningTable;
+		song.instruments = instruments;
 		song.initialSpeed = module.speed;
 
-		// Detect chip type from title or author
-		const titleLower = module.title.toLowerCase();
-		const authorLower = module.author.toLowerCase();
+		song.patterns = patterns.map((vt2Pattern) => {
+			const pattern = new Pattern(vt2Pattern.id, vt2Pattern.rows.length);
+			this.convertPattern(vt2Pattern, pattern, 0);
+			return pattern;
+		});
 
-		let chipType: 'AY' | 'YM' = 'AY'; // Default to AY
-		if (titleLower.includes('ym') || authorLower.includes('ym')) {
-			chipType = 'YM';
-		} else if (titleLower.includes('ay') || authorLower.includes('ay')) {
-			chipType = 'AY';
-		}
+		const chipType = this.detectChipType(module);
 
-		const project = new Project(
+		return new Project(
 			module.title,
 			module.author,
 			[song],
@@ -163,10 +306,19 @@ class VT2Converter {
 			chipType,
 			module.chipFrequency,
 			module.interruptFrequency,
-			convertedTables
+			tables
 		);
+	}
 
-		return project;
+	private detectChipType(module: VT2Module): 'AY' | 'YM' {
+		const titleLower = module.title.toLowerCase();
+		const authorLower = module.author.toLowerCase();
+
+		if (titleLower.includes('ym') || authorLower.includes('ym')) {
+			return 'YM';
+		}
+
+		return 'AY';
 	}
 
 	private parseModule(lines: string[]): VT2Module {
@@ -341,9 +493,9 @@ class VT2Converter {
 		const envelopeValue = this.parseHexValue(envelopePart, 4);
 		const noiseValue = this.parseHexValue(noisePart, 2);
 
-		const channelRows = channelParts
-			.slice(0, 3)
-			.map((channelData) => this.parseChannelData(channelData.trim()));
+		const channelRows = channelParts.map((channelData) =>
+			this.parseChannelData(channelData.trim())
+		);
 
 		return { channelRows, envelopeValue, noiseValue };
 	}
@@ -381,7 +533,11 @@ class VT2Converter {
 		};
 	}
 
-	private convertPattern(vt2Pattern: VT2Pattern, pattern: Pattern): void {
+	private convertPattern(
+		vt2Pattern: VT2Pattern,
+		pattern: Pattern,
+		channelOffset: number = 0
+	): void {
 		for (
 			let rowIndex = 0;
 			rowIndex < Math.min(vt2Pattern.rows.length, pattern.length);
@@ -400,7 +556,8 @@ class VT2Converter {
 			}
 
 			for (let channelIndex = 0; channelIndex < 3; channelIndex++) {
-				const vt2ChannelData = vt2Row[channelIndex];
+				const sourceChannelIndex = channelOffset + channelIndex;
+				const vt2ChannelData = vt2Row[sourceChannelIndex];
 				const row = pattern.channels[channelIndex].rows[rowIndex];
 
 				if (!vt2ChannelData) {
@@ -518,6 +675,15 @@ class VT2Converter {
 		let currentContent: string[] = [];
 
 		for (const line of lines) {
+			if (line === '[Module]') {
+				if (currentMatch) {
+					sections.push({ match: currentMatch, content: currentContent });
+					currentMatch = null;
+					currentContent = [];
+				}
+				continue;
+			}
+
 			const match = line.match(pattern);
 			if (match) {
 				if (currentMatch) {

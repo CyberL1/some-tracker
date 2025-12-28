@@ -7,6 +7,7 @@
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio-service';
+	import { ProjectService } from './lib/services/project-service';
 	import { AY_CHIP } from './lib/models/chips';
 	import { TabView } from './lib/components/TabView';
 	import SongView from './lib/components/Song/SongView.svelte';
@@ -21,6 +22,8 @@
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
 	});
+
+	const projectService = new ProjectService(container.audioService);
 
 	container.audioService.addChipProcessor(AY_CHIP);
 
@@ -93,8 +96,49 @@
 				return;
 			}
 
+			if (data.action === 'new-project') {
+				playbackStore.isPlaying = false;
+				container.audioService.stop();
+
+				const newProject = await projectService.resetProject(AY_CHIP);
+
+				projectSettings = {
+					title: newProject.name,
+					author: newProject.author,
+					aymChipType: newProject.aymChipType,
+					aymFrequency: newProject.aymFrequency,
+					intFrequency: newProject.intFrequency
+				};
+				songs = newProject.songs;
+				patternOrder = newProject.patternOrder;
+				tables = newProject.tables;
+
+				patternEditor?.resetToBeginning();
+				return;
+			}
+
+			if (data.action === 'new-song-ay') {
+				playbackStore.isPlaying = false;
+				container.audioService.stop();
+
+				const newSong = await projectService.createNewSong(AY_CHIP);
+				songs = [...songs, newSong];
+
+				patternEditor?.resetToBeginning();
+				return;
+			}
+
 			const importedProject = await handleFileImport(data.action);
 			if (importedProject) {
+				playbackStore.isPlaying = false;
+				container.audioService.stop();
+
+				container.audioService.clearChipProcessors();
+
+				for (const _song of importedProject.songs) {
+					await container.audioService.addChipProcessor(AY_CHIP);
+				}
+
 				projectSettings = {
 					title: importedProject.name,
 					author: importedProject.author,
@@ -106,8 +150,6 @@
 				patternOrder = importedProject.patternOrder;
 				tables = importedProject.tables;
 
-				playbackStore.isPlaying = false;
-				container.audioService.stop();
 				patternEditor?.resetToBeginning();
 			}
 		} catch (error) {

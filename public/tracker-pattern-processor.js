@@ -1,6 +1,8 @@
-class AyumiPatternProcessor {
-	constructor(state) {
+class TrackerPatternProcessor {
+	constructor(state, chipAudioDriver, port) {
 		this.state = state;
+		this.chipAudioDriver = chipAudioDriver;
+		this.port = port;
 	}
 
 	parsePatternRow(pattern, rowIndex) {
@@ -9,33 +11,22 @@ class AyumiPatternProcessor {
 		const patternRow = pattern.patternRows[rowIndex];
 		if (!patternRow) return;
 
-		const { wasmModule, ayumiPtr } = this.state;
-
 		for (let channelIndex = 0; channelIndex < pattern.channels.length; channelIndex++) {
 			const channel = pattern.channels[channelIndex];
 			const row = channel.rows[rowIndex];
 
-			this._processNote(channelIndex, row);
+			this.chipAudioDriver.setMixer(channelIndex);
+			this._processNote(channelIndex, row, patternRow);
 			this._processTable(channelIndex, row);
-			this._processMixer(channelIndex);
 			this._processVolume(channelIndex, row);
-
-			if (patternRow.noiseValue > 0) {
-				wasmModule.ayumi_set_noise(ayumiPtr, patternRow.noiseValue);
-			}
-
-			if (patternRow.envelopeValue > 0) {
-				wasmModule.ayumi_set_envelope(ayumiPtr, patternRow.envelopeValue);
-			}
-
 			this._processEffects(row);
 		}
+
+		this.chipAudioDriver.processPatternRow(patternRow);
 	}
 
 	processTables() {
-		const { wasmModule, ayumiPtr, currentTuningTable } = this.state;
-
-		for (let channelIndex = 0; channelIndex < 3; channelIndex++) {
+		for (let channelIndex = 0; channelIndex < this.state.channelTables.length; channelIndex++) {
 			const tableIndex = this.state.channelTables[channelIndex];
 			if (tableIndex < 0) continue;
 
@@ -48,9 +39,9 @@ class AyumiPatternProcessor {
 			const tableOffset = table.rows[this.state.tablePositions[channelIndex]];
 			const finalNote = baseNote + tableOffset;
 
-			if (finalNote >= 0 && finalNote < currentTuningTable.length) {
-				const regValue = currentTuningTable[finalNote];
-				wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, regValue);
+			if (finalNote >= 0 && finalNote < this.state.currentTuningTable.length) {
+				const regValue = this.state.currentTuningTable[finalNote];
+				this.chipAudioDriver.setTone(channelIndex, regValue);
 			}
 
 			this.state.tableCounters[channelIndex]++;
@@ -69,20 +60,18 @@ class AyumiPatternProcessor {
 		}
 	}
 
-	_processNote(channelIndex, row) {
-		const { wasmModule, ayumiPtr, currentTuningTable } = this.state;
-
+	_processNote(channelIndex, row, patternRow) {
 		if (row.note.name === 1) {
-			wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, 0);
+			this.chipAudioDriver.setTone(channelIndex, 0);
 			this.state.channelTables[channelIndex] = -1;
 			this.state.channelBaseNotes[channelIndex] = 0;
 		} else if (row.note.name !== 0) {
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
 			this.state.channelBaseNotes[channelIndex] = noteValue;
 
-			if (noteValue >= 0 && noteValue < currentTuningTable.length) {
-				const regValue = currentTuningTable[noteValue];
-				wasmModule.ayumi_set_tone(ayumiPtr, channelIndex, regValue);
+			if (noteValue >= 0 && noteValue < this.state.currentTuningTable.length) {
+				const regValue = this.state.currentTuningTable[noteValue];
+				this.chipAudioDriver.setTone(channelIndex, regValue);
 			}
 		}
 	}
@@ -96,36 +85,27 @@ class AyumiPatternProcessor {
 				this.state.tableCounters[channelIndex] = 0;
 			}
 		} else if (row.table === 0 && row.note.name !== 0) {
-			//todo:  Clear table
-			// this.state.channelTables[channelIndex] = -1;
 		}
 	}
 
-	_processMixer(channelIndex) {
-		const { wasmModule, ayumiPtr } = this.state;
-		wasmModule.ayumi_set_mixer(ayumiPtr, channelIndex, 0, 1, 0);
-	}
-
 	_processVolume(channelIndex, row) {
-		const { wasmModule, ayumiPtr, channelVolumes } = this.state;
-
 		if (row.volume > 0) {
-			wasmModule.ayumi_set_volume(ayumiPtr, channelIndex, row.volume);
-			channelVolumes[channelIndex] = row.volume;
+			this.chipAudioDriver.setVolume(channelIndex, row.volume);
+			this.state.channelVolumes[channelIndex] = row.volume;
 		} else {
-			wasmModule.ayumi_set_volume(ayumiPtr, channelIndex, channelVolumes[channelIndex]);
+			this.chipAudioDriver.setVolume(channelIndex, this.state.channelVolumes[channelIndex]);
 		}
 	}
 
 	_processEffects(row) {
-		// Check for speed effect (Effect type 5 - ehhh change it later..)
 		if (row.effects[0] && row.effects[0].effect === 5) {
 			const newSpeed = row.effects[0].parameter;
 			if (newSpeed > 0) {
 				this.state.setSpeed(newSpeed);
+				this.port.postMessage({ type: 'speed_update', speed: newSpeed });
 			}
 		}
 	}
 }
 
-export default AyumiPatternProcessor;
+export default TrackerPatternProcessor;
