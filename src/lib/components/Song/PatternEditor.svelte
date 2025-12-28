@@ -724,6 +724,24 @@
 	});
 
 	$effect(() => {
+		if (!containerDiv) return;
+
+		const resizeObserver = new ResizeObserver(() => {
+			if (containerDiv.clientHeight > 0) {
+				updateSize();
+				setupCanvas();
+				draw();
+			}
+		});
+
+		resizeObserver.observe(containerDiv);
+
+		return () => {
+			resizeObserver.disconnect();
+		};
+	});
+
+	$effect(() => {
 		if (!chipProcessor) return;
 
 		const handlePatternUpdate = (

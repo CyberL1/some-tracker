@@ -124,13 +124,14 @@
 	<div class="flex-1 overflow-hidden">
 		<TabView {tabs} bind:activeTabId>
 			{#snippet children(tabId)}
-				{#if tabId === 'song'}
+				<div class={tabId !== 'song' ? 'hidden' : 'h-full w-full'}>
 					<SongView
 						bind:songs
 						bind:patternOrder
 						bind:patternEditor
 						chipProcessors={container.audioService.chipProcessors} />
-				{:else if tabId === 'tables'}
+				</div>
+				{#if tabId === 'tables'}
 					<TablesView bind:tables />
 				{:else if tabId === 'instruments'}
 					<div class="flex h-full items-center justify-center">
