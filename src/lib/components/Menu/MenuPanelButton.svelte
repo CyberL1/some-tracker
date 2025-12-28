@@ -151,6 +151,7 @@
 	{#if showSubmenuPanel && type === 'expandable' && items && items.length > 0}
 		<div class="absolute top-0 left-full ml-0.5">
 			<MenuPanel
+				isFirst={false}
 				{items}
 				onAction={handleAction}
 				onMenuOpen={handleMenuOpen}

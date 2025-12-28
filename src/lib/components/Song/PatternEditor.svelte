@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { Pattern, Instrument } from '../../models/song';
-	import type { ChipProcessor, TuningTableSupport, InstrumentSupport } from '../../core/chip-processor';
+	import type {
+		ChipProcessor,
+		TuningTableSupport,
+		InstrumentSupport
+	} from '../../core/chip-processor';
 	import type { AudioService } from '../../services/audio-service';
 	import type { Chip } from '../../models/chips';
 	import { getColors } from '../../utils/colors';
@@ -38,6 +42,7 @@
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
+	let containerDiv: HTMLDivElement;
 
 	let COLORS = getColors();
 	let FONTS = getFonts();
@@ -107,11 +112,11 @@
 	function initPlayback() {
 		chipProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
 		chipProcessor.sendInitSpeed(speed);
-		
+
 		if (chip.type === 'ay') {
 			const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
 			const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
-			
+
 			withTuningTables.sendInitTuningTable(tuningTable);
 			withInstruments.sendInitInstruments(instruments);
 		}
@@ -659,10 +664,21 @@
 	}
 
 	function updateSize() {
-		canvasHeight = Math.max(
-			PATTERN_EDITOR_CONSTANTS.MIN_CANVAS_HEIGHT,
-			window.innerHeight - PATTERN_EDITOR_CONSTANTS.CANVAS_TOP_MARGIN
-		);
+		if (containerDiv) {
+			const availableHeight = containerDiv.clientHeight;
+			const gap = 8;
+
+			canvasHeight = Math.max(
+				PATTERN_EDITOR_CONSTANTS.MIN_CANVAS_HEIGHT,
+				availableHeight - gap
+			);
+		} else {
+			canvasHeight = Math.max(
+				PATTERN_EDITOR_CONSTANTS.MIN_CANVAS_HEIGHT,
+				window.innerHeight - PATTERN_EDITOR_CONSTANTS.CANVAS_TOP_MARGIN
+			);
+		}
+
 		if (ctx && currentPattern) {
 			const genericPattern = converter.toGeneric(currentPattern);
 			const genericPatternRow = genericPattern.patternRows[0];
@@ -737,7 +753,7 @@
 	});
 </script>
 
-<div class="flex flex-col gap-2">
+<div bind:this={containerDiv} class="flex h-full flex-col gap-2">
 	<div class="flex" style="max-height: {canvasHeight}px">
 		<PatternOrder
 			bind:currentPatternOrderIndex

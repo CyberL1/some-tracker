@@ -8,10 +8,14 @@
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio-service';
 	import { AY_CHIP } from './lib/models/chips';
-	import { ProjectCard, TablesCard } from './lib/components/AppLayout';
-	import Card from './lib/components/Card/Card.svelte';
-	import IconCarbonChip from '~icons/carbon/chip';
+	import { TabView } from './lib/components/TabView';
+	import SongView from './lib/components/Song/SongView.svelte';
+	import { TablesView } from './lib/components/Tables';
 	import { playbackStore } from './lib/stores/playback.svelte';
+	import IconCarbonMusic from '~icons/carbon/music';
+	import IconCarbonChip from '~icons/carbon/chip';
+	import IconCarbonWaveform from '~icons/carbon/waveform';
+	import IconCarbonInformationSquare from '~icons/carbon/information-square';
 
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
@@ -43,6 +47,14 @@
 	});
 
 	let patternEditor: PatternEditor | null = $state(null);
+	let activeTabId = $state('song');
+
+	const tabs = [
+		{ id: 'song', label: 'Song', icon: IconCarbonChip },
+		{ id: 'tables', label: 'Tables', icon: IconCarbonMusic },
+		{ id: 'instruments', label: 'Instruments', icon: IconCarbonWaveform },
+		{ id: 'details', label: 'Details', icon: IconCarbonInformationSquare }
+	];
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
@@ -111,37 +123,27 @@
 <main
 	class="flex h-screen flex-col gap-1 overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
-	<div class="mx-auto">
-		<!-- <div class="flex min-h-0 flex-1 flex-col gap-3">
-			<ProjectCard
-				bind:title
-				bind:author
-				bind:aymChipType
-				bind:aymFrequency
-				bind:intFrequency />
-			<TablesCard bind:tables />
-		</div> -->
-		<div class="shrink-0">
-			{#each songs as song, i}
-				<Card
-					title={`${container.audioService.chipProcessors[i].chip.name} - (${i + 1})`}
-					fullHeight
-					icon={IconCarbonChip}
-					class="p-0">
-					<PatternEditor
-						bind:this={patternEditor}
-						bind:patterns={song.patterns}
+	<div class="flex-1 overflow-hidden">
+		<TabView {tabs} bind:activeTabId>
+			{#snippet children(tabId)}
+				{#if tabId === 'song'}
+					<SongView
+						bind:songs
 						bind:patternOrder
-						speed={song.initialSpeed}
-						tuningTable={song.tuningTable}
-						instruments={song.instruments}
-						chip={container.audioService.chipProcessors[i].chip}
-						chipProcessor={container.audioService.chipProcessors[i]} />
-				</Card>
-			{/each}
-		</div>
-		<!-- <div class="flex-1">
-			some example container here, we can use it to display instruments later
-		</div> -->
+						bind:patternEditor
+						chipProcessors={container.audioService.chipProcessors} />
+				{:else if tabId === 'tables'}
+					<TablesView bind:tables />
+				{:else if tabId === 'instruments'}
+					<div class="flex h-full items-center justify-center">
+						<p class="text-sm text-neutral-500">Instruments editor coming soon...</p>
+					</div>
+				{:else if tabId === 'details'}
+					<div class="flex h-full items-center justify-center">
+						<p class="text-sm text-neutral-500">Project details coming soon...</p>
+					</div>
+				{/if}
+			{/snippet}
+		</TabView>
 	</div>
 </main>
