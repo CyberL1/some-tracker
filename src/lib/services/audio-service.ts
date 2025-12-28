@@ -1,10 +1,12 @@
-import type { ChipProcessor } from '../core/chip-processor';
+import type { ChipProcessor, SettingsSubscriber } from '../core/chip-processor';
 import type { Chip } from '../models/chips';
-import type { Ornament } from '../models/project';
+import type { Table } from '../models/project';
+import { ChipSettings } from './chip-settings';
 
 export class AudioService {
 	private _audioContext: AudioContext | null = new AudioContext();
 	private _isPlaying = false;
+	public chipSettings: ChipSettings = new ChipSettings();
 
 	//for example 1x FM chip processor, 2x AY chip processors for TSFM track
 	//they will all be mixed together in single audio context
@@ -36,6 +38,10 @@ export class AudioService {
 
 		const processor = this.createChipProcessor(chip);
 		this.chipProcessors.push(processor);
+
+		if (this.hasSettingsSubscription(processor)) {
+			processor.subscribeToSettings(this.chipSettings);
+		}
 
 		const response = await fetch(import.meta.env.BASE_URL + chip.wasmUrl);
 		const wasmBuffer = await response.arrayBuffer();
@@ -85,17 +91,9 @@ export class AudioService {
 		});
 	}
 
-	updateChipParameter(chipType: string, parameter: string, value: any) {
-		this.chipProcessors
-			.filter((chipProcessor) => chipProcessor.chip.type === chipType)
-			.forEach((chipProcessor) => {
-				chipProcessor.updateParameter(parameter, value);
-			});
-	}
-
-	updateOrnaments(ornaments: Ornament[]) {
+	updateTables(tables: Table[]) {
 		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.sendInitOrnaments(ornaments);
+			chipProcessor.sendInitTables(tables);
 		});
 	}
 
@@ -141,5 +139,18 @@ export class AudioService {
 		}
 
 		return createProcessor();
+	}
+
+	private hasSettingsSubscription(
+		processor: ChipProcessor
+	): processor is ChipProcessor & SettingsSubscriber {
+		return (
+			'subscribeToSettings' in processor &&
+			'unsubscribeFromSettings' in processor &&
+			typeof (processor as unknown as SettingsSubscriber).subscribeToSettings ===
+				'function' &&
+			typeof (processor as unknown as SettingsSubscriber).unsubscribeFromSettings ===
+				'function'
+		);
 	}
 }

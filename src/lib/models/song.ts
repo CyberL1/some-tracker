@@ -95,7 +95,7 @@ class Row {
 	note: Note;
 	instrument: number;
 	volume: number;
-	ornament: number;
+	table: number;
 	envelopeShape: number;
 	effects: (Effect | null)[];
 
@@ -103,7 +103,7 @@ class Row {
 		this.note = new Note();
 		this.instrument = 0;
 		this.volume = 0;
-		this.ornament = 0;
+		this.table = 0;
 		this.envelopeShape = 0;
 		this.effects = [null];
 	}

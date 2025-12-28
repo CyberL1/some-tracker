@@ -39,7 +39,7 @@ export class AYConverter implements PatternConverter {
 					note: formatNoteFromEnum(ayRow.note.name, ayRow.note.octave),
 					instrument: ayRow.instrument,
 					volume: ayRow.volume,
-					ornament: ayRow.ornament,
+					table: ayRow.table,
 					envelopeShape: ayRow.envelopeShape,
 					effect: ayRow.effects[0]
 						? ({
@@ -91,7 +91,7 @@ export class AYConverter implements PatternConverter {
 
 				ayRow.instrument = (genericRow.instrument as number) || 0;
 				ayRow.volume = (genericRow.volume as number) || 0;
-				ayRow.ornament = (genericRow.ornament as number) || 0;
+				ayRow.table = (genericRow.table as number) || 0;
 				ayRow.envelopeShape = (genericRow.envelopeShape as number) || 0;
 
 				if (genericRow.effect) {

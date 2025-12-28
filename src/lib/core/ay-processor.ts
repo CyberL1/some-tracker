@@ -1,7 +1,13 @@
 import { AY_CHIP, type Chip } from '../models/chips';
 import type { Pattern, Instrument } from '../models/song';
-import type { Ornament } from '../models/project';
-import type { ChipProcessor } from './chip-processor';
+import type { Table } from '../models/project';
+import type {
+	ChipProcessor,
+	SettingsSubscriber,
+	TuningTableSupport,
+	InstrumentSupport
+} from './chip-processor';
+import type { ChipSettings } from '../services/chip-settings';
 
 type PositionUpdateMessage = {
 	type: 'position_update';
@@ -26,20 +32,46 @@ type WorkletCommand =
 	| { type: 'init_tuning_table'; tuningTable: number[] }
 	| { type: 'init_speed'; speed: number }
 	| { type: 'set_pattern_data'; pattern: Pattern }
-	| { type: 'init_ornaments'; ornaments: Ornament[] }
+	| { type: 'init_tables'; tables: Table[] }
 	| { type: 'init_instruments'; instruments: Instrument[] }
 	| { type: 'update_ay_frequency'; aymFrequency: number }
 	| { type: 'update_int_frequency'; intFrequency: number };
 
-export class AYProcessor implements ChipProcessor {
+export class AYProcessor
+	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport
+{
 	chip: Chip;
 	audioNode: AudioWorkletNode | null = null;
 	private onPositionUpdate?: (currentRow: number, currentPatternOrderIndex?: number) => void;
 	private onPatternRequest?: (patternOrderIndex: number) => void;
 	private commandQueue: WorkletCommand[] = [];
+	private settingsUnsubscribers: (() => void)[] = [];
 
 	constructor() {
 		this.chip = AY_CHIP;
+	}
+
+	subscribeToSettings(chipSettings: ChipSettings): void {
+		this.settingsUnsubscribers.push(
+			chipSettings.subscribe('aymFrequency', (value) => {
+				if (typeof value === 'number') {
+					this.sendUpdateAyFrequency(value);
+				}
+			})
+		);
+
+		this.settingsUnsubscribers.push(
+			chipSettings.subscribe('intFrequency', (value) => {
+				if (typeof value === 'number') {
+					this.sendUpdateIntFrequency(value);
+				}
+			})
+		);
+	}
+
+	unsubscribeFromSettings(): void {
+		this.settingsUnsubscribers.forEach((unsubscribe) => unsubscribe());
+		this.settingsUnsubscribers = [];
 	}
 
 	initialize(wasmBuffer: ArrayBuffer, audioNode: AudioWorkletNode): void {
@@ -107,14 +139,14 @@ export class AYProcessor implements ChipProcessor {
 		this.sendCommand({ type: 'init_speed', speed });
 	}
 
-	sendInitOrnaments(ornaments: Ornament[]): void {
-		const sanitized: Ornament[] = ornaments.map((o) => ({
+	sendInitTables(tables: Table[]): void {
+		const sanitized: Table[] = tables.map((o) => ({
 			id: o.id,
 			rows: Array.from(o.rows),
 			loop: o.loop,
 			name: o.name
 		}));
-		this.sendCommand({ type: 'init_ornaments', ornaments: sanitized });
+		this.sendCommand({ type: 'init_tables', tables: sanitized });
 	}
 
 	sendInitInstruments(instruments: Instrument[]): void {
@@ -133,13 +165,13 @@ export class AYProcessor implements ChipProcessor {
 		this.sendCommand({ type: 'update_int_frequency', intFrequency });
 	}
 
-	updateParameter(parameter: string, value: any): void {
+	updateParameter(parameter: string, value: unknown): void {
 		switch (parameter) {
 			case 'aymFrequency':
-				this.sendUpdateAyFrequency(value);
+				this.sendUpdateAyFrequency(value as number);
 				break;
 			case 'intFrequency':
-				this.sendUpdateIntFrequency(value);
+				this.sendUpdateIntFrequency(value as number);
 				break;
 			default:
 				console.warn(`AY processor: unknown parameter "${parameter}"`);

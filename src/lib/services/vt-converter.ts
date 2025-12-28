@@ -1,4 +1,4 @@
-import { Project, Ornament } from '../models/project';
+import { Project, Table } from '../models/project';
 import {
 	Song,
 	Pattern,
@@ -23,7 +23,7 @@ interface VT2Module {
 	interruptFrequency: number;
 }
 
-interface VT2Ornament {
+interface VT2Table {
 	id: number;
 	data: number[];
 	loop: boolean;
@@ -49,7 +49,7 @@ interface VT2PatternRow {
 	note: string;
 	instrument: number;
 	volume: number;
-	ornament: number;
+	table: number;
 	envelopeShape: number;
 	effects: string;
 }
@@ -89,7 +89,7 @@ class VT2Converter {
 		const lines = vt2Content.split('\n').map((line) => line.trim());
 
 		const module = this.parseModule(lines);
-		const ornaments = this.parseOrnaments(lines);
+		const tables = this.parseTables(lines);
 		const samples = this.parseSamples(lines);
 		const patterns = this.parsePatterns(lines);
 
@@ -99,12 +99,12 @@ class VT2Converter {
 			song.tuningTable = PT3TuneTables[module.noteTable];
 		}
 
-		const convertedOrnaments = ornaments.map((ornament) => {
-			return new Ornament(
-				ornament.id - 1,
-				ornament.data,
-				ornament.loop ? ornament.loopPoint : 0,
-				`Ornament ${ornament.id}`
+		const convertedTables = tables.map((table) => {
+			return new Table(
+				table.id - 1,
+				table.data,
+				table.loop ? table.loopPoint : 0,
+				`Table ${table.id}`
 			);
 		});
 
@@ -163,7 +163,7 @@ class VT2Converter {
 			chipType,
 			module.chipFrequency,
 			module.interruptFrequency,
-			convertedOrnaments
+			convertedTables
 		);
 
 		return project;
@@ -227,13 +227,13 @@ class VT2Converter {
 			.filter((num) => !isNaN(num));
 	}
 
-	private parseOrnaments(lines: string[]): VT2Ornament[] {
-		const ornaments: VT2Ornament[] = [];
-		const ornamentSections = this.extractSections(lines, /^\[Ornament(\d+)\]$/);
+	private parseTables(lines: string[]): VT2Table[] {
+		const tables: VT2Table[] = [];
+		const tableSections = this.extractSections(lines, /^\[Ornament(\d+)\]$/);
 
-		for (const { match, content } of ornamentSections) {
+		for (const { match, content } of tableSections) {
 			const id = parseInt(match[1]);
-			const ornament: VT2Ornament = {
+			const table: VT2Table = {
 				id,
 				data: [],
 				loop: false,
@@ -244,21 +244,21 @@ class VT2Converter {
 				const values = line.split(',').map((v) => v.trim());
 				for (const value of values) {
 					if (value.startsWith('L')) {
-						ornament.loop = true;
-						ornament.loopPoint = ornament.data.length;
+						table.loop = true;
+						table.loopPoint = table.data.length;
 						const num = parseInt(value.substring(1));
-						if (!isNaN(num)) ornament.data.push(num);
+						if (!isNaN(num)) table.data.push(num);
 					} else {
 						const num = parseInt(value);
-						if (!isNaN(num)) ornament.data.push(num);
+						if (!isNaN(num)) table.data.push(num);
 					}
 				}
 			}
 
-			ornaments.push(ornament);
+			tables.push(table);
 		}
 
-		return ornaments;
+		return tables;
 	}
 
 	private parseSamples(lines: string[]): VT2Sample[] {
@@ -361,13 +361,13 @@ class VT2Converter {
 
 		let instrument = 0;
 		let volume = 0;
-		let ornament = 0;
+		let table = 0;
 		let envelopeShape = 0;
 
 		if (sampleAndVol.length >= 4) {
 			instrument = this.parseHexDigit(sampleAndVol[0]);
 			envelopeShape = this.parseHexDigit(sampleAndVol[1]);
-			ornament = this.parseHexDigit(sampleAndVol[2]);
+			table = this.parseHexDigit(sampleAndVol[2]);
 			volume = this.parseHexDigit(sampleAndVol[3]);
 		}
 
@@ -375,7 +375,7 @@ class VT2Converter {
 			note,
 			instrument,
 			volume,
-			ornament,
+			table,
 			envelopeShape,
 			effects
 		};
@@ -411,7 +411,7 @@ class VT2Converter {
 				row.note = new Note(noteName, octave);
 				row.instrument = vt2ChannelData.instrument || 0;
 				row.volume = vt2ChannelData.volume || 0;
-				row.ornament = vt2ChannelData.ornament || 0;
+				row.table = vt2ChannelData.table || 0;
 				row.envelopeShape = vt2ChannelData.envelopeShape || 0;
 				row.effects = this.parseEffects(vt2ChannelData.effects || '');
 			}

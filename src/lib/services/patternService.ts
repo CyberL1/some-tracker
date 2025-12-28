@@ -38,7 +38,7 @@ export class PatternService {
 				newRow.note = new Note(row.note.name, row.note.octave);
 				newRow.instrument = row.instrument;
 				newRow.volume = row.volume;
-				newRow.ornament = row.ornament;
+				newRow.table = row.table;
 				newRow.envelopeShape = row.envelopeShape;
 				newRow.effects = row.effects.map((effect) =>
 					effect ? new Effect(effect.effect, effect.delay, effect.parameter) : null

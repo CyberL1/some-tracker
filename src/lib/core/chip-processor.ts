@@ -1,6 +1,7 @@
 import type { Chip } from '../models/chips';
 import type { Pattern, Instrument } from '../models/song';
-import type { Ornament } from '../models/project';
+import type { Table } from '../models/project';
+import type { ChipSettings } from '../services/chip-settings';
 
 export interface ChipProcessor {
 	chip: Chip;
@@ -11,16 +12,25 @@ export interface ChipProcessor {
 	updateOrder(order: number[]): void;
 	sendInitPattern(pattern: Pattern, patternOrderIndex: number): void;
 	sendRequestedPattern(pattern: Pattern): void;
-	sendInitTuningTable(tuningTable: number[]): void;
-	sendInitOrnaments(ornaments: Ornament[]): void;
-	sendInitInstruments(instruments: Instrument[]): void;
+	sendInitTables(tables: Table[]): void;
 	setCallbacks(
 		onPositionUpdate: (currentRow: number, currentPatternOrderIndex?: number) => void,
 		onPatternRequest: (patternOrderIndex: number) => void
 	): void;
 	isAudioNodeAvailable(): boolean;
 	sendInitSpeed(speed: number): void;
-	updateParameter(parameter: string, value: any): void;
-	sendUpdateAyFrequency(aymFrequency: number): void;
-	sendUpdateIntFrequency(intFrequency: number): void;
+	updateParameter(parameter: string, value: unknown): void;
+}
+
+export interface SettingsSubscriber {
+	subscribeToSettings(chipSettings: ChipSettings): void;
+	unsubscribeFromSettings(): void;
+}
+
+export interface TuningTableSupport {
+	sendInitTuningTable(tuningTable: number[]): void;
+}
+
+export interface InstrumentSupport {
+	sendInitInstruments(instruments: Instrument[]): void;
 }

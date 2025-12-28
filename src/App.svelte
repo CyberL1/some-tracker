@@ -8,7 +8,7 @@
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio-service';
 	import { AY_CHIP } from './lib/models/chips';
-	import { ProjectCard, OrnamentsCard } from './lib/components/AppLayout';
+	import { ProjectCard, TablesCard } from './lib/components/AppLayout';
 	import Card from './lib/components/Card/Card.svelte';
 	import IconCarbonChip from '~icons/carbon/chip';
 	import { playbackStore } from './lib/stores/playback.svelte';
@@ -28,18 +28,18 @@
 	let patternOrder = $state(newProject.patternOrder);
 	let aymFrequency = $state(newProject.aymFrequency);
 	let intFrequency = $state(newProject.intFrequency);
-	let ornaments = $state(newProject.ornaments);
+	let tables = $state(newProject.tables);
 
 	$effect(() => {
-		container.audioService.updateChipParameter('ay', 'aymFrequency', aymFrequency);
+		container.audioService.chipSettings.set('aymFrequency', aymFrequency);
 	});
 
 	$effect(() => {
-		container.audioService.updateChipParameter('ay', 'intFrequency', intFrequency);
+		container.audioService.chipSettings.set('intFrequency', intFrequency);
 	});
 
 	$effect(() => {
-		container.audioService.updateOrnaments(ornaments);
+		container.audioService.updateTables(tables);
 	});
 
 	let patternEditor: PatternEditor | null = $state(null);
@@ -94,7 +94,7 @@
 				patternOrder = importedProject.patternOrder;
 				aymFrequency = importedProject.aymFrequency;
 				intFrequency = importedProject.intFrequency;
-				ornaments = importedProject.ornaments;
+				tables = importedProject.tables;
 
 				playbackStore.isPlaying = false;
 				container.audioService.stop();
@@ -119,7 +119,7 @@
 				bind:aymChipType
 				bind:aymFrequency
 				bind:intFrequency />
-			<OrnamentsCard bind:ornaments />
+			<TablesCard bind:tables />
 		</div> -->
 		<div class="shrink-0">
 			{#each songs as song, i}

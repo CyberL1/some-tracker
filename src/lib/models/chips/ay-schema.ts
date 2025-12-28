@@ -8,7 +8,7 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 		envelopeEffect: { key: 'envelopeEffect', type: 'hex', length: 4, color: 'patternEffect' },
 		noiseValue: { key: 'noiseValue', type: 'hex', length: 2, color: 'patternNoise' }
 	},
-	template: '{note} {instrument}{envelopeShape}{ornament}{volume} {effect}',
+	template: '{note} {instrument}{envelopeShape}{table}{volume} {effect}',
 	fields: {
 		note: { key: 'note', type: 'note', length: 3, color: 'patternNote', selectable: 'atomic' },
 		instrument: {
@@ -25,11 +25,11 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 			color: 'patternEnvelope',
 			selectable: 'character'
 		},
-		ornament: {
-			key: 'ornament',
+		table: {
+			key: 'table',
 			type: 'symbol',
 			length: 2,
-			color: 'patternOrnament',
+			color: 'patternTable',
 			selectable: 'character'
 		},
 		volume: {

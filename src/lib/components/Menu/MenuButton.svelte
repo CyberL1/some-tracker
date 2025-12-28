@@ -6,7 +6,7 @@
 		label?: string;
 		items?: MenuItem[];
 		activeMenu?: string;
-		onAction?: (action: any) => void;
+		onAction?: (action: string) => void;
 		onMenuOpen?: (data: { label: string }) => void;
 		onMenuClose?: (data: { label?: string; all?: boolean }) => void;
 	}>();

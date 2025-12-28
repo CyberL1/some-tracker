@@ -211,17 +211,17 @@ export abstract class BaseFormatter implements PatternFormatter {
 	}
 
 	protected formatNote(
-		value: number | string | null | undefined,
+		value: number | string | null | undefined | { name: number; octave: number },
 		field: { type: string; length: number }
 	): string {
 		if (typeof value === 'string') {
 			return value.length === field.length ? value : value.padEnd(field.length, ' ');
 		}
-		const formatted = this.formatNoteValue(value as any);
+		const formatted = this.formatNoteValue(value);
 		return formatted.length === field.length ? formatted : formatted.padEnd(field.length, ' ');
 	}
 
-	protected formatNoteValue(value: any): string {
+	protected formatNoteValue(value: number | null | undefined | { name: number; octave: number }): string {
 		if (typeof value === 'object' && value !== null && 'name' in value && 'octave' in value) {
 			return this.formatNoteFromEnum(value.name, value.octave);
 		}

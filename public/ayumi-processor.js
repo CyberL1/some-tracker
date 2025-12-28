@@ -52,8 +52,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			case 'init_speed':
 				this.handleInitSpeed(data);
 				break;
-			case 'init_ornaments':
-				this.handleInitOrnaments(data);
+			case 'init_tables':
+				this.handleInitTables(data);
 				break;
 			case 'update_ay_frequency':
 				this.handleUpdateAyFrequency(data);
@@ -98,8 +98,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.state.setSpeed(data.speed);
 	}
 
-	handleInitOrnaments(data) {
-		this.state.setOrnaments(data.ornaments);
+	handleInitTables(data) {
+		this.state.setTables(data.tables);
 	}
 
 	handleInitPattern(data) {
@@ -169,9 +169,9 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			wasmModule.ayumi_set_volume(ayumiPtr, i, 0);
 		}
 		this.state.channelVolumes = [0, 0, 0];
-		this.state.channelOrnaments = [-1, -1, -1];
-		this.state.ornamentPositions = [0, 0, 0];
-		this.state.ornamentCounters = [0, 0, 0];
+		this.state.channelTables = [-1, -1, -1];
+		this.state.tablePositions = [0, 0, 0];
+		this.state.tableCounters = [0, 0, 0];
 		this.state.channelBaseNotes = [0, 0, 0];
 	}
 
@@ -216,7 +216,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 						});
 					}
 
-					this.patternProcessor.processOrnaments();
+					this.patternProcessor.processTables();
 
 					const needsPatternChange = this.state.advancePosition();
 					if (needsPatternChange) {

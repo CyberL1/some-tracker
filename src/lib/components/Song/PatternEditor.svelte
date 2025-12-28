@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Pattern, Instrument } from '../../models/song';
-	import type { ChipProcessor } from '../../core/chip-processor';
+	import type { ChipProcessor, TuningTableSupport, InstrumentSupport } from '../../core/chip-processor';
 	import type { AudioService } from '../../services/audio-service';
 	import type { Chip } from '../../models/chips';
 	import { getColors } from '../../utils/colors';
@@ -106,9 +106,15 @@
 
 	function initPlayback() {
 		chipProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
-		chipProcessor.sendInitTuningTable(tuningTable);
 		chipProcessor.sendInitSpeed(speed);
-		chipProcessor.sendInitInstruments(instruments);
+		
+		if (chip.type === 'ay') {
+			const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
+			const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
+			
+			withTuningTables.sendInitTuningTable(tuningTable);
+			withInstruments.sendInitInstruments(instruments);
+		}
 	}
 
 	function pausePlayback() {
