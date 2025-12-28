@@ -46,5 +46,59 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 			color: 'patternEffect',
 			selectable: 'character'
 		}
-	}
+	},
+	settings: [
+		{
+			key: 'title',
+			label: 'Title',
+			type: 'text',
+			group: 'project'
+		},
+		{
+			key: 'author',
+			label: 'Author',
+			type: 'text',
+			group: 'project'
+		},
+		{
+			key: 'aymChipType',
+			label: 'Chip Type',
+			type: 'toggle',
+			options: [
+				{ label: 'AY', value: 'AY' },
+				{ label: 'YM', value: 'YM' }
+			],
+			defaultValue: 'AY',
+			group: 'chip'
+		},
+		{
+			key: 'aymFrequency',
+			label: 'Chip Frequency',
+			type: 'select',
+			options: [
+				{ label: 'Sinclair QL (0.75 MHz)', value: 750000 },
+				{ label: 'Amstrad CPC (1 MHz)', value: 1000000 },
+				{ label: 'ZX Spectrum (1.7734 MHz)', value: 1773400 },
+				{ label: 'Pentagon (1.75 MHz)', value: 1750000 },
+				{ label: 'MSX (1.7897 MHz)', value: 1789700 },
+				{ label: 'Atari ST (2 MHz)', value: 2000000 }
+			],
+			defaultValue: 1773400,
+			group: 'chip',
+			notifyAudioService: true
+		},
+		{
+			key: 'intFrequency',
+			label: 'Interrupt Frequency',
+			type: 'select',
+			options: [
+				{ label: 'Pentagon (48.828 Hz)', value: 48.828 },
+				{ label: 'PAL (50 Hz)', value: 50 },
+				{ label: 'NTSC (60 Hz)', value: 60 }
+			],
+			defaultValue: 50,
+			group: 'chip',
+			notifyAudioService: true
+		}
+	]
 };

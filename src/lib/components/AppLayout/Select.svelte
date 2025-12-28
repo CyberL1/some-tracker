@@ -2,7 +2,7 @@
 	import IconCarbonEdit from '~icons/carbon/edit';
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
 
-	type FrequencyOption = {
+	type SelectOption = {
 		label: string;
 		value: number;
 	};
@@ -12,7 +12,7 @@
 		options
 	}: {
 		value: number;
-		options: FrequencyOption[];
+		options: SelectOption[];
 	} = $props();
 
 	let selectedOption = $state<string>('');
@@ -62,7 +62,7 @@
 			type="number"
 			bind:value={customValue}
 			oninput={handleCustomValueChange}
-			placeholder="Enter frequency"
+			placeholder="Enter value"
 			class="w-full rounded border border-neutral-600 bg-neutral-900 px-2 py-1 pr-8 text-xs focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none" />
 		<button
 			onclick={switchToDropdown}
@@ -77,7 +77,7 @@
 			bind:value={selectedOption}
 			onchange={handleSelectionChange}
 			class="w-full cursor-pointer rounded border border-neutral-600 bg-neutral-900 px-2 py-1 pr-8 text-xs focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none">
-			<option value="" disabled>Select frequency</option>
+			<option value="" disabled>Select option</option>
 			{#each options as option}
 				<option value={option.label}>{option.label}</option>
 			{/each}

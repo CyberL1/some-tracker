@@ -11,6 +11,7 @@
 	import { TabView } from './lib/components/TabView';
 	import SongView from './lib/components/Song/SongView.svelte';
 	import { TablesView } from './lib/components/Tables';
+	import { DetailsView } from './lib/components/Details';
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import IconCarbonMusic from '~icons/carbon/music';
 	import IconCarbonChip from '~icons/carbon/chip';
@@ -25,21 +26,16 @@
 
 	const newProject = new Project();
 
-	let title = $state(newProject.name);
-	let author = $state(newProject.author);
-	let aymChipType = $state(newProject.aymChipType);
 	let songs = $state(newProject.songs);
 	let patternOrder = $state(newProject.patternOrder);
-	let aymFrequency = $state(newProject.aymFrequency);
-	let intFrequency = $state(newProject.intFrequency);
 	let tables = $state(newProject.tables);
 
-	$effect(() => {
-		container.audioService.chipSettings.set('aymFrequency', aymFrequency);
-	});
-
-	$effect(() => {
-		container.audioService.chipSettings.set('intFrequency', intFrequency);
+	let projectSettings = $state({
+		title: newProject.name,
+		author: newProject.author,
+		aymChipType: newProject.aymChipType,
+		aymFrequency: newProject.aymFrequency,
+		intFrequency: newProject.intFrequency
 	});
 
 	$effect(() => {
@@ -99,13 +95,15 @@
 
 			const importedProject = await handleFileImport(data.action);
 			if (importedProject) {
-				title = importedProject.name;
-				author = importedProject.author;
-				aymChipType = importedProject.aymChipType;
+				projectSettings = {
+					title: importedProject.name,
+					author: importedProject.author,
+					aymChipType: importedProject.aymChipType,
+					aymFrequency: importedProject.aymFrequency,
+					intFrequency: importedProject.intFrequency
+				};
 				songs = importedProject.songs;
 				patternOrder = importedProject.patternOrder;
-				aymFrequency = importedProject.aymFrequency;
-				intFrequency = importedProject.intFrequency;
 				tables = importedProject.tables;
 
 				playbackStore.isPlaying = false;
@@ -139,9 +137,9 @@
 						<p class="text-sm text-neutral-500">Instruments editor coming soon...</p>
 					</div>
 				{:else if tabId === 'details'}
-					<div class="flex h-full items-center justify-center">
-						<p class="text-sm text-neutral-500">Project details coming soon...</p>
-					</div>
+					<DetailsView
+						chipProcessors={container.audioService.chipProcessors}
+						bind:values={projectSettings} />
 				{/if}
 			{/snippet}
 		</TabView>

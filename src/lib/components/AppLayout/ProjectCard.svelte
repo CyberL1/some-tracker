@@ -3,7 +3,7 @@
 	import CardElement from '../Card/CardElement.svelte';
 	import Input from '../Input/Input.svelte';
 	import Button from '../Button/Button.svelte';
-	import FrequencySelector from './FrequencySelector.svelte';
+	import Select from './Select.svelte';
 	import IconCarbonFolders from '~icons/carbon/folders';
 
 	let {
@@ -56,13 +56,13 @@
 
 		<div class="flex-1">
 			<CardElement label="AY frequency">
-				<FrequencySelector bind:value={aymFrequency} options={ayFrequencyOptions} />
+				<Select bind:value={aymFrequency} options={ayFrequencyOptions} />
 			</CardElement>
 		</div>
 
 		<div class="flex-1">
 			<CardElement label="Interrupt frequency">
-				<FrequencySelector bind:value={intFrequency} options={intFrequencyOptions} />
+				<Select bind:value={intFrequency} options={intFrequencyOptions} />
 			</CardElement>
 		</div>
 	</div>
