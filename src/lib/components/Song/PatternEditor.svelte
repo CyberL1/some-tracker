@@ -14,9 +14,10 @@
 	import { playbackStore } from '../../stores/playback.svelte';
 	import { getFormatter } from '../../models/formatters/formatter-factory';
 	import { getConverter } from '../../models/adapters/converter-factory';
+	import { PatternService } from '../../services/patternService';
 
 	let {
-		patterns,
+		patterns = $bindable(),
 		patternOrder = $bindable(),
 		currentPatternOrderIndex = $bindable(0),
 		selectedRow = $bindable(0),
@@ -70,6 +71,18 @@
 		return patterns.find((p) => p.id === patternId);
 	});
 
+	function ensurePatternExists(): Pattern | null {
+		const patternId = patternOrder[currentPatternOrderIndex];
+		let pattern = patterns.find((p) => p.id === patternId);
+
+		if (!pattern) {
+			pattern = PatternService.createEmptyPattern(patternId);
+			patterns = [...patterns, pattern];
+		}
+
+		return pattern;
+	}
+
 	export function resetToBeginning() {
 		selectedRow = 0;
 		currentPatternOrderIndex = 0;
@@ -82,7 +95,8 @@
 	}
 
 	export function setSelectedRow(row: number) {
-		if (currentPattern && row >= 0 && row < currentPattern.length) {
+		const pattern = currentPattern || ensurePatternExists();
+		if (pattern && row >= 0 && row < pattern.length) {
 			selectedRow = row;
 		}
 	}
@@ -100,7 +114,11 @@
 			}
 
 			initAllChips?.();
-			services.audioService.playFromRow(selectedRow, currentPatternOrderIndex, getSpeedForChip);
+			services.audioService.playFromRow(
+				selectedRow,
+				currentPatternOrderIndex,
+				getSpeedForChip
+			);
 		} catch (error) {
 			console.error('Error during playback from cursor:', error);
 			services.audioService.stop();
@@ -130,6 +148,7 @@
 	}
 
 	function initPlayback() {
+		if (!currentPattern) return;
 		chipProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
 		chipProcessor.sendInitSpeed(speed);
 
@@ -327,7 +346,7 @@
 		return rowString.replace(/\s/g, '').length;
 	}
 
-	function getVisibleRows() {
+	function getVisibleRows(pattern: Pattern) {
 		const visibleCount = Math.floor(canvasHeight / lineHeight);
 		const halfVisible = Math.floor(visibleCount / 2);
 		const startRow = selectedRow - halfVisible;
@@ -339,7 +358,7 @@
 		for (let i = startRow; i <= endRow; i++) {
 			let rowAdded = false;
 
-			if (i >= 0 && i < currentPattern.length) {
+			if (i >= 0 && i < pattern.length) {
 				rows.push({
 					rowIndex: i,
 					isSelected: i === selectedRow,
@@ -350,9 +369,12 @@
 				rowAdded = true;
 			} else if (i < 0) {
 				const prevPatternOrderIndex = currentPatternOrderIndex - 1;
-				if (prevPatternOrderIndex >= 0) {
+				if (prevPatternOrderIndex >= 0 && prevPatternOrderIndex < patternOrder.length) {
 					const prevPatternIndex = patternOrder[prevPatternOrderIndex];
-					const prevPattern = patterns[prevPatternIndex];
+					let prevPattern = patterns.find((p) => p.id === prevPatternIndex);
+					if (!prevPattern) {
+						prevPattern = PatternService.createEmptyPattern(prevPatternIndex);
+					}
 					if (prevPattern) {
 						const ghostRowIndex = prevPattern.length + i;
 						if (ghostRowIndex >= 0 && ghostRowIndex < prevPattern.length) {
@@ -371,10 +393,13 @@
 				const nextPatternOrderIndex = currentPatternOrderIndex + 1;
 				if (nextPatternOrderIndex < patternOrder.length) {
 					const nextPatternIndex = patternOrder[nextPatternOrderIndex];
-					const nextPattern = patterns[nextPatternIndex];
+					let nextPattern = patterns.find((p) => p.id === nextPatternIndex);
+					if (!nextPattern) {
+						nextPattern = PatternService.createEmptyPattern(nextPatternIndex);
+					}
 					if (nextPattern) {
-						const ghostRowIndex = i - currentPattern.length;
-						if (ghostRowIndex < nextPattern.length) {
+						const ghostRowIndex = i - pattern.length;
+						if (ghostRowIndex >= 0 && ghostRowIndex < nextPattern.length) {
 							rows.push({
 								rowIndex: ghostRowIndex,
 								isSelected: false,
@@ -512,12 +537,19 @@
 	}
 
 	function draw() {
-		if (!ctx || !currentPattern) return;
+		if (!ctx) return;
 
 		ctx.fillStyle = COLORS.patternBg;
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-		const visibleRows = getVisibleRows();
+		const patternToShow =
+			currentPattern ||
+			(() => {
+				const patternId = patternOrder[currentPatternOrderIndex];
+				return PatternService.createEmptyPattern(patternId);
+			})();
+
+		const visibleRows = getVisibleRows(patternToShow);
 		visibleRows.forEach((row) => {
 			const y = row.displayIndex * lineHeight;
 
@@ -531,9 +563,18 @@
 				ctx.globalAlpha = 1.0;
 			}
 
-			const pattern = patterns.find((p) => p.id === row.patternIndex);
-			if (pattern) {
-				const genericPattern = converter.toGeneric(pattern);
+			let patternToRender: Pattern | null = null;
+			if (row.isGhost) {
+				const pattern = patterns.find((p) => p.id === row.patternIndex);
+				patternToRender = pattern || PatternService.createEmptyPattern(row.patternIndex);
+			} else {
+				const pattern = patterns.find((p) => p.id === row.patternIndex);
+				patternToRender =
+					pattern || (row.patternIndex === patternToShow.id ? patternToShow : null);
+			}
+
+			if (patternToRender && row.rowIndex >= 0 && row.rowIndex < patternToRender.length) {
+				const genericPattern = converter.toGeneric(patternToRender);
 				const genericPatternRow = genericPattern.patternRows[row.rowIndex];
 				const genericChannels = genericPattern.channels.map((ch) => ch.rows[row.rowIndex]);
 				const rowString = formatter.formatRow(
@@ -550,8 +591,11 @@
 	}
 
 	function moveRow(delta: number) {
+		const pattern = currentPattern || ensurePatternExists();
+		if (!pattern) return;
+
 		const newRow = selectedRow + delta;
-		if (newRow >= 0 && newRow < currentPattern.length) {
+		if (newRow >= 0 && newRow < pattern.length) {
 			selectedRow = newRow;
 		} else if (delta < 0 && currentPatternOrderIndex > 0) {
 			currentPatternOrderIndex--;
@@ -565,8 +609,9 @@
 			selectedRow = 0;
 		}
 
-		if (currentPattern) {
-			const genericPattern = converter.toGeneric(currentPattern);
+		const currentPatternToUse = currentPattern || ensurePatternExists();
+		if (currentPatternToUse) {
+			const genericPattern = converter.toGeneric(currentPatternToUse);
 			const genericPatternRow = genericPattern.patternRows[selectedRow];
 			const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
 			const rowString = formatter.formatRow(
@@ -584,9 +629,10 @@
 	}
 
 	function moveColumn(delta: number) {
-		if (!currentPattern) return;
+		const pattern = currentPattern || ensurePatternExists();
+		if (!pattern) return;
 
-		const genericPattern = converter.toGeneric(currentPattern);
+		const genericPattern = converter.toGeneric(pattern);
 		const genericPatternRow = genericPattern.patternRows[selectedRow];
 		const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
 		const rowString = formatter.formatRow(
@@ -650,10 +696,12 @@
 				break;
 			case 'End':
 				event.preventDefault();
+				const pattern = currentPattern || ensurePatternExists();
+				if (!pattern) break;
 				if (event.ctrlKey) {
-					selectedRow = currentPattern.length - 1;
+					selectedRow = pattern.length - 1;
 				} else {
-					const genericPattern = converter.toGeneric(currentPattern);
+					const genericPattern = converter.toGeneric(pattern);
 					const genericPatternRow = genericPattern.patternRows[selectedRow];
 					const genericChannels = genericPattern.channels.map(
 						(ch) => ch.rows[selectedRow]
@@ -704,13 +752,29 @@
 			);
 		}
 
-		if (ctx && currentPattern) {
-			const genericPattern = converter.toGeneric(currentPattern);
-			const genericPatternRow = genericPattern.patternRows[0];
-			const genericChannels = genericPattern.channels.map((ch) => ch.rows[0]);
-			const rowString = formatter.formatRow(genericPatternRow, genericChannels, 0, schema);
-			const width = ctx.measureText(rowString).width;
-			canvasWidth = width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
+		if (ctx) {
+			const patternToMeasure =
+				currentPattern ||
+				(() => {
+					const patternId = patternOrder[currentPatternOrderIndex];
+					return PatternService.createEmptyPattern(patternId);
+				})();
+
+			if (patternToMeasure) {
+				const genericPattern = converter.toGeneric(patternToMeasure);
+				const genericPatternRow = genericPattern.patternRows[0];
+				const genericChannels = genericPattern.channels.map((ch) => ch.rows[0]);
+				const rowString = formatter.formatRow(
+					genericPatternRow,
+					genericChannels,
+					0,
+					schema
+				);
+				const width = ctx.measureText(rowString).width;
+				canvasWidth = width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
+			} else {
+				canvasWidth = PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH;
+			}
 		} else {
 			canvasWidth = PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH;
 		}
@@ -719,6 +783,24 @@
 	$effect(() => {
 		if (canvas) {
 			setupCanvas();
+			draw();
+		}
+	});
+
+	$effect(() => {
+		if (ctx && (currentPattern || patternOrder[currentPatternOrderIndex] !== undefined)) {
+			updateSize();
+			setupCanvas();
+			draw();
+		}
+	});
+
+	$effect(() => {
+		if (ctx) {
+			patternOrder.length;
+			patterns.length;
+			currentPatternOrderIndex;
+			selectedRow;
 			draw();
 		}
 	});

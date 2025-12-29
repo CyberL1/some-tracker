@@ -7,6 +7,7 @@
 	import PatternEditor from './PatternEditor.svelte';
 	import PatternOrder from './PatternOrder.svelte';
 	import IconCarbonChip from '~icons/carbon/chip';
+	import IconCarbonListBoxes from '~icons/carbon/list-boxes';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { getContext } from 'svelte';
 
@@ -139,13 +140,15 @@
 
 <div bind:this={songViewContainer} class="relative flex h-full overflow-hidden">
 	<div class="absolute left-0 top-0 h-full shrink-0">
-		<PatternOrder
-			bind:currentPatternOrderIndex={sharedPatternOrderIndex}
-			bind:patterns={patternsRecord}
-			bind:selectedRow={sharedSelectedRow}
-			bind:patternOrder
-			canvasHeight={patternOrderHeight}
-			{lineHeight} />
+		<Card title="Patterns Order" fullHeight={true} icon={IconCarbonListBoxes} class="p-0 overflow-hidden">
+			<PatternOrder
+				bind:currentPatternOrderIndex={sharedPatternOrderIndex}
+				bind:patterns={patternsRecord}
+				bind:selectedRow={sharedSelectedRow}
+				bind:patternOrder
+				canvasHeight={patternOrderHeight}
+				{lineHeight} />
+		</Card>
 	</div>
 	<div class="flex w-full justify-center overflow-hidden">
 		{#each songs as song, i}
@@ -156,7 +159,7 @@
 				class="p-0">
 				<PatternEditor
 					bind:this={patternEditors[i]}
-					patterns={song.patterns}
+					bind:patterns={song.patterns}
 					bind:patternOrder
 					bind:currentPatternOrderIndex={sharedPatternOrderIndex}
 					bind:selectedRow={sharedSelectedRow}

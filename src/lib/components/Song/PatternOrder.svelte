@@ -26,7 +26,7 @@
 	const CELL_HEIGHT = 28;
 	const PADDING = 12;
 	const FADE_HEIGHT = 30;
-	const BUTTON_SIZE = 13;
+	const BUTTON_SIZE = 18;
 	const BUTTON_SPACING = 1;
 
 	let canvas: HTMLCanvasElement;
@@ -85,8 +85,8 @@
 		for (let i = startIndex; i <= endIndex; i++) {
 			if (i < 0 || i >= patternOrder.length) continue;
 
-			const pattern = patterns[patternOrder[i]];
-			if (!pattern) continue;
+			const patternId = patternOrder[i];
+			const pattern = patterns[patternId];
 
 			const y = centerY - (currentPatternOrderIndex - i) * CELL_HEIGHT;
 
@@ -95,9 +95,8 @@
 			const isSelected = i === currentPatternOrderIndex;
 			const isHovered = hoveredIndex === i;
 
-			drawPatternCell(pattern, y, isSelected, i);
+			drawPatternCell(pattern, patternId, y, isSelected, i);
 
-			// Draw buttons only for hovered patterns
 			if (isHovered) {
 				drawPatternButtons(y, i);
 			}
@@ -107,7 +106,8 @@
 	}
 
 	function drawPatternCell(
-		pattern: Pattern,
+		pattern: Pattern | undefined,
+		patternId: number,
 		y: number,
 		isSelected: boolean,
 		index: number
@@ -115,6 +115,7 @@
 		const cellY = y - CELL_HEIGHT / 2;
 		const isHovered = hoveredIndex === index;
 		const isEditing = editingPatternIndex === index;
+		const isEmpty = !pattern;
 
 		if (isSelected) {
 			ctx.fillStyle = COLORS.patternNoise;
@@ -142,15 +143,19 @@
 		let patternText: string;
 		if (isEditing) {
 			if (editingPatternValue === '') {
-				patternText = pattern.id.toString().padStart(2, '0');
+				patternText = patternId.toString().padStart(2, '0');
 			} else {
 				patternText = editingPatternValue.padStart(2, '0');
 			}
 		} else {
-			patternText = pattern.id.toString().padStart(2, '0');
+			patternText = patternId.toString().padStart(2, '0');
 		}
 
-		ctx.fillStyle = isEditing ? COLORS.patternEnvelope : COLORS.patternText;
+		ctx.fillStyle = isEmpty
+			? COLORS.patternEmpty
+			: isEditing
+				? COLORS.patternEnvelope
+				: COLORS.patternText;
 		ctx.fillText(patternText, PADDING + CELL_WIDTH / 2, y);
 
 		if (isEditing) {
@@ -392,9 +397,11 @@
 			const currentPatternId = patternOrder[editingPatternIndex];
 			const currentPattern = patterns[currentPatternId];
 
-			if (newId >= 0 && newId <= 99 && currentPattern) {
+			if (newId >= 0 && newId <= 99) {
 				if (!patterns[newId]) {
-					const newPattern = PatternService.clonePattern(currentPattern, newId);
+					const newPattern = currentPattern
+						? PatternService.clonePattern(currentPattern, newId)
+						: PatternService.createEmptyPattern(newId);
 					patterns = { ...patterns, [newId]: newPattern };
 				}
 
@@ -456,35 +463,70 @@
 		if (!canvas || mouseY === undefined) return;
 
 		const centerY = canvasHeight / 2;
-		const newHoveredIndex = Math.round(
-			currentPatternOrderIndex + (mouseY - centerY) / CELL_HEIGHT
-		);
-
 		const { startIndex, endIndex } = getVisibleRange();
-		const isOverPattern =
-			newHoveredIndex >= 0 &&
-			newHoveredIndex < patternOrder.length &&
-			newHoveredIndex >= startIndex &&
-			newHoveredIndex <= endIndex;
 
-		const previousHoveredIndex = hoveredIndex;
-		hoveredIndex = isOverPattern ? newHoveredIndex : null;
+		let newHoveredIndex: number | null = null;
+		let newHoveredButton: 'remove' | 'up' | 'add' | 'clone' | null = null;
 
-		if (isOverPattern && mouseX !== undefined) {
+		if (mouseX !== undefined && mouseX > PADDING + CELL_WIDTH) {
 			const buttonStartX = PADDING + CELL_WIDTH + BUTTON_SPACING;
-			const buttonCenterY =
-				centerY - (currentPatternOrderIndex - newHoveredIndex) * CELL_HEIGHT;
-			hoveredButton = detectButtonHover(mouseX, mouseY, buttonStartX, buttonCenterY);
-		} else {
-			hoveredButton = null;
+
+			for (let i = startIndex; i <= endIndex; i++) {
+				if (i < 0 || i >= patternOrder.length) continue;
+
+				const buttonCenterY = centerY - (currentPatternOrderIndex - i) * CELL_HEIGHT;
+				const detectedButton = detectButtonHover(
+					mouseX,
+					mouseY,
+					buttonStartX,
+					buttonCenterY
+				);
+
+				if (detectedButton !== null) {
+					newHoveredIndex = i;
+					newHoveredButton = detectedButton;
+					break;
+				}
+			}
 		}
 
+		if (newHoveredIndex === null) {
+			const calculatedIndex = Math.round(
+				currentPatternOrderIndex + (mouseY - centerY) / CELL_HEIGHT
+			);
+
+			const isOverPattern =
+				calculatedIndex >= 0 &&
+				calculatedIndex < patternOrder.length &&
+				calculatedIndex >= startIndex &&
+				calculatedIndex <= endIndex;
+
+			if (isOverPattern) {
+				newHoveredIndex = calculatedIndex;
+				if (mouseX !== undefined) {
+					const buttonStartX = PADDING + CELL_WIDTH + BUTTON_SPACING;
+					const buttonCenterY =
+						centerY - (currentPatternOrderIndex - calculatedIndex) * CELL_HEIGHT;
+					newHoveredButton = detectButtonHover(
+						mouseX,
+						mouseY,
+						buttonStartX,
+						buttonCenterY
+					);
+				}
+			}
+		}
+
+		const previousHoveredIndex = hoveredIndex;
+		const previousHoveredButton = hoveredButton;
+		hoveredIndex = newHoveredIndex;
+		hoveredButton = newHoveredButton;
+
 		if (previousHoveredIndex !== hoveredIndex || previousHoveredButton !== hoveredButton) {
-			previousHoveredButton = hoveredButton;
 			draw();
 		}
 
-		canvas.style.cursor = isOverPattern ? 'pointer' : 'default';
+		canvas.style.cursor = newHoveredIndex !== null ? 'pointer' : 'default';
 	}
 
 	function switchPattern(index: number): void {
@@ -588,14 +630,16 @@
 	}
 </script>
 
-<canvas
-	bind:this={canvas}
-	tabindex="0"
-	onclick={handleClick}
-	onwheel={handleWheel}
-	onkeydown={handleKeyDown}
-	onmousemove={handleMouseMove}
-	onmouseleave={handleMouseLeave}
-	onmouseenter={handleMouseEnter}
-	class="focus:border-opacity-50 border-pattern-empty bg-pattern-bg focus:border-pattern-text block border transition-colors duration-150 focus:outline-none"
-	style="width: {canvasWidth}px; height: {canvasHeight}px;"></canvas>
+<div style="width: {canvasWidth}px; height: {canvasHeight}px;" class="overflow-hidden">
+	<canvas
+		bind:this={canvas}
+		tabindex="0"
+		onclick={handleClick}
+		onwheel={handleWheel}
+		onkeydown={handleKeyDown}
+		onmousemove={handleMouseMove}
+		onmouseleave={handleMouseLeave}
+		onmouseenter={handleMouseEnter}
+		class="focus:border-opacity-50 border-pattern-empty bg-pattern-bg focus:border-pattern-text block border transition-colors duration-150 focus:outline-none"
+		style="width: {canvasWidth}px; height: {canvasHeight}px;"></canvas>
+</div>
