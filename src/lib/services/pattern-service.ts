@@ -131,16 +131,14 @@ export class PatternService {
 	static clonePatternAfter(
 		patterns: Record<number, Pattern>,
 		patternOrder: number[],
-		index: number
+		index: number,
+		targetPattern: Pattern
 	): {
 		newPatterns: Record<number, Pattern>;
 		newPatternOrder: number[];
 		newPatternId: number;
 		insertIndex: number;
 	} | null {
-		const targetPatternId = patternOrder[index];
-		const targetPattern = patterns[targetPatternId];
-
 		if (!targetPattern) return null;
 
 		const newPatternId = this.findNextAvailablePatternId(patterns, patternOrder);
@@ -166,19 +164,17 @@ export class PatternService {
 	static makePatternUnique(
 		patterns: Record<number, Pattern>,
 		patternOrder: number[],
-		index: number
+		index: number,
+		targetPattern: Pattern
 	): {
 		newPatterns: Record<number, Pattern>;
 		newPatternOrder: number[];
 		newPatternId: number;
 	} | null {
-		const currentPatternId = patternOrder[index];
-		const currentPattern = patterns[currentPatternId];
-
-		if (!currentPattern) return null;
+		if (!targetPattern) return null;
 
 		const newPatternId = this.findNextAvailablePatternId(patterns, patternOrder);
-		const uniquePattern = this.clonePattern(currentPattern, newPatternId);
+		const uniquePattern = this.clonePattern(targetPattern, newPatternId);
 
 		const newPatterns = { ...patterns, [newPatternId]: uniquePattern };
 		const newPatternOrder = [...patternOrder];
@@ -208,5 +204,35 @@ export class PatternService {
 		} else {
 			return currentIndex - 1;
 		}
+	}
+
+	/**
+	 * Change the pattern ID at a specific position in the pattern order
+	 */
+	static setPatternIdInOrder(
+		patterns: Record<number, Pattern>,
+		patternOrder: number[],
+		index: number,
+		newId: number,
+		currentPattern?: Pattern
+	): {
+		newPatterns: Record<number, Pattern>;
+		newPatternOrder: number[];
+	} | null {
+		if (newId < 0 || newId > 99) return null;
+
+		if (!patterns[newId]) {
+			const newPattern = currentPattern
+				? this.clonePattern(currentPattern, newId)
+				: this.createEmptyPattern(newId);
+			patterns = { ...patterns, [newId]: newPattern };
+		}
+
+		const newPatternOrder = patternOrder.map((id, i) => (i === index ? newId : id));
+
+		return {
+			newPatterns: patterns,
+			newPatternOrder
+		};
 	}
 }

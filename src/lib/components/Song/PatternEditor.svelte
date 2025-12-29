@@ -15,7 +15,15 @@
 	import { playbackStore } from '../../stores/playback.svelte';
 	import { getFormatter } from '../../models/formatters/formatter-factory';
 	import { getConverter } from '../../models/adapters/converter-factory';
-	import { PatternService } from '../../services/patternService';
+	import { PatternService } from '../../services/pattern-service';
+	import { PatternNavigationService } from '../../services/pattern-navigation';
+	import {
+		PatternVisibleRowsService,
+		type VisibleRow,
+		type VisibleRowsCache
+	} from '../../services/pattern-visible-rows';
+	import { PatternEditorRenderer } from '../../rendering/pattern-editor-renderer';
+	import { PatternEditorTextParser } from '../../rendering/pattern-editor-text-parser';
 	import { Cache } from '../../utils/memoize';
 
 	let {
@@ -68,25 +76,19 @@
 
 	let selectedColumn = $state(0);
 
-	type VisibleRow = {
-		rowIndex: number;
-		isSelected: boolean;
-		isGhost: boolean;
-		patternIndex: number;
-		displayIndex: number;
-		isEmpty?: boolean;
-	};
-
 	const rowStringCache = new Cache<string, string>(500);
 	const patternGenericCache = new Cache<number, ReturnType<typeof converter.toGeneric>>(100);
-	const cellPositionsCache = new Cache<string, ReturnType<typeof getCellPositions>>(500);
-	const rowSegmentsCache = new Cache<string, FieldSegment[]>(500);
-	let lastVisibleRowsCache: {
-		patternId: number;
-		selectedRow: number;
-		canvasHeight: number;
-		result: VisibleRow[];
-	} | null = null;
+	const cellPositionsCache = new Cache<
+		string,
+		ReturnType<PatternEditorTextParser['getCellPositions']>
+	>(500);
+	const rowSegmentsCache = new Cache<
+		string,
+		ReturnType<PatternEditorTextParser['parseRowString']>
+	>(500);
+	let textParser: PatternEditorTextParser | null = null;
+	let renderer: PatternEditorRenderer | null = null;
+	let lastVisibleRowsCache: VisibleRowsCache | null = null;
 
 	let currentPattern = $derived.by(() => {
 		const patternId = patternOrder[currentPatternOrderIndex];
@@ -195,191 +197,12 @@
 		services.audioService.stop();
 	}
 
-	interface FieldSegment {
-		start: number;
-		end: number;
-		fieldKey: string;
-		color: string;
-	}
-
-	function parseRowString(rowString: string, rowIndex: number): FieldSegment[] {
-		const cacheKey = `${rowString}:${rowIndex}`;
-		const cached = rowSegmentsCache.get(cacheKey);
-		if (cached) return cached;
-
-		const segments: FieldSegment[] = [];
-		let pos = 0;
-
-		const skipSpaces = () => {
-			while (pos < rowString.length && rowString[pos] === ' ') {
-				pos++;
-			}
-		};
-
-		skipSpaces();
-		const rowNumStart = pos;
-		while (pos < rowString.length && rowString[pos] !== ' ') {
-			pos++;
-		}
-		if (rowNumStart < pos) {
-			const colorKey = rowIndex % 4 === 0 ? 'patternRowNumAlternate' : 'patternRowNum';
-			segments.push({
-				start: rowNumStart,
-				end: pos,
-				fieldKey: 'rowNum',
-				color: COLORS[colorKey as keyof typeof COLORS] || COLORS.patternText
-			});
-		}
-		skipSpaces();
-
-		if (schema.globalTemplate && schema.globalFields) {
-			const globalStart = pos;
-			const globalTemplate = schema.globalTemplate;
-			let templatePos = 0;
-			while (templatePos < globalTemplate.length) {
-				if (globalTemplate[templatePos] === '{') {
-					const end = globalTemplate.indexOf('}', templatePos);
-					if (end !== -1) {
-						const key = globalTemplate.substring(templatePos + 1, end);
-						const field = schema.globalFields[key];
-						if (field) {
-							const colorKey = formatter.getColorForField(key, schema);
-							const color =
-								COLORS[colorKey as keyof typeof COLORS] || COLORS.patternText;
-							segments.push({
-								start: pos,
-								end: pos + field.length,
-								fieldKey: key,
-								color
-							});
-							pos += field.length;
-						}
-						templatePos = end + 1;
-					} else {
-						templatePos++;
-					}
-				} else if (globalTemplate[templatePos] === ' ') {
-					pos++;
-					templatePos++;
-				} else {
-					templatePos++;
-				}
-			}
-			skipSpaces();
-		}
-
-		const template = schema.template;
-		while (pos < rowString.length) {
-			skipSpaces();
-			if (pos >= rowString.length) break;
-
-			const channelStart = pos;
-			let templatePos = 0;
-			let foundField = false;
-			while (templatePos < template.length) {
-				if (template[templatePos] === '{') {
-					const end = template.indexOf('}', templatePos);
-					if (end !== -1) {
-						const key = template.substring(templatePos + 1, end);
-						const field = schema.fields[key];
-						if (field) {
-							const colorKey = formatter.getColorForField(key, schema);
-							const color =
-								COLORS[colorKey as keyof typeof COLORS] || COLORS.patternText;
-							segments.push({
-								start: pos,
-								end: pos + field.length,
-								fieldKey: key,
-								color
-							});
-							pos += field.length;
-							foundField = true;
-						}
-						templatePos = end + 1;
-					} else {
-						break;
-					}
-				} else if (template[templatePos] === ' ') {
-					if (pos < rowString.length && rowString[pos] === ' ') {
-						pos++;
-					}
-					templatePos++;
-				} else {
-					templatePos++;
-				}
-			}
-			if (!foundField) break;
-		}
-		rowSegmentsCache.set(cacheKey, segments);
-		return segments;
-	}
-
 	function getCellPositions(
 		rowString: string,
 		rowIndex: number
-	): { x: number; width: number; charIndex: number; fieldKey?: string }[] {
-		const cacheKey = `${rowString}:${rowIndex}`;
-		const cached = cellPositionsCache.get(cacheKey);
-		if (cached) return cached;
-
-		const positions: { x: number; width: number; charIndex: number; fieldKey?: string }[] = [];
-		const segments = parseRowString(rowString, rowIndex);
-		let x = 10;
-		let i = 0;
-
-		while (i < rowString.length) {
-			const char = rowString[i];
-			if (char === ' ') {
-				x += ctx.measureText(' ').width;
-				i++;
-				continue;
-			}
-
-			const segment = segments.find((s) => i >= s.start && i < s.end);
-
-			if (!segment) {
-				const width = ctx.measureText(char).width;
-				x += width;
-				i++;
-				continue;
-			}
-
-			const field =
-				schema.fields[segment.fieldKey] || schema.globalFields?.[segment.fieldKey];
-
-			if (segment.fieldKey === 'rowNum' || field?.skip) {
-				const skipText = rowString.substring(segment.start, segment.end);
-				x += ctx.measureText(skipText).width;
-				i = segment.end;
-				continue;
-			}
-
-			const isAtomic = field?.selectable === 'atomic';
-
-			if (isAtomic && i === segment.start) {
-				const fieldText = rowString.substring(segment.start, segment.end);
-				const width = ctx.measureText(fieldText).width;
-				positions.push({ x, width, charIndex: segment.start, fieldKey: segment.fieldKey });
-				x += width;
-				i = segment.end;
-			} else if (isAtomic && i > segment.start) {
-				const width = ctx.measureText(char).width;
-				x += width;
-				i++;
-			} else if (!isAtomic) {
-				const width = ctx.measureText(char).width;
-				positions.push({ x, width, charIndex: i, fieldKey: segment.fieldKey });
-				x += width;
-				i++;
-			} else {
-				const width = ctx.measureText(char).width;
-				x += width;
-				i++;
-			}
-		}
-
-		cellPositionsCache.set(cacheKey, positions);
-		return positions;
+	): ReturnType<PatternEditorTextParser['getCellPositions']> {
+		if (!textParser) return [];
+		return textParser.getCellPositions(rowString, rowIndex);
 	}
 
 	function getTotalCellCount(rowString: string): number {
@@ -387,101 +210,25 @@
 	}
 
 	function getVisibleRows(pattern: Pattern): VisibleRow[] {
-		if (
-			lastVisibleRowsCache &&
-			lastVisibleRowsCache.patternId === pattern.id &&
-			lastVisibleRowsCache.selectedRow === selectedRow &&
-			lastVisibleRowsCache.canvasHeight === canvasHeight
-		) {
-			return lastVisibleRowsCache.result;
-		}
-
-		const visibleCount = Math.floor(canvasHeight / lineHeight);
-		const halfVisible = Math.floor(visibleCount / 2);
-		const startRow = selectedRow - halfVisible;
-		const endRow = selectedRow + halfVisible;
-
-		const rows = [];
-		let displayIndex = 0;
-
-		for (let i = startRow; i <= endRow; i++) {
-			let rowAdded = false;
-
-			if (i >= 0 && i < pattern.length) {
-				rows.push({
-					rowIndex: i,
-					isSelected: i === selectedRow,
-					isGhost: false,
-					patternIndex: patternOrder[currentPatternOrderIndex],
-					displayIndex
-				});
-				rowAdded = true;
-			} else if (i < 0) {
-				const prevPatternOrderIndex = currentPatternOrderIndex - 1;
-				if (prevPatternOrderIndex >= 0 && prevPatternOrderIndex < patternOrder.length) {
-					const prevPatternIndex = patternOrder[prevPatternOrderIndex];
-					let prevPattern = patterns.find((p) => p.id === prevPatternIndex);
-					if (!prevPattern) {
-						prevPattern = PatternService.createEmptyPattern(prevPatternIndex);
-						patterns = [...patterns, prevPattern];
-					}
-					const ghostRowIndex = prevPattern.length + i;
-					if (ghostRowIndex >= 0 && ghostRowIndex < prevPattern.length) {
-						rows.push({
-							rowIndex: ghostRowIndex,
-							isSelected: false,
-							isGhost: true,
-							patternIndex: prevPatternIndex,
-							displayIndex
-						});
-						rowAdded = true;
-					}
+		const { rows, cache } = PatternVisibleRowsService.getVisibleRows(
+			pattern,
+			{
+				patterns,
+				patternOrder,
+				currentPatternOrderIndex,
+				selectedRow,
+				canvasHeight,
+				lineHeight,
+				createPatternIfMissing: (patternId: number) => {
+					const newPattern = PatternService.createEmptyPattern(patternId);
+					patterns = [...patterns, newPattern];
+					return newPattern;
 				}
-			} else {
-				const nextPatternOrderIndex = currentPatternOrderIndex + 1;
-				if (nextPatternOrderIndex < patternOrder.length) {
-					const nextPatternIndex = patternOrder[nextPatternOrderIndex];
-					let nextPattern = patterns.find((p) => p.id === nextPatternIndex);
-					if (!nextPattern) {
-						nextPattern = PatternService.createEmptyPattern(nextPatternIndex);
-						patterns = [...patterns, nextPattern];
-					}
-					const ghostRowIndex = i - pattern.length;
-					if (ghostRowIndex >= 0 && ghostRowIndex < nextPattern.length) {
-						rows.push({
-							rowIndex: ghostRowIndex,
-							isSelected: false,
-							isGhost: true,
-							patternIndex: nextPatternIndex,
-							displayIndex
-						});
-						rowAdded = true;
-					}
-				}
-			}
-
-			if (!rowAdded) {
-				rows.push({
-					rowIndex: -1,
-					isSelected: false,
-					isGhost: false,
-					patternIndex: -1,
-					displayIndex,
-					isEmpty: true
-				});
-			}
-
-			displayIndex++;
-		}
-
-		const result = rows;
-		lastVisibleRowsCache = {
-			patternId: pattern.id,
-			selectedRow,
-			canvasHeight,
-			result
-		};
-		return result;
+			},
+			lastVisibleRowsCache
+		);
+		lastVisibleRowsCache = cache;
+		return rows;
 	}
 
 	function setupCanvas() {
@@ -501,110 +248,40 @@
 				fonts: FONTS,
 				textBaseline: 'middle'
 			});
+
+			textParser = new PatternEditorTextParser(
+				schema,
+				formatter,
+				COLORS,
+				ctx,
+				rowSegmentsCache,
+				cellPositionsCache
+			);
+
+			renderer = new PatternEditorRenderer({
+				ctx,
+				colors: COLORS,
+				canvasWidth,
+				lineHeight,
+				schema
+			});
 		} catch (error) {
 			console.error('Error during canvas setup:', error);
 		}
 	}
 
-	function drawRowStructured(
-		rowString: string,
-		y: number,
-		isSelected: boolean,
-		rowIndex: number
-	) {
-		if (rowIndex % 4 === 0) {
-			ctx.fillStyle = COLORS.patternAlternate;
-			ctx.fillRect(0, y, canvasWidth, lineHeight);
-		}
-
-		if (isSelected) {
-			ctx.fillStyle = COLORS.patternSelected;
-			ctx.fillRect(0, y, canvasWidth, lineHeight);
-		}
-
-		const cellPositions = getCellPositions(rowString, rowIndex);
-
-		if (isSelected && selectedColumn < cellPositions.length) {
-			const cellPos = cellPositions[selectedColumn];
-			ctx.fillStyle = COLORS.patternCellSelected;
-			ctx.fillRect(cellPos.x - 1, y, cellPos.width + 2, lineHeight);
-		}
-
-		const segments = parseRowString(rowString, rowIndex);
-		let x = 10;
-		let segmentIndex = 0;
-		let currentSegment = segments[0];
-
-		for (let i = 0; i < rowString.length; i++) {
-			const char = rowString[i];
-
-			if (char === ' ') {
-				x += ctx.measureText(' ').width;
-				continue;
-			}
-
-			while (currentSegment && i >= currentSegment.end) {
-				segmentIndex++;
-				currentSegment = segments[segmentIndex];
-			}
-
-			let color = COLORS.patternText;
-			if (currentSegment) {
-				color = currentSegment.color;
-			}
-
-			const field =
-				currentSegment &&
-				(schema.fields[currentSegment.fieldKey] ||
-					schema.globalFields?.[currentSegment.fieldKey]);
-			const isAtomic = field?.selectable === 'atomic';
-			const fieldText = currentSegment
-				? rowString.substring(currentSegment.start, currentSegment.end)
-				: '';
-
-			const isEmptyField =
-				fieldText && fieldText.split('').every((c) => c === '.' || c === '-');
-
-			if ((char === '.' || char === '-') && isEmptyField) {
-				if (isAtomic) {
-					if (fieldText === '---') {
-						ctx.fillStyle = isSelected
-							? COLORS.patternEmptySelected
-							: rowIndex % 4 === 0
-								? COLORS.patternAlternateEmpty
-								: COLORS.patternEmpty;
-					} else {
-						ctx.fillStyle = color;
-					}
-				} else {
-					ctx.fillStyle = isSelected
-						? COLORS.patternEmptySelected
-						: rowIndex % 4 === 0
-							? COLORS.patternAlternateEmpty
-							: COLORS.patternEmpty;
-				}
-			} else {
-				ctx.fillStyle = color;
-			}
-
-			ctx.fillText(char, x, y + lineHeight / 2);
-			x += ctx.measureText(char).width;
-		}
-	}
-
 	function draw() {
-		if (!ctx) return;
+		if (!ctx || !renderer || !textParser) return;
 
-		ctx.fillStyle = COLORS.patternBg;
-		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+		renderer.drawBackground(canvasHeight);
 
 		const visibleRows = getVisibleRows(currentPattern);
 
-		visibleRows.forEach((row: VisibleRow) => {
+		for (const row of visibleRows) {
 			const y = row.displayIndex * lineHeight;
 
 			if (row.isEmpty) {
-				return;
+				continue;
 			}
 
 			if (row.isGhost) {
@@ -636,9 +313,21 @@
 					rowStringCache.set(rowCacheKey, rowString);
 				}
 
-				drawRowStructured(rowString, y, row.isSelected && isActive, row.rowIndex);
+				if (!textParser || !renderer) continue;
+				const segments = textParser.parseRowString(rowString, row.rowIndex);
+				const cellPositions = getCellPositions(rowString, row.rowIndex);
+
+				renderer.drawRow({
+					rowString,
+					y,
+					isSelected: row.isSelected && isActive,
+					rowIndex: row.rowIndex,
+					selectedColumn,
+					segments,
+					cellPositions
+				});
 			}
-		});
+		}
 
 		ctx.globalAlpha = 1.0;
 	}
@@ -647,37 +336,39 @@
 		const pattern = currentPattern || ensurePatternExists();
 		if (!pattern) return;
 
-		const newRow = selectedRow + delta;
-		if (newRow >= 0 && newRow < pattern.length) {
-			selectedRow = newRow;
-		} else if (delta < 0 && currentPatternOrderIndex > 0) {
-			currentPatternOrderIndex--;
-			const prevPatternId = patternOrder[currentPatternOrderIndex];
-			const prevPattern = patterns.find((p) => p.id === prevPatternId);
-			if (prevPattern) {
-				selectedRow = prevPattern.length - 1;
-			}
-		} else if (delta > 0 && currentPatternOrderIndex < patternOrder.length - 1) {
-			currentPatternOrderIndex++;
-			selectedRow = 0;
-		}
-
-		const currentPatternToUse = currentPattern || ensurePatternExists();
-		if (currentPatternToUse) {
-			const genericPattern = converter.toGeneric(currentPatternToUse);
-			const genericPatternRow = genericPattern.patternRows[selectedRow];
-			const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
-			const rowString = formatter.formatRow(
-				genericPatternRow,
-				genericChannels,
+		const navigationState = PatternNavigationService.moveRow(
+			{
 				selectedRow,
-				schema
-			);
-			const cellPositions = getCellPositions(rowString, selectedRow);
-			const maxCells = cellPositions.length;
-			if (selectedColumn >= maxCells) {
-				selectedColumn = Math.max(0, maxCells - 1);
-			}
+				currentPatternOrderIndex,
+				selectedColumn
+			},
+			{
+				patterns,
+				patternOrder,
+				currentPattern: pattern,
+				converter,
+				formatter,
+				schema,
+				getCellPositions
+			},
+			delta
+		);
+
+		selectedRow = navigationState.selectedRow;
+		currentPatternOrderIndex = navigationState.currentPatternOrderIndex;
+
+		const updatedPattern = currentPattern || ensurePatternExists();
+		if (updatedPattern) {
+			const updatedState = PatternNavigationService.moveColumn(navigationState, {
+				patterns,
+				patternOrder,
+				currentPattern: updatedPattern,
+				converter,
+				formatter,
+				schema,
+				getCellPositions
+			});
+			selectedColumn = updatedState.selectedColumn;
 		}
 	}
 
@@ -685,23 +376,25 @@
 		const pattern = currentPattern || ensurePatternExists();
 		if (!pattern) return;
 
-		const genericPattern = converter.toGeneric(pattern);
-		const genericPatternRow = genericPattern.patternRows[selectedRow];
-		const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
-		const rowString = formatter.formatRow(
-			genericPatternRow,
-			genericChannels,
-			selectedRow,
-			schema
+		const navigationState = PatternNavigationService.moveColumnByDelta(
+			{
+				selectedRow,
+				currentPatternOrderIndex,
+				selectedColumn
+			},
+			{
+				patterns,
+				patternOrder,
+				currentPattern: pattern,
+				converter,
+				formatter,
+				schema,
+				getCellPositions
+			},
+			delta
 		);
-		const cellPositions = getCellPositions(rowString, selectedRow);
-		const maxCells = cellPositions.length;
-		let newColumn = selectedColumn + delta;
 
-		if (newColumn < 0) newColumn = 0;
-		if (newColumn >= maxCells) newColumn = maxCells - 1;
-
-		selectedColumn = newColumn;
+		selectedColumn = navigationState.selectedColumn;
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
@@ -754,20 +447,23 @@
 				if (event.ctrlKey) {
 					selectedRow = pattern.length - 1;
 				} else {
-					const genericPattern = converter.toGeneric(pattern);
-					const genericPatternRow = genericPattern.patternRows[selectedRow];
-					const genericChannels = genericPattern.channels.map(
-						(ch) => ch.rows[selectedRow]
+					const navigationState = PatternNavigationService.moveToRowEnd(
+						{
+							selectedRow,
+							currentPatternOrderIndex,
+							selectedColumn
+						},
+						{
+							patterns,
+							patternOrder,
+							currentPattern: pattern,
+							converter,
+							formatter,
+							schema,
+							getCellPositions
+						}
 					);
-					const rowString = formatter.formatRow(
-						genericPatternRow,
-						genericChannels,
-						selectedRow,
-						schema
-					);
-					const cellPositions = getCellPositions(rowString, selectedRow);
-					const maxCells = cellPositions.length;
-					selectedColumn = Math.max(0, maxCells - 1);
+					selectedColumn = navigationState.selectedColumn;
 				}
 				break;
 		}

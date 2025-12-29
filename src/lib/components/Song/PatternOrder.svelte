@@ -3,7 +3,8 @@
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
 	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
-	import { PatternService } from '../../services/patternService';
+	import { PatternService } from '../../services/pattern-service';
+	import { PatternOrderRenderer } from '../../rendering/pattern-order-renderer';
 	import IconCarbonUnlink from '~icons/carbon/unlink';
 	import IconCarbonCopy from '~icons/carbon/copy';
 	import IconCarbonSubtract from '~icons/carbon/subtract';
@@ -46,6 +47,7 @@
 
 	let COLORS = getColors();
 	let FONTS = getFonts();
+	let renderer: PatternOrderRenderer | null = null;
 
 	let lastDrawnOrderIndex = -1;
 	let lastPatternOrderLength = -1;
@@ -100,6 +102,19 @@
 			textAlign: 'center',
 			textBaseline: 'middle'
 		});
+
+		renderer = new PatternOrderRenderer({
+			ctx,
+			colors: COLORS,
+			fonts: FONTS,
+			canvasWidth,
+			canvasHeight,
+			fontSize: FONT_SIZE,
+			cellWidth: CELL_WIDTH,
+			cellHeight: CELL_HEIGHT,
+			padding: PADDING,
+			fadeHeight: FADE_HEIGHT
+		});
 	}
 
 	function getVisibleRange() {
@@ -114,14 +129,11 @@
 	}
 
 	function draw(): void {
-		if (!ctx) return;
+		if (!ctx || !renderer) return;
 
 		const centerY = canvasHeight / 2;
 
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-		ctx.fillStyle = COLORS.patternBg;
-		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+		renderer.drawBackground(canvasHeight);
 
 		const { startIndex, endIndex } = getVisibleRange();
 
@@ -143,155 +155,27 @@
 
 			const isSelected = i === currentPatternOrderIndex;
 			const isHovered = hoveredIndex === i;
+			const isEditing = editingPatternIndex === i;
 
-			drawPatternCell(pattern, patternId, y, isSelected, i);
+			renderer.drawPatternCell({
+				pattern,
+				patternId,
+				y,
+				isSelected,
+				isHovered,
+				isEditing,
+				editingValue: editingPatternValue,
+				index: i
+			});
 		}
 
-		drawScrollIndicators(startIndex, endIndex);
-	}
-
-	function drawPatternCell(
-		pattern: Pattern | undefined,
-		patternId: number,
-		y: number,
-		isSelected: boolean,
-		index: number
-	): void {
-		const cellY = y - CELL_HEIGHT / 2;
-		const isHovered = hoveredIndex === index;
-		const isEditing = editingPatternIndex === index;
-		const isEmpty = !pattern;
-
-		if (isSelected) {
-			ctx.fillStyle = COLORS.patternNoise;
-			ctx.fillRect(PADDING, cellY, CELL_WIDTH, CELL_HEIGHT);
-
-			ctx.strokeStyle = COLORS.patternInstrument;
-			ctx.lineWidth = 1;
-			ctx.strokeRect(PADDING + 0.5, cellY + 0.5, CELL_WIDTH - 1, CELL_HEIGHT - 1);
-		} else if (isHovered) {
-			ctx.fillStyle = COLORS.patternHeader;
-			ctx.fillRect(PADDING, cellY, CELL_WIDTH, CELL_HEIGHT);
-
-			ctx.strokeStyle = COLORS.patternInstrument;
-			ctx.lineWidth = 1;
-			ctx.strokeRect(PADDING + 0.5, cellY + 0.5, CELL_WIDTH - 1, CELL_HEIGHT - 1);
-		} else {
-			ctx.fillStyle = index % 2 === 0 ? COLORS.patternBg : COLORS.patternAlternate;
-			ctx.fillRect(PADDING, cellY, CELL_WIDTH, CELL_HEIGHT);
-
-			ctx.strokeStyle = COLORS.patternEmpty;
-			ctx.lineWidth = 1;
-			ctx.strokeRect(PADDING + 0.5, cellY + 0.5, CELL_WIDTH - 1, CELL_HEIGHT - 1);
-		}
-
-		let patternText: string;
-		if (isEditing) {
-			if (editingPatternValue === '') {
-				patternText = patternId.toString().padStart(2, '0');
-			} else {
-				patternText = editingPatternValue.padStart(2, '0');
-			}
-		} else {
-			patternText = patternId.toString().padStart(2, '0');
-		}
-
-		const editingColor = isEditing
-			? editingPatternValue === ''
-				? COLORS.patternEnvelope
-				: COLORS.patternEditing
-			: null;
-
-		ctx.fillStyle = isEmpty
-			? COLORS.patternEmpty
-			: isEditing
-				? editingColor!
-				: COLORS.patternText;
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-		ctx.fillText(patternText, PADDING + CELL_WIDTH / 2, y);
-
-		if (isEditing) {
-			ctx.save();
-			const borderColor =
-				editingPatternValue === '' ? COLORS.patternEnvelope : COLORS.patternEditing;
-			ctx.strokeStyle = borderColor;
-			ctx.lineWidth = 2;
-			ctx.strokeRect(PADDING + 1, cellY + 1, CELL_WIDTH - 2, CELL_HEIGHT - 2);
-
-			const textWidth = ctx.measureText(patternText).width;
-			const charWidth = textWidth / 2;
-			const underlineY = y + FONT_SIZE / 2 + 2;
-			const centerX = PADDING + CELL_WIDTH / 2;
-			const underlineX = centerX - charWidth;
-
-			const underlineColor =
-				editingPatternValue === '' ? COLORS.patternEnvelope : COLORS.patternEditing;
-			ctx.strokeStyle = underlineColor;
-			ctx.lineWidth = 1;
-			ctx.beginPath();
-			ctx.moveTo(underlineX, underlineY);
-			ctx.lineTo(underlineX + charWidth * 2, underlineY);
-			ctx.stroke();
-			ctx.restore();
-			ctx.textAlign = 'center';
-			ctx.textBaseline = 'middle';
-		}
-
-		if (isSelected) {
-			ctx.save();
-			ctx.fillStyle = COLORS.patternEnvelope;
-			ctx.textAlign = 'left';
-			ctx.textBaseline = 'middle';
-			ctx.fillText('►', 2, y);
-			ctx.restore();
-			ctx.textAlign = 'center';
-			ctx.textBaseline = 'middle';
-		}
-	}
-
-	function drawScrollIndicators(startIndex: number, endIndex: number): void {
-		const hasMoreAbove = startIndex > 0;
 		const visibleCount = Math.floor(canvasHeight / CELL_HEIGHT);
 		const halfVisible = Math.floor(visibleCount / 2);
 		const maxVisibleEndIndex = currentPatternOrderIndex + halfVisible;
+		const hasMoreAbove = startIndex > 0;
 		const hasMoreBelow = maxVisibleEndIndex < patternOrder.length - 1;
 
-		if (hasMoreAbove) {
-			const topGradient = ctx.createLinearGradient(0, 0, 0, FADE_HEIGHT);
-			topGradient.addColorStop(0, COLORS.patternBg);
-			topGradient.addColorStop(1, 'rgba(0,0,0,0)');
-			ctx.fillStyle = topGradient;
-			ctx.fillRect(0, 0, canvasWidth, FADE_HEIGHT);
-		}
-
-		if (hasMoreBelow) {
-			const bottomGradient = ctx.createLinearGradient(
-				0,
-				canvasHeight - FADE_HEIGHT,
-				0,
-				canvasHeight
-			);
-			bottomGradient.addColorStop(0, 'rgba(0,0,0,0)');
-			bottomGradient.addColorStop(1, COLORS.patternBg);
-			ctx.fillStyle = bottomGradient;
-			ctx.fillRect(0, canvasHeight - FADE_HEIGHT, canvasWidth, FADE_HEIGHT);
-		}
-
-		ctx.save();
-		ctx.fillStyle = COLORS.patternEnvelope;
-		ctx.textAlign = 'center';
-		ctx.font = `${FONT_SIZE}px ${FONTS.mono}`;
-
-		if (hasMoreAbove) {
-			ctx.textBaseline = 'top';
-			ctx.fillText('▲', canvasWidth / 2, 2);
-		}
-		if (hasMoreBelow) {
-			ctx.textBaseline = 'bottom';
-			ctx.fillText('▼', canvasWidth / 2, canvasHeight - 2);
-		}
-		ctx.restore();
+		renderer.drawScrollIndicators(hasMoreAbove, hasMoreBelow);
 	}
 
 	let editingPatternIndex: number | null = $state(null);
@@ -374,17 +258,17 @@
 			const currentPatternId = patternOrder[editingPatternIndex];
 			const currentPattern = patterns[currentPatternId];
 
-			if (newId >= 0 && newId <= 99) {
-				if (!patterns[newId]) {
-					const newPattern = currentPattern
-						? PatternService.clonePattern(currentPattern, newId)
-						: PatternService.createEmptyPattern(newId);
-					patterns = { ...patterns, [newId]: newPattern };
-				}
+			const result = PatternService.setPatternIdInOrder(
+				patterns,
+				patternOrder,
+				editingPatternIndex,
+				newId,
+				currentPattern
+			);
 
-				patternOrder = patternOrder.map((id, index) =>
-					index === editingPatternIndex ? newId : id
-				);
+			if (result) {
+				patterns = result.newPatterns;
+				patternOrder = result.newPatternOrder;
 			}
 		}
 
@@ -452,6 +336,16 @@
 		}
 	}
 
+	function afterPatternOperation(): void {
+		lastDrawnOrderIndex = -1;
+		lastPatternOrderLength = -1;
+		draw();
+
+		if (lastMouseY !== null && lastMouseX !== null) {
+			updateCursor(lastMouseY, lastMouseX);
+		}
+	}
+
 	function handleMouseMove(event: MouseEvent): void {
 		const rect = canvas.getBoundingClientRect();
 		const y = event.clientY - rect.top;
@@ -488,13 +382,7 @@
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
 
-		lastDrawnOrderIndex = -1;
-		lastPatternOrderLength = -1;
-		draw();
-
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
-		}
+		afterPatternOperation();
 	}
 
 	function removePatternAtIndex(index: number): void {
@@ -509,17 +397,40 @@
 		);
 		selectedRow = 0;
 
-		lastDrawnOrderIndex = -1;
-		lastPatternOrderLength = -1;
-		draw();
+		afterPatternOperation();
+	}
 
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
+	function ensurePatternInRecord(patternId: number): Pattern | null {
+		let pattern = patterns[patternId];
+
+		if (pattern) {
+			return pattern;
 		}
+
+		const foundPattern = songPatterns.find((p) => p.id === patternId);
+
+		if (!foundPattern) {
+			return null;
+		}
+
+		pattern = foundPattern;
+		patterns = { ...patterns, [patternId]: pattern };
+
+		return pattern;
 	}
 
 	function clonePatternAtIndex(index: number): void {
-		const result = PatternService.clonePatternAfter(patterns, patternOrder, index);
+		const targetPatternId = patternOrder[index];
+		const targetPattern = ensurePatternInRecord(targetPatternId);
+
+		if (!targetPattern) return;
+
+		const result = PatternService.clonePatternAfter(
+			patterns,
+			patternOrder,
+			index,
+			targetPattern
+		);
 
 		if (!result) return;
 
@@ -528,35 +439,26 @@
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
 
-		lastDrawnOrderIndex = -1;
-		lastPatternOrderLength = -1;
-		draw();
-
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
+		const clonedPattern = result.newPatterns[result.newPatternId];
+		if (clonedPattern) {
+			onPatternCreated?.(clonedPattern);
 		}
+
+		afterPatternOperation();
 	}
 
 	function makePatternUniqueAtIndex(index: number): void {
-		const currentPatternId = patternOrder[index];
-		let currentPattern = patterns[currentPatternId];
+		const targetPatternId = patternOrder[index];
+		const targetPattern = ensurePatternInRecord(targetPatternId);
 
-		if (!currentPattern) {
-			const foundPattern = songPatterns.find((p) => p.id === currentPatternId);
-			if (!foundPattern) {
-				return;
-			}
-			currentPattern = foundPattern;
-			patterns = { ...patterns, [currentPatternId]: currentPattern };
-		} else {
-			const foundPattern = songPatterns.find((p) => p.id === currentPatternId);
-			if (foundPattern && foundPattern !== currentPattern) {
-				currentPattern = foundPattern;
-				patterns = { ...patterns, [currentPatternId]: currentPattern };
-			}
-		}
+		if (!targetPattern) return;
 
-		const result = PatternService.makePatternUnique(patterns, patternOrder, index);
+		const result = PatternService.makePatternUnique(
+			patterns,
+			patternOrder,
+			index,
+			targetPattern
+		);
 
 		if (!result) return;
 
@@ -568,13 +470,7 @@
 			selectedRow = 0;
 		}
 
-		lastDrawnOrderIndex = -1;
-		lastPatternOrderLength = -1;
-		draw();
-
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
-		}
+		afterPatternOperation();
 	}
 
 	const buttonStartX = PADDING + CELL_WIDTH + BUTTON_SPACING;

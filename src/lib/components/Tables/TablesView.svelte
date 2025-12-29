@@ -20,13 +20,20 @@
 	let selectedTableIndex = $state(0);
 	let tableEditor: TableEditor | null = $state(null);
 
+	function handleTableChange(table: Table): void {
+		tables[selectedTableIndex] = { ...table };
+		tables = [...tables];
+		services.audioService.updateTables(tables);
+	}
+
 	$effect(() => {
 		if (selectedTableIndex >= tables.length) selectedTableIndex = 0;
 	});
 </script>
 
 <div class="flex h-full flex-col bg-neutral-900">
-	<div class="flex items-center justify-between border-b border-neutral-700 bg-neutral-800 px-4 py-2">
+	<div
+		class="flex items-center justify-between border-b border-neutral-700 bg-neutral-800 px-4 py-2">
 		<h2 class="text-sm font-medium text-neutral-100">Tables (Arpeggios)</h2>
 		<div class="flex gap-1">
 			<button
@@ -92,11 +99,7 @@
 					bind:this={tableEditor}
 					table={tables[selectedTableIndex]}
 					{asHex}
-					onTableChange={(table) => {
-						tables[selectedTableIndex] = { ...table };
-						tables = [...tables];
-						services.audioService.updateTables(tables);
-					}} />
+					onTableChange={handleTableChange} />
 			{/key}
 		</div>
 	{:else}
@@ -105,5 +108,3 @@
 		</div>
 	{/if}
 </div>
-
-

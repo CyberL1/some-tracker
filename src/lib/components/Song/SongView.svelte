@@ -37,7 +37,20 @@
 
 	let patternsRecord = $state<Record<number, Pattern>>({});
 
+	const songPatterns = $derived(songs.flatMap((song) => song.patterns));
+
 	const SPEED_EFFECT_TYPE = 5;
+
+	function handlePatternCreated(pattern: Pattern): void {
+		songs.forEach((song) => {
+			const existingPattern = song.patterns.find((p) => p.id === pattern.id);
+			if (!existingPattern) {
+				song.patterns = [...song.patterns, pattern];
+			} else {
+				song.patterns = song.patterns.map((p) => (p.id === pattern.id ? pattern : p));
+			}
+		});
+	}
 
 	function findLastSpeedCommand(
 		song: Song,
@@ -169,14 +182,8 @@
 				bind:patternOrder
 				canvasHeight={patternOrderHeight}
 				{lineHeight}
-				songPatterns={songs.flatMap((song) => song.patterns)}
-				onPatternCreated={(pattern) => {
-					songs.forEach((song) => {
-						if (!song.patterns.find((p) => p.id === pattern.id)) {
-							song.patterns = [...song.patterns, pattern];
-						}
-					});
-				}} />
+				{songPatterns}
+				onPatternCreated={handlePatternCreated} />
 		</Card>
 	</div>
 	<div class="flex w-full justify-center overflow-hidden">
