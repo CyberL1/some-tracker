@@ -16,6 +16,7 @@
 	import { getFormatter } from '../../models/formatters/formatter-factory';
 	import { getConverter } from '../../models/adapters/converter-factory';
 	import { PatternService } from '../../services/patternService';
+	import { Cache } from '../../utils/memoize';
 
 	let {
 		patterns = $bindable(),
@@ -67,6 +68,26 @@
 
 	let selectedColumn = $state(0);
 
+	type VisibleRow = {
+		rowIndex: number;
+		isSelected: boolean;
+		isGhost: boolean;
+		patternIndex: number;
+		displayIndex: number;
+		isEmpty?: boolean;
+	};
+
+	const rowStringCache = new Cache<string, string>(500);
+	const patternGenericCache = new Cache<number, ReturnType<typeof converter.toGeneric>>(100);
+	const cellPositionsCache = new Cache<string, ReturnType<typeof getCellPositions>>(500);
+	const rowSegmentsCache = new Cache<string, FieldSegment[]>(500);
+	let lastVisibleRowsCache: {
+		patternId: number;
+		selectedRow: number;
+		canvasHeight: number;
+		result: VisibleRow[];
+	} | null = null;
+
 	let currentPattern = $derived.by(() => {
 		const patternId = patternOrder[currentPatternOrderIndex];
 		let pattern = patterns.find((p) => p.id === patternId);
@@ -77,6 +98,16 @@
 		}
 
 		return pattern;
+	});
+
+	$effect(() => {
+		patterns.length;
+		patternOrder.length;
+		rowStringCache.clear();
+		patternGenericCache.clear();
+		cellPositionsCache.clear();
+		rowSegmentsCache.clear();
+		lastVisibleRowsCache = null;
 	});
 
 	function ensurePatternExists(): Pattern | null {
@@ -172,6 +203,10 @@
 	}
 
 	function parseRowString(rowString: string, rowIndex: number): FieldSegment[] {
+		const cacheKey = `${rowString}:${rowIndex}`;
+		const cached = rowSegmentsCache.get(cacheKey);
+		if (cached) return cached;
+
 		const segments: FieldSegment[] = [];
 		let pos = 0;
 
@@ -275,6 +310,7 @@
 			}
 			if (!foundField) break;
 		}
+		rowSegmentsCache.set(cacheKey, segments);
 		return segments;
 	}
 
@@ -282,6 +318,10 @@
 		rowString: string,
 		rowIndex: number
 	): { x: number; width: number; charIndex: number; fieldKey?: string }[] {
+		const cacheKey = `${rowString}:${rowIndex}`;
+		const cached = cellPositionsCache.get(cacheKey);
+		if (cached) return cached;
+
 		const positions: { x: number; width: number; charIndex: number; fieldKey?: string }[] = [];
 		const segments = parseRowString(rowString, rowIndex);
 		let x = 10;
@@ -338,6 +378,7 @@
 			}
 		}
 
+		cellPositionsCache.set(cacheKey, positions);
 		return positions;
 	}
 
@@ -345,7 +386,16 @@
 		return rowString.replace(/\s/g, '').length;
 	}
 
-	function getVisibleRows(pattern: Pattern) {
+	function getVisibleRows(pattern: Pattern): VisibleRow[] {
+		if (
+			lastVisibleRowsCache &&
+			lastVisibleRowsCache.patternId === pattern.id &&
+			lastVisibleRowsCache.selectedRow === selectedRow &&
+			lastVisibleRowsCache.canvasHeight === canvasHeight
+		) {
+			return lastVisibleRowsCache.result;
+		}
+
 		const visibleCount = Math.floor(canvasHeight / lineHeight);
 		const halfVisible = Math.floor(visibleCount / 2);
 		const startRow = selectedRow - halfVisible;
@@ -423,7 +473,15 @@
 
 			displayIndex++;
 		}
-		return rows;
+
+		const result = rows;
+		lastVisibleRowsCache = {
+			patternId: pattern.id,
+			selectedRow,
+			canvasHeight,
+			result
+		};
+		return result;
 	}
 
 	function setupCanvas() {
@@ -465,6 +523,7 @@
 		}
 
 		const cellPositions = getCellPositions(rowString, rowIndex);
+
 		if (isSelected && selectedColumn < cellPositions.length) {
 			const cellPos = cellPositions[selectedColumn];
 			ctx.fillStyle = COLORS.patternCellSelected;
@@ -535,12 +594,14 @@
 
 	function draw() {
 		if (!ctx) return;
+		if (!isActive && services.audioService.playing) return;
 
 		ctx.fillStyle = COLORS.patternBg;
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
 		const visibleRows = getVisibleRows(currentPattern);
-		visibleRows.forEach((row) => {
+
+		visibleRows.forEach((row: VisibleRow) => {
 			const y = row.displayIndex * lineHeight;
 
 			if (row.isEmpty) {
@@ -555,15 +616,27 @@
 
 			const patternToRender = patterns.find((p) => p.id === row.patternIndex);
 			if (patternToRender && row.rowIndex >= 0 && row.rowIndex < patternToRender.length) {
-				const genericPattern = converter.toGeneric(patternToRender);
+				let genericPattern = patternGenericCache.get(patternToRender.id);
+				if (!genericPattern) {
+					genericPattern = converter.toGeneric(patternToRender);
+					patternGenericCache.set(patternToRender.id, genericPattern);
+				}
+
 				const genericPatternRow = genericPattern.patternRows[row.rowIndex];
 				const genericChannels = genericPattern.channels.map((ch) => ch.rows[row.rowIndex]);
-				const rowString = formatter.formatRow(
-					genericPatternRow,
-					genericChannels,
-					row.rowIndex,
-					schema
-				);
+
+				const rowCacheKey = `${patternToRender.id}:${row.rowIndex}`;
+				let rowString = rowStringCache.get(rowCacheKey);
+				if (!rowString) {
+					rowString = formatter.formatRow(
+						genericPatternRow,
+						genericChannels,
+						row.rowIndex,
+						schema
+					);
+					rowStringCache.set(rowCacheKey, rowString);
+				}
+
 				drawRowStructured(rowString, y, row.isSelected && isActive, row.rowIndex);
 			}
 		});
@@ -745,28 +818,52 @@
 		}
 	}
 
-	$effect(() => {
-		if (canvas) {
-			setupCanvas();
-			draw();
-		}
-	});
+	let lastDrawnRow = -1;
+	let lastDrawnOrderIndex = -1;
+	let lastPatternOrderLength = -1;
+	let lastPatternsLength = -1;
+	let lastCanvasWidth = -1;
+	let lastCanvasHeight = -1;
+	let needsSetup = true;
 
 	$effect(() => {
-		if (ctx && (currentPattern || patternOrder[currentPatternOrderIndex] !== undefined)) {
+		if (!canvas) return;
+
+		if (needsSetup || !ctx) {
+			ctx = canvas.getContext('2d')!;
+			setupCanvas();
+			needsSetup = false;
+			draw();
+			lastDrawnRow = selectedRow;
+			lastDrawnOrderIndex = currentPatternOrderIndex;
+			lastPatternOrderLength = patternOrder.length;
+			lastPatternsLength = patterns.length;
+			lastCanvasWidth = canvasWidth;
+			lastCanvasHeight = canvasHeight;
+			return;
+		}
+
+		const patternChanged = currentPattern !== undefined;
+		const sizeChanged = canvasWidth !== lastCanvasWidth || canvasHeight !== lastCanvasHeight;
+		const rowChanged = selectedRow !== lastDrawnRow;
+		const orderChanged =
+			currentPatternOrderIndex !== lastDrawnOrderIndex ||
+			patternOrder.length !== lastPatternOrderLength ||
+			patterns.length !== lastPatternsLength;
+
+		if (sizeChanged) {
 			updateSize();
 			setupCanvas();
-			draw();
+			lastCanvasWidth = canvasWidth;
+			lastCanvasHeight = canvasHeight;
 		}
-	});
 
-	$effect(() => {
-		if (ctx) {
-			patternOrder.length;
-			patterns.length;
-			currentPatternOrderIndex;
-			selectedRow;
+		if (rowChanged || orderChanged || patternChanged || sizeChanged) {
 			draw();
+			lastDrawnRow = selectedRow;
+			lastDrawnOrderIndex = currentPatternOrderIndex;
+			lastPatternOrderLength = patternOrder.length;
+			lastPatternsLength = patterns.length;
 		}
 	});
 
@@ -813,6 +910,9 @@
 		};
 	});
 
+	let lastPlaybackUpdate = 0;
+	const PLAYBACK_THROTTLE_MS = 33;
+
 	$effect(() => {
 		if (!chipProcessor) return;
 
@@ -823,11 +923,16 @@
 			currentRow: number,
 			currentPatternOrderIndexUpdate?: number
 		) => {
-			if (services.audioService.playing) {
-				selectedRow = currentRow;
-				if (currentPatternOrderIndexUpdate !== undefined) {
-					currentPatternOrderIndex = currentPatternOrderIndexUpdate;
-				}
+			if (!services.audioService.playing) return;
+			if (!isActive) return;
+
+			const now = performance.now();
+			if (now - lastPlaybackUpdate < PLAYBACK_THROTTLE_MS) return;
+			lastPlaybackUpdate = now;
+
+			selectedRow = currentRow;
+			if (currentPatternOrderIndexUpdate !== undefined) {
+				currentPatternOrderIndex = currentPatternOrderIndexUpdate;
 			}
 		};
 

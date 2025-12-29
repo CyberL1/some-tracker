@@ -47,16 +47,46 @@
 	let COLORS = getColors();
 	let FONTS = getFonts();
 
+	let lastDrawnOrderIndex = -1;
+	let lastPatternOrderLength = -1;
+	let lastHoveredIndex: number | null = null;
+	let lastCanvasHeight = -1;
+	let needsSetup = true;
+
 	$effect(() => {
 		if (!canvas) return;
 
-		ctx = canvas.getContext('2d')!;
-		setupCanvas();
-		draw();
-	});
+		if (needsSetup || !ctx) {
+			ctx = canvas.getContext('2d')!;
+			setupCanvas();
+			needsSetup = false;
+			lastDrawnOrderIndex = currentPatternOrderIndex;
+			lastPatternOrderLength = patternOrder.length;
+			lastCanvasHeight = canvasHeight;
+			draw();
+			return;
+		}
 
-	$effect(() => {
-		if (ctx) draw();
+		const sizeChanged = canvasHeight !== lastCanvasHeight;
+		const orderChanged =
+			currentPatternOrderIndex !== lastDrawnOrderIndex ||
+			patternOrder.length !== lastPatternOrderLength ||
+			sizeChanged;
+
+		if (sizeChanged) {
+			setupCanvas();
+		}
+
+		if (orderChanged) {
+			lastDrawnOrderIndex = currentPatternOrderIndex;
+			lastPatternOrderLength = patternOrder.length;
+			lastCanvasHeight = canvasHeight;
+			draw();
+			lastHoveredIndex = hoveredIndex;
+		} else if (hoveredIndex !== lastHoveredIndex) {
+			draw();
+			lastHoveredIndex = hoveredIndex;
+		}
 	});
 
 	function setupCanvas(): void {
@@ -88,6 +118,8 @@
 
 		const centerY = canvasHeight / 2;
 
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
 		ctx.fillStyle = COLORS.patternBg;
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
@@ -169,6 +201,8 @@
 			: isEditing
 				? COLORS.patternEnvelope
 				: COLORS.patternText;
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
 		ctx.fillText(patternText, PADDING + CELL_WIDTH / 2, y);
 
 		if (isEditing) {
@@ -191,14 +225,19 @@
 			ctx.lineTo(underlineX + charWidth, underlineY);
 			ctx.stroke();
 			ctx.restore();
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
 		}
 
 		if (isSelected) {
 			ctx.save();
 			ctx.fillStyle = COLORS.patternEnvelope;
 			ctx.textAlign = 'left';
+			ctx.textBaseline = 'middle';
 			ctx.fillText('►', 2, y);
 			ctx.restore();
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
 		}
 	}
 
@@ -387,10 +426,8 @@
 			}
 		}
 
-		const previousHoveredIndex = hoveredIndex;
-		hoveredIndex = newHoveredIndex;
-
-		if (previousHoveredIndex !== hoveredIndex) {
+		if (hoveredIndex !== newHoveredIndex) {
+			hoveredIndex = newHoveredIndex;
 			draw();
 		}
 
@@ -442,6 +479,10 @@
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
 
+		lastDrawnOrderIndex = -1;
+		lastPatternOrderLength = -1;
+		draw();
+
 		if (lastMouseY !== null && lastMouseX !== null) {
 			updateCursor(lastMouseY, lastMouseX);
 		}
@@ -459,6 +500,10 @@
 		);
 		selectedRow = 0;
 
+		lastDrawnOrderIndex = -1;
+		lastPatternOrderLength = -1;
+		draw();
+
 		if (lastMouseY !== null && lastMouseX !== null) {
 			updateCursor(lastMouseY, lastMouseX);
 		}
@@ -473,6 +518,10 @@
 		patternOrder = result.newPatternOrder;
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
+
+		lastDrawnOrderIndex = -1;
+		lastPatternOrderLength = -1;
+		draw();
 
 		if (lastMouseY !== null && lastMouseX !== null) {
 			updateCursor(lastMouseY, lastMouseX);
@@ -509,6 +558,10 @@
 		if (index === currentPatternOrderIndex) {
 			selectedRow = 0;
 		}
+
+		lastDrawnOrderIndex = -1;
+		lastPatternOrderLength = -1;
+		draw();
 
 		if (lastMouseY !== null && lastMouseX !== null) {
 			updateCursor(lastMouseY, lastMouseX);
