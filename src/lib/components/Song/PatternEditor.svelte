@@ -594,7 +594,6 @@
 
 	function draw() {
 		if (!ctx) return;
-		if (!isActive && services.audioService.playing) return;
 
 		ctx.fillStyle = COLORS.patternBg;
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
@@ -924,7 +923,6 @@
 			currentPatternOrderIndexUpdate?: number
 		) => {
 			if (!services.audioService.playing) return;
-			if (!isActive) return;
 
 			const now = performance.now();
 			if (now - lastPlaybackUpdate < PLAYBACK_THROTTLE_MS) return;
