@@ -49,18 +49,6 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 	},
 	settings: [
 		{
-			key: 'title',
-			label: 'Title',
-			type: 'text',
-			group: 'project'
-		},
-		{
-			key: 'author',
-			label: 'Author',
-			type: 'text',
-			group: 'project'
-		},
-		{
 			key: 'aymChipType',
 			label: 'Chip Type',
 			type: 'toggle',
