@@ -16,9 +16,9 @@
 	} = $props();
 </script>
 
-<div class="w-full {props.fullHeight ? 'flex h-full flex-col' : ''}">
+<div class="{props.fullHeight ? 'flex h-full flex-col' : 'w-full'}">
 	<h2
-		class="flex items-center justify-between rounded-t-sm border border-neutral-600 bg-neutral-900 px-2 py-1 font-bold {props.fullHeight
+		class="relative z-10 flex items-center justify-between rounded-t-sm border border-neutral-600 bg-neutral-900 px-2 py-1 font-bold {props.fullHeight
 			? 'flex-shrink-0'
 			: ''}">
 		<div class="flex items-center gap-2">
@@ -41,8 +41,8 @@
 			</div>
 		{/if}
 	</h2>
-	<div class="flex-1 rounded-b-sm bg-neutral-700">
-		<div class="h-full {props.class}">
+	<div class="{props.fullHeight ? 'flex-1 overflow-hidden' : ''} rounded-b-sm bg-neutral-900">
+		<div class="{props.fullHeight ? 'h-full' : ''} {props.class}">
 			{@render props.children?.()}
 		</div>
 	</div>

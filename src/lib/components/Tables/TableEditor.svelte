@@ -1,24 +1,24 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import type { Ornament } from '../../models/project';
+	import type { Table } from '../../models/project';
 	import type { AudioService } from '../../services/audio-service';
 
 	let {
-		ornament,
+		table,
 		asHex = false,
-		onOrnamentChange
+		onTableChange
 	}: {
-		ornament: Ornament;
+		table: Table;
 		asHex: boolean;
-		onOrnamentChange: (ornament: Ornament) => void;
+		onTableChange: (table: Table) => void;
 	} = $props();
 
 	const PITCH_VALUES = Array.from({ length: 23 }, (_, i) => i - 11); // -11 … 11
 	const SHIFT_VALUES = Array.from({ length: 9 }, (_, i) => i - 4); // -4 … 4
 
-	let rows = $state([...ornament.rows]);
-	let loopRow = $state(ornament.loop);
-	let name = $state(ornament.name);
+	let rows = $state([...table.rows]);
+	let loopRow = $state(table.loop);
+	let name = $state(table.name);
 	let pitches = $state<number[]>([]);
 	let shifts = $state<number[]>([]);
 
@@ -49,13 +49,13 @@
 	function setPitch(index: number, pitch: number) {
 		pitches[index] = pitch;
 		recalcRow(index);
-		onOrnamentChange({ ...ornament, rows });
+		onTableChange({ ...table, rows });
 	}
 
 	function setShift(index: number, shift: number) {
 		shifts[index] = shift;
 		recalcRow(index);
-		onOrnamentChange({ ...ornament, rows });
+		onTableChange({ ...table, rows });
 	}
 
 	function adjustRowOffset(index: number, newOffset: number) {
@@ -101,7 +101,7 @@
 			adjustRowOffset(index, parsed);
 		}
 
-		onOrnamentChange({ ...ornament, rows });
+		onTableChange({ ...table, rows });
 	}
 
 	function handleOffsetKeyDown(event: KeyboardEvent) {
@@ -115,7 +115,7 @@
 		rows = [...rows, 0];
 		pitches = [...pitches, 0];
 		shifts = [...shifts, 0];
-		onOrnamentChange({ ...ornament, rows });
+		onTableChange({ ...table, rows });
 	}
 
 	function removeRow(index: number) {
@@ -124,12 +124,12 @@
 		pitches = pitches.filter((_, i) => i !== index);
 		shifts = shifts.filter((_, i) => i !== index);
 		if (loopRow >= rows.length) loopRow = rows.length - 1;
-		onOrnamentChange({ ...ornament, rows });
+		onTableChange({ ...table, rows });
 	}
 
 	function setLoop(index: number) {
 		loopRow = index;
-		onOrnamentChange({ ...ornament, loop: loopRow });
+		onTableChange({ ...table, loop: loopRow });
 	}
 
 	export function addRowExternal() {
@@ -184,7 +184,7 @@
 			value={name}
 			oninput={(e) => {
 				name = (e.target as HTMLInputElement).value;
-				onOrnamentChange({ ...ornament, name });
+				onTableChange({ ...table, name });
 			}} />
 	</div>
 

@@ -10,17 +10,17 @@ class Project {
 		public aymChipType: 'AY' | 'YM' = 'AY',
 		public aymFrequency: number = 1773400,
 		public intFrequency: number = 50,
-		public ornaments: Ornament[] = []
+		public tables: Table[] = []
 	) {}
 }
 
-class Ornament {
+class Table {
 	id: number;
 	rows: number[];
 	loop: number;
 	name: string;
 
-	constructor(id: number, rows: number[], loop: number, name: string = `Ornament ${id + 1}`) {
+	constructor(id: number, rows: number[], loop: number, name: string = `Table ${id + 1}`) {
 		this.id = id;
 		this.rows = rows;
 		this.loop = loop;
@@ -28,4 +28,4 @@ class Ornament {
 	}
 }
 
-export { Project, Ornament };
+export { Project, Table };

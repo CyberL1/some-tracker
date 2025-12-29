@@ -17,7 +17,7 @@ export function getColors() {
 		patternRowNum: style.getPropertyValue('--color-pattern-row-num').trim(),
 		patternAlternate: style.getPropertyValue('--color-pattern-alternate').trim(),
 		patternAlternateEmpty: style.getPropertyValue('--color-pattern-alternate-empty').trim(),
-		patternOrnament: style.getPropertyValue('--color-pattern-ornament').trim(),
+		patternTable: style.getPropertyValue('--color-pattern-table').trim(),
 		patternRowNumAlternate: style.getPropertyValue('--color-pattern-row-num-alternate').trim()
 	};
 }

@@ -1,10 +1,12 @@
-import type { ChipProcessor } from '../core/chip-processor';
+import type { ChipProcessor, SettingsSubscriber } from '../core/chip-processor';
 import type { Chip } from '../models/chips';
-import type { Ornament } from '../models/project';
+import type { Table } from '../models/project';
+import { ChipSettings } from './chip-settings';
 
 export class AudioService {
 	private _audioContext: AudioContext | null = new AudioContext();
 	private _isPlaying = false;
+	public chipSettings: ChipSettings = new ChipSettings();
 
 	//for example 1x FM chip processor, 2x AY chip processors for TSFM track
 	//they will all be mixed together in single audio context
@@ -37,6 +39,10 @@ export class AudioService {
 		const processor = this.createChipProcessor(chip);
 		this.chipProcessors.push(processor);
 
+		if (this.hasSettingsSubscription(processor)) {
+			processor.subscribeToSettings(this.chipSettings);
+		}
+
 		const response = await fetch(import.meta.env.BASE_URL + chip.wasmUrl);
 		const wasmBuffer = await response.arrayBuffer();
 
@@ -59,13 +65,18 @@ export class AudioService {
 		});
 	}
 
-	playFromRow(row: number) {
+	playFromRow(
+		row: number,
+		patternOrderIndex?: number,
+		getSpeedForChip?: (chipIndex: number) => number | null
+	) {
 		if (this._isPlaying) return;
 
 		this._isPlaying = true;
 
-		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.playFromRow(row);
+		this.chipProcessors.forEach((chipProcessor, index) => {
+			const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+			chipProcessor.playFromRow(row, patternOrderIndex, speed);
 		});
 	}
 
@@ -85,22 +96,23 @@ export class AudioService {
 		});
 	}
 
-	updateAyFrequency(aymFrequency: number) {
+	updateTables(tables: Table[]) {
 		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.sendUpdateAyFrequency(aymFrequency);
+			chipProcessor.sendInitTables(tables);
 		});
 	}
 
-	updateIntFrequency(intFrequency: number) {
+	updateSpeed(speed: number) {
 		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.sendUpdateIntFrequency(intFrequency);
+			chipProcessor.sendInitSpeed(speed);
 		});
 	}
 
-	updateOrnaments(ornaments: Ornament[]) {
-		this.chipProcessors.forEach((chipProcessor) => {
-			chipProcessor.sendInitOrnaments(ornaments);
-		});
+	clearChipProcessors() {
+		if (this._isPlaying) {
+			this.stop();
+		}
+		this.chipProcessors = [];
 	}
 
 	async dispose() {
@@ -145,5 +157,18 @@ export class AudioService {
 		}
 
 		return createProcessor();
+	}
+
+	private hasSettingsSubscription(
+		processor: ChipProcessor
+	): processor is ChipProcessor & SettingsSubscriber {
+		return (
+			'subscribeToSettings' in processor &&
+			'unsubscribeFromSettings' in processor &&
+			typeof (processor as unknown as SettingsSubscriber).subscribeToSettings ===
+				'function' &&
+			typeof (processor as unknown as SettingsSubscriber).unsubscribeFromSettings ===
+				'function'
+		);
 	}
 }

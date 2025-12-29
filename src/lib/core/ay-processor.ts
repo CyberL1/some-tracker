@@ -1,7 +1,13 @@
 import { AY_CHIP, type Chip } from '../models/chips';
 import type { Pattern, Instrument } from '../models/song';
-import type { Ornament } from '../models/project';
-import type { ChipProcessor } from './chip-processor';
+import type { Table } from '../models/project';
+import type {
+	ChipProcessor,
+	SettingsSubscriber,
+	TuningTableSupport,
+	InstrumentSupport
+} from './chip-processor';
+import type { ChipSettings } from '../services/chip-settings';
 
 type PositionUpdateMessage = {
 	type: 'position_update';
@@ -14,32 +20,64 @@ type RequestPatternMessage = {
 	patternOrderIndex: number;
 };
 
-type WorkletMessage = PositionUpdateMessage | RequestPatternMessage;
+type WorkletMessage = PositionUpdateMessage | RequestPatternMessage | SpeedUpdateMessage;
+
+interface SpeedUpdateMessage {
+	type: 'speed_update';
+	speed: number;
+}
 
 type WorkletCommand =
 	| { type: 'init'; wasmBuffer: ArrayBuffer }
 	| { type: 'play' }
-	| { type: 'play_from_row'; row: number }
+	| { type: 'play_from_row'; row: number; patternOrderIndex?: number; speed?: number | null }
 	| { type: 'stop' }
 	| { type: 'update_order'; order: number[] }
 	| { type: 'init_pattern'; pattern: Pattern; patternOrderIndex: number }
 	| { type: 'init_tuning_table'; tuningTable: number[] }
 	| { type: 'init_speed'; speed: number }
-	| { type: 'set_pattern_data'; pattern: Pattern }
-	| { type: 'init_ornaments'; ornaments: Ornament[] }
+	| { type: 'set_pattern_data'; pattern: Pattern; patternOrderIndex: number }
+	| { type: 'init_tables'; tables: Table[] }
 	| { type: 'init_instruments'; instruments: Instrument[] }
 	| { type: 'update_ay_frequency'; aymFrequency: number }
 	| { type: 'update_int_frequency'; intFrequency: number };
 
-export class AYProcessor implements ChipProcessor {
+export class AYProcessor
+	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport
+{
 	chip: Chip;
 	audioNode: AudioWorkletNode | null = null;
 	private onPositionUpdate?: (currentRow: number, currentPatternOrderIndex?: number) => void;
 	private onPatternRequest?: (patternOrderIndex: number) => void;
+	private onSpeedUpdate?: (speed: number) => void;
 	private commandQueue: WorkletCommand[] = [];
+	private settingsUnsubscribers: (() => void)[] = [];
 
 	constructor() {
 		this.chip = AY_CHIP;
+	}
+
+	subscribeToSettings(chipSettings: ChipSettings): void {
+		this.settingsUnsubscribers.push(
+			chipSettings.subscribe('aymFrequency', (value) => {
+				if (typeof value === 'number') {
+					this.sendUpdateAyFrequency(value);
+				}
+			})
+		);
+
+		this.settingsUnsubscribers.push(
+			chipSettings.subscribe('intFrequency', (value) => {
+				if (typeof value === 'number') {
+					this.sendUpdateIntFrequency(value);
+				}
+			})
+		);
+	}
+
+	unsubscribeFromSettings(): void {
+		this.settingsUnsubscribers.forEach((unsubscribe) => unsubscribe());
+		this.settingsUnsubscribers = [];
 	}
 
 	initialize(wasmBuffer: ArrayBuffer, audioNode: AudioWorkletNode): void {
@@ -73,18 +111,20 @@ export class AYProcessor implements ChipProcessor {
 
 	setCallbacks(
 		onPositionUpdate: (currentRow: number, currentPatternOrderIndex?: number) => void,
-		onPatternRequest: (patternOrderIndex: number) => void
+		onPatternRequest: (patternOrderIndex: number) => void,
+		onSpeedUpdate?: (speed: number) => void
 	): void {
 		this.onPositionUpdate = onPositionUpdate;
 		this.onPatternRequest = onPatternRequest;
+		this.onSpeedUpdate = onSpeedUpdate;
 	}
 
 	play(): void {
 		this.sendCommand({ type: 'play' });
 	}
 
-	playFromRow(row: number): void {
-		this.sendCommand({ type: 'play_from_row', row });
+	playFromRow(row: number, patternOrderIndex?: number, speed?: number | null): void {
+		this.sendCommand({ type: 'play_from_row', row, patternOrderIndex, speed });
 	}
 
 	stop(): void {
@@ -107,22 +147,22 @@ export class AYProcessor implements ChipProcessor {
 		this.sendCommand({ type: 'init_speed', speed });
 	}
 
-	sendInitOrnaments(ornaments: Ornament[]): void {
-		const sanitized: Ornament[] = ornaments.map((o) => ({
+	sendInitTables(tables: Table[]): void {
+		const sanitized: Table[] = tables.map((o) => ({
 			id: o.id,
 			rows: Array.from(o.rows),
 			loop: o.loop,
 			name: o.name
 		}));
-		this.sendCommand({ type: 'init_ornaments', ornaments: sanitized });
+		this.sendCommand({ type: 'init_tables', tables: sanitized });
 	}
 
 	sendInitInstruments(instruments: Instrument[]): void {
 		this.sendCommand({ type: 'init_instruments', instruments });
 	}
 
-	sendRequestedPattern(pattern: Pattern): void {
-		this.sendCommand({ type: 'set_pattern_data', pattern });
+	sendRequestedPattern(pattern: Pattern, patternOrderIndex: number): void {
+		this.sendCommand({ type: 'set_pattern_data', pattern, patternOrderIndex });
 	}
 
 	sendUpdateAyFrequency(aymFrequency: number): void {
@@ -131,6 +171,19 @@ export class AYProcessor implements ChipProcessor {
 
 	sendUpdateIntFrequency(intFrequency: number): void {
 		this.sendCommand({ type: 'update_int_frequency', intFrequency });
+	}
+
+	updateParameter(parameter: string, value: unknown): void {
+		switch (parameter) {
+			case 'aymFrequency':
+				this.sendUpdateAyFrequency(value as number);
+				break;
+			case 'intFrequency':
+				this.sendUpdateIntFrequency(value as number);
+				break;
+			default:
+				console.warn(`AY processor: unknown parameter "${parameter}"`);
+		}
 	}
 
 	private handleWorkletMessage(event: MessageEvent<WorkletMessage>): void {
@@ -142,6 +195,9 @@ export class AYProcessor implements ChipProcessor {
 				break;
 			case 'request_pattern':
 				this.onPatternRequest?.(message.patternOrderIndex);
+				break;
+			case 'speed_update':
+				this.onSpeedUpdate?.(message.speed);
 				break;
 			default:
 				console.warn('Unhandled message:', message);

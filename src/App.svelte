@@ -7,12 +7,18 @@
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio-service';
+	import { ProjectService } from './lib/services/project-service';
 	import { AY_CHIP } from './lib/models/chips';
-	import { ProjectCard, OrnamentsCard } from './lib/components/AppLayout';
-	import Card from './lib/components/Card/Card.svelte';
-	import IconCarbonChip from '~icons/carbon/chip';
+	import { TabView } from './lib/components/TabView';
+	import SongView from './lib/components/Song/SongView.svelte';
+	import { TablesView } from './lib/components/Tables';
+	import { DetailsView } from './lib/components/Details';
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
+	import IconCarbonMusic from '~icons/carbon/music';
+	import IconCarbonChip from '~icons/carbon/chip';
+	import IconCarbonWaveform from '~icons/carbon/waveform';
+	import IconCarbonInformationSquare from '~icons/carbon/information-square';
 
 	settingsStore.init();
 
@@ -20,32 +26,37 @@
 		audioService: new AudioService()
 	});
 
+	const projectService = new ProjectService(container.audioService);
+
 	container.audioService.addChipProcessor(AY_CHIP);
 
 	const newProject = new Project();
 
-	let title = $state(newProject.name);
-	let author = $state(newProject.author);
-	let aymChipType = $state(newProject.aymChipType);
 	let songs = $state(newProject.songs);
 	let patternOrder = $state(newProject.patternOrder);
-	let aymFrequency = $state(newProject.aymFrequency);
-	let intFrequency = $state(newProject.intFrequency);
-	let ornaments = $state(newProject.ornaments);
+	let tables = $state(newProject.tables);
 
-	$effect(() => {
-		container.audioService.updateAyFrequency(aymFrequency);
+	let projectSettings = $state({
+		title: newProject.name,
+		author: newProject.author,
+		aymChipType: newProject.aymChipType,
+		aymFrequency: newProject.aymFrequency,
+		intFrequency: newProject.intFrequency
 	});
 
 	$effect(() => {
-		container.audioService.updateIntFrequency(intFrequency);
-	});
-
-	$effect(() => {
-		container.audioService.updateOrnaments(ornaments);
+		container.audioService.updateTables(tables);
 	});
 
 	let patternEditor: PatternEditor | null = $state(null);
+	let activeTabId = $state('song');
+
+	const tabs = [
+		{ id: 'song', label: 'Song', icon: IconCarbonChip },
+		{ id: 'tables', label: 'Tables', icon: IconCarbonMusic },
+		{ id: 'instruments', label: 'Instruments', icon: IconCarbonWaveform },
+		{ id: 'details', label: 'Details', icon: IconCarbonInformationSquare }
+	];
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
@@ -88,19 +99,60 @@
 				return;
 			}
 
-			const importedProject = await handleFileImport(data.action);
-			if (importedProject) {
-				title = importedProject.name;
-				author = importedProject.author;
-				aymChipType = importedProject.aymChipType;
-				songs = importedProject.songs;
-				patternOrder = importedProject.patternOrder;
-				aymFrequency = importedProject.aymFrequency;
-				intFrequency = importedProject.intFrequency;
-				ornaments = importedProject.ornaments;
-
+			if (data.action === 'new-project') {
 				playbackStore.isPlaying = false;
 				container.audioService.stop();
+
+				const newProject = await projectService.resetProject(AY_CHIP);
+
+				projectSettings = {
+					title: newProject.name,
+					author: newProject.author,
+					aymChipType: newProject.aymChipType,
+					aymFrequency: newProject.aymFrequency,
+					intFrequency: newProject.intFrequency
+				};
+				songs = newProject.songs;
+				patternOrder = newProject.patternOrder;
+				tables = newProject.tables;
+
+				patternEditor?.resetToBeginning();
+				return;
+			}
+
+			if (data.action === 'new-song-ay') {
+				playbackStore.isPlaying = false;
+				container.audioService.stop();
+
+				const newSong = await projectService.createNewSong(AY_CHIP);
+				songs = [...songs, newSong];
+
+				patternEditor?.resetToBeginning();
+				return;
+			}
+
+			const importedProject = await handleFileImport(data.action);
+			if (importedProject) {
+				playbackStore.isPlaying = false;
+				container.audioService.stop();
+
+				container.audioService.clearChipProcessors();
+
+				for (const _song of importedProject.songs) {
+					await container.audioService.addChipProcessor(AY_CHIP);
+				}
+
+				projectSettings = {
+					title: importedProject.name,
+					author: importedProject.author,
+					aymChipType: importedProject.aymChipType,
+					aymFrequency: importedProject.aymFrequency,
+					intFrequency: importedProject.intFrequency
+				};
+				songs = importedProject.songs;
+				patternOrder = importedProject.patternOrder;
+				tables = importedProject.tables;
+
 				patternEditor?.resetToBeginning();
 			}
 		} catch (error) {
@@ -114,37 +166,28 @@
 <main
 	class="flex h-screen flex-col gap-1 overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
-	<div class="mx-auto">
-		<!-- <div class="flex min-h-0 flex-1 flex-col gap-3">
-			<ProjectCard
-				bind:title
-				bind:author
-				bind:aymChipType
-				bind:aymFrequency
-				bind:intFrequency />
-			<OrnamentsCard bind:ornaments />
-		</div> -->
-		<div class="shrink-0">
-			{#each songs as song, i}
-				<Card
-					title={`${container.audioService.chipProcessors[i].chip.name} - (${i + 1})`}
-					fullHeight
-					icon={IconCarbonChip}
-					class="p-0">
-					<PatternEditor
-						bind:this={patternEditor}
-						bind:patterns={song.patterns}
+	<div class="flex-1 overflow-hidden">
+		<TabView {tabs} bind:activeTabId>
+			{#snippet children(tabId)}
+				<div class={tabId !== 'song' ? 'hidden' : 'h-full w-full'}>
+					<SongView
+						bind:songs
 						bind:patternOrder
-						speed={song.initialSpeed}
-						tuningTable={song.tuningTable}
-						{ornaments}
-						instruments={song.instruments}
-						ayProcessor={container.audioService.chipProcessors[i]} />
-				</Card>
-			{/each}
-		</div>
-		<!-- <div class="flex-1">
-			some example container here, we can use it to display instruments later
-		</div> -->
+						bind:patternEditor
+						chipProcessors={container.audioService.chipProcessors} />
+				</div>
+				{#if tabId === 'tables'}
+					<TablesView bind:tables />
+				{:else if tabId === 'instruments'}
+					<div class="flex h-full items-center justify-center">
+						<p class="text-sm text-neutral-500">Instruments editor coming soon...</p>
+					</div>
+				{:else if tabId === 'details'}
+					<DetailsView
+						chipProcessors={container.audioService.chipProcessors}
+						bind:values={projectSettings} />
+				{/if}
+			{/snippet}
+		</TabView>
 	</div>
 </main>

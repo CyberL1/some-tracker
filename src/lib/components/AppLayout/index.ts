@@ -1,5 +1,3 @@
-import ProjectCard from './ProjectCard.svelte';
-import FrequencySelector from './FrequencySelector.svelte';
-import OrnamentsCard from './OrnamentsCard.svelte';
+import Select from './Select.svelte';
 
-export { ProjectCard, FrequencySelector, OrnamentsCard };
+export { Select };
