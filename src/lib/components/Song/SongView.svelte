@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { Pattern, Instrument, Song } from '../../models/song';
-	import type { ChipProcessor, TuningTableSupport, InstrumentSupport } from '../../core/chip-processor';
+	import type {
+		ChipProcessor,
+		TuningTableSupport,
+		InstrumentSupport
+	} from '../../core/chip-processor';
 	import type { Chip } from '../../models/chips';
 	import type { AudioService } from '../../services/audio-service';
 	import Card from '../Card/Card.svelte';
@@ -41,12 +45,17 @@
 		startPatternOrderIndex: number,
 		startRow: number
 	): number | null {
-		for (let patternOrderIdx = startPatternOrderIndex; patternOrderIdx >= 0; patternOrderIdx--) {
+		for (
+			let patternOrderIdx = startPatternOrderIndex;
+			patternOrderIdx >= 0;
+			patternOrderIdx--
+		) {
 			const patternId = patternOrder[patternOrderIdx];
 			const pattern = song.patterns.find((p) => p.id === patternId);
 			if (!pattern) continue;
 
-			const startRowIdx = patternOrderIdx === startPatternOrderIndex ? startRow : pattern.length - 1;
+			const startRowIdx =
+				patternOrderIdx === startPatternOrderIndex ? startRow : pattern.length - 1;
 
 			for (let rowIdx = startRowIdx; rowIdx >= 0; rowIdx--) {
 				for (const channel of pattern.channels) {
@@ -68,7 +77,12 @@
 		const song = songs[chipIndex];
 		if (!song) return null;
 
-		const lastSpeed = findLastSpeedCommand(song, patternOrder, sharedPatternOrderIndex, sharedSelectedRow);
+		const lastSpeed = findLastSpeedCommand(
+			song,
+			patternOrder,
+			sharedPatternOrderIndex,
+			sharedSelectedRow
+		);
 		return lastSpeed !== null ? lastSpeed : song.initialSpeed;
 	}
 
@@ -139,8 +153,12 @@
 </script>
 
 <div bind:this={songViewContainer} class="relative flex h-full overflow-hidden">
-	<div class="absolute left-0 top-0 h-full shrink-0">
-		<Card title="Patterns Order" fullHeight={true} icon={IconCarbonListBoxes} class="p-0 overflow-hidden">
+	<div class="absolute top-0 left-0 h-full shrink-0">
+		<Card
+			title="Patterns Order"
+			fullHeight={true}
+			icon={IconCarbonListBoxes}
+			class="overflow-hidden p-0">
 			<PatternOrder
 				bind:currentPatternOrderIndex={sharedPatternOrderIndex}
 				bind:patterns={patternsRecord}
@@ -169,7 +187,7 @@
 						patternEditor = patternEditors[i];
 					}}
 					initAllChips={initAllChipsForPlayback}
-					getSpeedForChip={getSpeedForChip}
+					{getSpeedForChip}
 					speed={song.initialSpeed}
 					tuningTable={song.tuningTable}
 					instruments={song.instruments}
