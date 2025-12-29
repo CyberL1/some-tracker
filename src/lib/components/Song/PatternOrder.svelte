@@ -196,10 +196,16 @@
 			patternText = patternId.toString().padStart(2, '0');
 		}
 
+		const editingColor = isEditing
+			? editingPatternValue === ''
+				? COLORS.patternEnvelope
+				: COLORS.patternEditing
+			: null;
+
 		ctx.fillStyle = isEmpty
 			? COLORS.patternEmpty
 			: isEditing
-				? COLORS.patternEnvelope
+				? editingColor!
 				: COLORS.patternText;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
@@ -207,22 +213,25 @@
 
 		if (isEditing) {
 			ctx.save();
-			ctx.strokeStyle = COLORS.patternEnvelope;
+			const borderColor =
+				editingPatternValue === '' ? COLORS.patternEnvelope : COLORS.patternEditing;
+			ctx.strokeStyle = borderColor;
 			ctx.lineWidth = 2;
 			ctx.strokeRect(PADDING + 1, cellY + 1, CELL_WIDTH - 2, CELL_HEIGHT - 2);
 
-			const digitPosition = editingPatternValue.length;
 			const textWidth = ctx.measureText(patternText).width;
 			const charWidth = textWidth / 2;
 			const underlineY = y + FONT_SIZE / 2 + 2;
 			const centerX = PADDING + CELL_WIDTH / 2;
-			const underlineX = centerX - textWidth / 2 + digitPosition * charWidth;
+			const underlineX = centerX - charWidth;
 
-			ctx.strokeStyle = COLORS.patternEnvelope;
+			const underlineColor =
+				editingPatternValue === '' ? COLORS.patternEnvelope : COLORS.patternEditing;
+			ctx.strokeStyle = underlineColor;
 			ctx.lineWidth = 1;
 			ctx.beginPath();
 			ctx.moveTo(underlineX, underlineY);
-			ctx.lineTo(underlineX + charWidth, underlineY);
+			ctx.lineTo(underlineX + charWidth * 2, underlineY);
 			ctx.stroke();
 			ctx.restore();
 			ctx.textAlign = 'center';
