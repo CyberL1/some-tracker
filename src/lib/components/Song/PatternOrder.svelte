@@ -4,7 +4,7 @@
 	import { getFonts } from '../../utils/fonts';
 	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
 	import { PatternService } from '../../services/patternService';
-	import IconCarbonArrowUp from '~icons/carbon/arrow-up';
+	import IconCarbonUnlink from '~icons/carbon/unlink';
 	import IconCarbonCopy from '~icons/carbon/copy';
 	import IconCarbonSubtract from '~icons/carbon/subtract';
 	import IconCarbonAdd from '~icons/carbon/add';
@@ -17,6 +17,8 @@
 		patternOrder: number[];
 		canvasHeight?: number;
 		lineHeight?: number;
+		songPatterns?: Pattern[];
+		onPatternCreated?: (pattern: Pattern) => void;
 	}
 
 	let {
@@ -24,7 +26,9 @@
 		patterns = $bindable(),
 		selectedRow = $bindable(),
 		patternOrder = $bindable(),
-		canvasHeight = 600
+		canvasHeight = 600,
+		songPatterns = [],
+		onPatternCreated
 	}: Props = $props();
 
 	const FONT_SIZE = 14;
@@ -93,7 +97,13 @@
 			if (i < 0 || i >= patternOrder.length) continue;
 
 			const patternId = patternOrder[i];
-			const pattern = patterns[patternId];
+			let pattern = patterns[patternId];
+			if (!pattern) {
+				const foundPattern = songPatterns.find((p) => p.id === patternId);
+				if (foundPattern) {
+					pattern = foundPattern;
+				}
+			}
 
 			const y = centerY - (currentPatternOrderIndex - i) * CELL_HEIGHT;
 
@@ -117,6 +127,7 @@
 	): void {
 		const cellY = y - CELL_HEIGHT / 2;
 		const isHovered = hoveredIndex === index;
+		const isEditing = editingPatternIndex === index;
 		const isEmpty = !pattern;
 
 		if (isSelected) {
@@ -142,9 +153,45 @@
 			ctx.strokeRect(PADDING + 0.5, cellY + 0.5, CELL_WIDTH - 1, CELL_HEIGHT - 1);
 		}
 
-		const patternText = patternId.toString().padStart(2, '0');
-		ctx.fillStyle = isEmpty ? COLORS.patternEmpty : COLORS.patternText;
+		let patternText: string;
+		if (isEditing) {
+			if (editingPatternValue === '') {
+				patternText = patternId.toString().padStart(2, '0');
+			} else {
+				patternText = editingPatternValue.padStart(2, '0');
+			}
+		} else {
+			patternText = patternId.toString().padStart(2, '0');
+		}
+
+		ctx.fillStyle = isEmpty
+			? COLORS.patternEmpty
+			: isEditing
+				? COLORS.patternEnvelope
+				: COLORS.patternText;
 		ctx.fillText(patternText, PADDING + CELL_WIDTH / 2, y);
+
+		if (isEditing) {
+			ctx.save();
+			ctx.strokeStyle = COLORS.patternEnvelope;
+			ctx.lineWidth = 2;
+			ctx.strokeRect(PADDING + 1, cellY + 1, CELL_WIDTH - 2, CELL_HEIGHT - 2);
+
+			const digitPosition = editingPatternValue.length;
+			const textWidth = ctx.measureText(patternText).width;
+			const charWidth = textWidth / 2;
+			const underlineY = y + FONT_SIZE / 2 + 2;
+			const centerX = PADDING + CELL_WIDTH / 2;
+			const underlineX = centerX - textWidth / 2 + digitPosition * charWidth;
+
+			ctx.strokeStyle = COLORS.patternEnvelope;
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.moveTo(underlineX, underlineY);
+			ctx.lineTo(underlineX + charWidth, underlineY);
+			ctx.stroke();
+			ctx.restore();
+		}
 
 		if (isSelected) {
 			ctx.save();
@@ -200,16 +247,7 @@
 	}
 
 	let editingPatternIndex: number | null = $state(null);
-	let editingInputElement: HTMLInputElement | null = $state(null);
-	let lastClickTime = 0;
-	let lastClickIndex: number | null = null;
-
-	$effect(() => {
-		if (editingInputElement && editingPatternIndex !== null) {
-			editingInputElement.focus();
-			editingInputElement.select();
-		}
-	});
+	let editingPatternValue: string = $state('');
 
 	function handleClick(event: MouseEvent): void {
 		const rect = canvas.getBoundingClientRect();
@@ -221,20 +259,11 @@
 
 		if (clickedIndex >= 0 && clickedIndex < patternOrder.length) {
 			if (x <= PADDING + CELL_WIDTH && x >= PADDING) {
-				const currentTime = Date.now();
-				const isDoubleClick =
-					currentTime - lastClickTime < 300 && lastClickIndex === clickedIndex;
-
-				if (isDoubleClick) {
-					editingPatternIndex = clickedIndex;
-					lastClickTime = 0;
-					lastClickIndex = null;
-				} else {
-					finishPatternEdit();
-					switchPattern(clickedIndex);
-					lastClickTime = currentTime;
-					lastClickIndex = clickedIndex;
-				}
+				finishPatternEdit();
+				switchPattern(clickedIndex);
+				editingPatternIndex = clickedIndex;
+				editingPatternValue = '';
+				draw();
 			} else {
 				finishPatternEdit();
 				switchPattern(clickedIndex);
@@ -258,11 +287,23 @@
 
 		if (editingPatternIndex !== null) {
 			if (key === 'Enter') {
-				event.preventDefault();
 				finishPatternEdit();
 			} else if (key === 'Escape') {
-				event.preventDefault();
-				cancelPatternEdit();
+				editingPatternIndex = null;
+				editingPatternValue = '';
+				draw();
+			} else if (key >= '0' && key <= '9') {
+				if (editingPatternValue.length < 2) {
+					editingPatternValue += key;
+					if (editingPatternValue.length === 2) {
+						finishPatternEdit();
+					} else {
+						draw();
+					}
+				}
+			} else if (key === 'Backspace') {
+				editingPatternValue = editingPatternValue.slice(0, -1);
+				draw();
 			}
 			return;
 		}
@@ -277,16 +318,15 @@
 	}
 
 	function finishPatternEdit(): void {
-		if (editingPatternIndex === null || !editingInputElement) return;
+		if (editingPatternIndex === null) return;
 
-		const inputValue = editingInputElement.value.trim();
-		if (inputValue !== '') {
-			const displayedValue = inputValue.padStart(2, '0');
+		if (editingPatternValue !== '') {
+			const displayedValue = editingPatternValue.padStart(2, '0');
 			const newId = parseInt(displayedValue);
 			const currentPatternId = patternOrder[editingPatternIndex];
 			const currentPattern = patterns[currentPatternId];
 
-			if (!isNaN(newId) && newId >= 0 && newId <= 99) {
+			if (newId >= 0 && newId <= 99) {
 				if (!patterns[newId]) {
 					const newPattern = currentPattern
 						? PatternService.clonePattern(currentPattern, newId)
@@ -300,14 +340,8 @@
 			}
 		}
 
-		cancelPatternEdit();
-	}
-
-	function cancelPatternEdit(): void {
 		editingPatternIndex = null;
-		if (editingInputElement) {
-			editingInputElement.value = '';
-		}
+		editingPatternValue = '';
 		draw();
 	}
 
@@ -446,12 +480,31 @@
 	}
 
 	function makePatternUniqueAtIndex(index: number): void {
+		const currentPatternId = patternOrder[index];
+		let currentPattern = patterns[currentPatternId];
+
+		if (!currentPattern) {
+			const foundPattern = songPatterns.find((p) => p.id === currentPatternId);
+			if (!foundPattern) {
+				return;
+			}
+			currentPattern = foundPattern;
+			patterns = { ...patterns, [currentPatternId]: currentPattern };
+		} else {
+			const foundPattern = songPatterns.find((p) => p.id === currentPatternId);
+			if (foundPattern && foundPattern !== currentPattern) {
+				currentPattern = foundPattern;
+				patterns = { ...patterns, [currentPatternId]: currentPattern };
+			}
+		}
+
 		const result = PatternService.makePatternUnique(patterns, patternOrder, index);
 
 		if (!result) return;
 
 		patterns = result.newPatterns;
 		patternOrder = result.newPatternOrder;
+		onPatternCreated?.(result.newPatterns[result.newPatternId]);
 
 		if (index === currentPatternOrderIndex) {
 			selectedRow = 0;
@@ -467,12 +520,6 @@
 	const totalHeight = BUTTON_SIZE * 4 + BUTTON_SPACING * 3;
 	const startY = $derived(buttonCenterY - totalHeight / 2);
 	const canRemove = $derived(patternOrder.length > 1);
-	const editingY = $derived(
-		editingPatternIndex !== null
-			? buttonCenterY - (currentPatternOrderIndex - editingPatternIndex) * CELL_HEIGHT
-			: 0
-	);
-	const editingCellY = $derived(editingY - CELL_HEIGHT / 2);
 </script>
 
 <div style="width: {canvasWidth}px; height: {canvasHeight}px;" class="relative overflow-hidden">
@@ -499,7 +546,7 @@
 			onMouseLeave={() => (hoveredButton = null)}
 			title="Make Unique"
 			size={BUTTON_SIZE}>
-			<IconCarbonArrowUp
+			<IconCarbonUnlink
 				class="text-pattern-text"
 				style="height: {BUTTON_SIZE - 6}px; width: {BUTTON_SIZE - 6}px;" />
 		</PatternOrderButton>
@@ -544,25 +591,4 @@
 				style="height: {BUTTON_SIZE - 6}px; width: {BUTTON_SIZE - 6}px;" />
 		</PatternOrderButton>
 	</div>
-
-	{#if editingPatternIndex !== null}
-		<input
-			bind:this={editingInputElement}
-			type="text"
-			inputmode="numeric"
-			pattern="[0-9]*"
-			maxlength="2"
-			value={patternOrder[editingPatternIndex]?.toString().padStart(2, '0') || '00'}
-			class="border-pattern-text bg-pattern-bg text-pattern-text pointer-events-auto absolute border focus:outline-none"
-			style="left: {PADDING}px; top: {editingCellY}px; width: {CELL_WIDTH}px; height: {CELL_HEIGHT}px; font-size: {FONT_SIZE}px; font-family: {FONTS.mono}; text-align: center;"
-			onkeydown={(e) => {
-				if (e.key === 'Enter') {
-					e.preventDefault();
-					finishPatternEdit();
-				} else if (e.key === 'Escape') {
-					e.preventDefault();
-					cancelPatternEdit();
-				}
-			}} />
-	{/if}
 </div>

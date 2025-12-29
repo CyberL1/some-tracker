@@ -69,11 +69,6 @@
 
 	let currentPattern = $derived.by(() => {
 		const patternId = patternOrder[currentPatternOrderIndex];
-		return patterns.find((p) => p.id === patternId);
-	});
-
-	function ensurePatternExists(): Pattern | null {
-		const patternId = patternOrder[currentPatternOrderIndex];
 		let pattern = patterns.find((p) => p.id === patternId);
 
 		if (!pattern) {
@@ -82,6 +77,10 @@
 		}
 
 		return pattern;
+	});
+
+	function ensurePatternExists(): Pattern | null {
+		return currentPattern;
 	}
 
 	export function resetToBeginning() {
@@ -149,7 +148,6 @@
 	}
 
 	function initPlayback() {
-		if (!currentPattern) return;
 		chipProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
 		chipProcessor.sendInitSpeed(speed);
 
@@ -375,19 +373,18 @@
 					let prevPattern = patterns.find((p) => p.id === prevPatternIndex);
 					if (!prevPattern) {
 						prevPattern = PatternService.createEmptyPattern(prevPatternIndex);
+						patterns = [...patterns, prevPattern];
 					}
-					if (prevPattern) {
-						const ghostRowIndex = prevPattern.length + i;
-						if (ghostRowIndex >= 0 && ghostRowIndex < prevPattern.length) {
-							rows.push({
-								rowIndex: ghostRowIndex,
-								isSelected: false,
-								isGhost: true,
-								patternIndex: prevPatternIndex,
-								displayIndex
-							});
-							rowAdded = true;
-						}
+					const ghostRowIndex = prevPattern.length + i;
+					if (ghostRowIndex >= 0 && ghostRowIndex < prevPattern.length) {
+						rows.push({
+							rowIndex: ghostRowIndex,
+							isSelected: false,
+							isGhost: true,
+							patternIndex: prevPatternIndex,
+							displayIndex
+						});
+						rowAdded = true;
 					}
 				}
 			} else {
@@ -397,19 +394,18 @@
 					let nextPattern = patterns.find((p) => p.id === nextPatternIndex);
 					if (!nextPattern) {
 						nextPattern = PatternService.createEmptyPattern(nextPatternIndex);
+						patterns = [...patterns, nextPattern];
 					}
-					if (nextPattern) {
-						const ghostRowIndex = i - pattern.length;
-						if (ghostRowIndex >= 0 && ghostRowIndex < nextPattern.length) {
-							rows.push({
-								rowIndex: ghostRowIndex,
-								isSelected: false,
-								isGhost: true,
-								patternIndex: nextPatternIndex,
-								displayIndex
-							});
-							rowAdded = true;
-						}
+					const ghostRowIndex = i - pattern.length;
+					if (ghostRowIndex >= 0 && ghostRowIndex < nextPattern.length) {
+						rows.push({
+							rowIndex: ghostRowIndex,
+							isSelected: false,
+							isGhost: true,
+							patternIndex: nextPatternIndex,
+							displayIndex
+						});
+						rowAdded = true;
 					}
 				}
 			}
@@ -543,14 +539,7 @@
 		ctx.fillStyle = COLORS.patternBg;
 		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-		const patternToShow =
-			currentPattern ||
-			(() => {
-				const patternId = patternOrder[currentPatternOrderIndex];
-				return PatternService.createEmptyPattern(patternId);
-			})();
-
-		const visibleRows = getVisibleRows(patternToShow);
+		const visibleRows = getVisibleRows(currentPattern);
 		visibleRows.forEach((row) => {
 			const y = row.displayIndex * lineHeight;
 
@@ -564,16 +553,7 @@
 				ctx.globalAlpha = 1.0;
 			}
 
-			let patternToRender: Pattern | null = null;
-			if (row.isGhost) {
-				const pattern = patterns.find((p) => p.id === row.patternIndex);
-				patternToRender = pattern || PatternService.createEmptyPattern(row.patternIndex);
-			} else {
-				const pattern = patterns.find((p) => p.id === row.patternIndex);
-				patternToRender =
-					pattern || (row.patternIndex === patternToShow.id ? patternToShow : null);
-			}
-
+			const patternToRender = patterns.find((p) => p.id === row.patternIndex);
 			if (patternToRender && row.rowIndex >= 0 && row.rowIndex < patternToRender.length) {
 				const genericPattern = converter.toGeneric(patternToRender);
 				const genericPatternRow = genericPattern.patternRows[row.rowIndex];
@@ -753,29 +733,13 @@
 			);
 		}
 
-		if (ctx) {
-			const patternToMeasure =
-				currentPattern ||
-				(() => {
-					const patternId = patternOrder[currentPatternOrderIndex];
-					return PatternService.createEmptyPattern(patternId);
-				})();
-
-			if (patternToMeasure) {
-				const genericPattern = converter.toGeneric(patternToMeasure);
-				const genericPatternRow = genericPattern.patternRows[0];
-				const genericChannels = genericPattern.channels.map((ch) => ch.rows[0]);
-				const rowString = formatter.formatRow(
-					genericPatternRow,
-					genericChannels,
-					0,
-					schema
-				);
-				const width = ctx.measureText(rowString).width;
-				canvasWidth = width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
-			} else {
-				canvasWidth = PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH;
-			}
+		if (ctx && currentPattern) {
+			const genericPattern = converter.toGeneric(currentPattern);
+			const genericPatternRow = genericPattern.patternRows[0];
+			const genericChannels = genericPattern.channels.map((ch) => ch.rows[0]);
+			const rowString = formatter.formatRow(genericPatternRow, genericChannels, 0, schema);
+			const width = ctx.measureText(rowString).width;
+			canvasWidth = width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
 		} else {
 			canvasWidth = PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH;
 		}

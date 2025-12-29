@@ -117,10 +117,13 @@
 			patternsRecord = {};
 			return;
 		}
-		const firstSongPatterns = songs[0].patterns;
 		const record: Record<number, Pattern> = {};
-		firstSongPatterns.forEach((pattern) => {
-			record[pattern.id] = pattern;
+		songs.forEach((song) => {
+			song.patterns.forEach((pattern) => {
+				if (!record[pattern.id]) {
+					record[pattern.id] = pattern;
+				}
+			});
 		});
 		patternsRecord = record;
 	});
@@ -165,7 +168,15 @@
 				bind:selectedRow={sharedSelectedRow}
 				bind:patternOrder
 				canvasHeight={patternOrderHeight}
-				{lineHeight} />
+				{lineHeight}
+				songPatterns={songs.flatMap((song) => song.patterns)}
+				onPatternCreated={(pattern) => {
+					songs.forEach((song) => {
+						if (!song.patterns.find((p) => p.id === pattern.id)) {
+							song.patterns = [...song.patterns, pattern];
+						}
+					});
+				}} />
 		</Card>
 	</div>
 	<div class="flex w-full justify-center overflow-hidden">
