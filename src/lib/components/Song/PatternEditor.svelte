@@ -9,6 +9,7 @@
 	import type { Chip } from '../../models/chips';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
+	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
 	import { getContext } from 'svelte';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { playbackStore } from '../../stores/playback.svelte';
@@ -437,15 +438,15 @@
 		try {
 			updateSize();
 
-			const dpr = window.devicePixelRatio || 1;
-			canvas.width = canvasWidth * dpr;
-			canvas.height = canvasHeight * dpr;
-			canvas.style.width = canvasWidth + 'px';
-			canvas.style.height = canvasHeight + 'px';
-
-			ctx.scale(dpr, dpr);
-			ctx.font = `${PATTERN_EDITOR_CONSTANTS.FONT_SIZE}px ${FONTS.mono}`;
-			ctx.textBaseline = 'middle';
+			setupCanvasUtil({
+				canvas,
+				ctx,
+				width: canvasWidth,
+				height: canvasHeight,
+				fontSize: PATTERN_EDITOR_CONSTANTS.FONT_SIZE,
+				fonts: FONTS,
+				textBaseline: 'middle'
+			});
 		} catch (error) {
 			console.error('Error during canvas setup:', error);
 		}
