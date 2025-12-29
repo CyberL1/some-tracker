@@ -1,13 +1,8 @@
-interface Settings {
-  volume: number;
-}
-
-export const defaultSettings: Settings = {
-  volume: 100
-}
+import type { Settings } from "../components/Settings/types";
+import { settingsItems } from "../config/settings";
 
 const STORAGE_KEY = "settings";
-let settingsState = $state(defaultSettings);
+let settingsState = $state({} as Settings);
 
 export const settingsStore = {
   init() {
@@ -16,7 +11,8 @@ export const settingsStore = {
     if (settings) {
       settingsState = JSON.parse(settings);
     } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultSettings));
+      settingsItems.map((item) => settingsState[item.setting] = item.defaultValue);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsState));
     }
   },
   get: (): Settings => {

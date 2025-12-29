@@ -19,6 +19,7 @@
 	import IconCarbonChip from '~icons/carbon/chip';
 	import IconCarbonWaveform from '~icons/carbon/waveform';
 	import IconCarbonInformationSquare from '~icons/carbon/information-square';
+	import Settings from './lib/components/Settings/Settings.svelte';
 
 	settingsStore.init();
 
@@ -131,6 +132,11 @@
 				return;
 			}
 
+			if (data.action === 'settings') {
+				activeTabId = 'settings';
+				return;
+			}
+
 			const importedProject = await handleFileImport(data.action);
 			if (importedProject) {
 				playbackStore.isPlaying = false;
@@ -186,6 +192,9 @@
 					<DetailsView
 						chipProcessors={container.audioService.chipProcessors}
 						bind:values={projectSettings} />
+				{/if}
+				{#if tabId === 'settings'}
+					<Settings />
 				{/if}
 			{/snippet}
 		</TabView>

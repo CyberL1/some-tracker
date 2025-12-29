@@ -78,11 +78,5 @@
 			}}>
 			<IconCarbonPlay class="h-4 w-4" />
 		</button>
-
-		<input
-			type="range"
-			defaultValue={settings.volume}
-			onchange={(element) => settingsStore.set('volume', element.currentTarget.value)} />
-		{settings.volume}%
 	</div>
 </div>

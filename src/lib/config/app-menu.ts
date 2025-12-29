@@ -27,6 +27,7 @@ export const menuItems: MenuItem[] = [
 			},
 			{ label: 'Save', type: 'normal' },
 			{ label: 'Save As', type: 'normal' },
+			{ label: 'Settings', type: 'normal', action: 'settings' },
 			{ label: 'Exit', type: 'normal' }
 		]
 	},
