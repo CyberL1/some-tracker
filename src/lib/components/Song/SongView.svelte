@@ -1,12 +1,17 @@
 <script lang="ts">
 	import type { Pattern, Instrument, Song } from '../../models/song';
-	import type { ChipProcessor, TuningTableSupport, InstrumentSupport } from '../../core/chip-processor';
+	import type {
+		ChipProcessor,
+		TuningTableSupport,
+		InstrumentSupport
+	} from '../../core/chip-processor';
 	import type { Chip } from '../../models/chips';
 	import type { AudioService } from '../../services/audio-service';
 	import Card from '../Card/Card.svelte';
 	import PatternEditor from './PatternEditor.svelte';
 	import PatternOrder from './PatternOrder.svelte';
 	import IconCarbonChip from '~icons/carbon/chip';
+	import IconCarbonListBoxes from '~icons/carbon/list-boxes';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { getContext } from 'svelte';
 
@@ -32,7 +37,20 @@
 
 	let patternsRecord = $state<Record<number, Pattern>>({});
 
+	const songPatterns = $derived(songs.flatMap((song) => song.patterns));
+
 	const SPEED_EFFECT_TYPE = 5;
+
+	function handlePatternCreated(pattern: Pattern): void {
+		songs.forEach((song) => {
+			const existingPattern = song.patterns.find((p) => p.id === pattern.id);
+			if (!existingPattern) {
+				song.patterns = [...song.patterns, pattern];
+			} else {
+				song.patterns = song.patterns.map((p) => (p.id === pattern.id ? pattern : p));
+			}
+		});
+	}
 
 	function findLastSpeedCommand(
 		song: Song,
@@ -40,12 +58,17 @@
 		startPatternOrderIndex: number,
 		startRow: number
 	): number | null {
-		for (let patternOrderIdx = startPatternOrderIndex; patternOrderIdx >= 0; patternOrderIdx--) {
+		for (
+			let patternOrderIdx = startPatternOrderIndex;
+			patternOrderIdx >= 0;
+			patternOrderIdx--
+		) {
 			const patternId = patternOrder[patternOrderIdx];
 			const pattern = song.patterns.find((p) => p.id === patternId);
 			if (!pattern) continue;
 
-			const startRowIdx = patternOrderIdx === startPatternOrderIndex ? startRow : pattern.length - 1;
+			const startRowIdx =
+				patternOrderIdx === startPatternOrderIndex ? startRow : pattern.length - 1;
 
 			for (let rowIdx = startRowIdx; rowIdx >= 0; rowIdx--) {
 				for (const channel of pattern.channels) {
@@ -67,7 +90,12 @@
 		const song = songs[chipIndex];
 		if (!song) return null;
 
-		const lastSpeed = findLastSpeedCommand(song, patternOrder, sharedPatternOrderIndex, sharedSelectedRow);
+		const lastSpeed = findLastSpeedCommand(
+			song,
+			patternOrder,
+			sharedPatternOrderIndex,
+			sharedSelectedRow
+		);
 		return lastSpeed !== null ? lastSpeed : song.initialSpeed;
 	}
 
@@ -102,10 +130,13 @@
 			patternsRecord = {};
 			return;
 		}
-		const firstSongPatterns = songs[0].patterns;
 		const record: Record<number, Pattern> = {};
-		firstSongPatterns.forEach((pattern) => {
-			record[pattern.id] = pattern;
+		songs.forEach((song) => {
+			song.patterns.forEach((pattern) => {
+				if (!record[pattern.id]) {
+					record[pattern.id] = pattern;
+				}
+			});
 		});
 		patternsRecord = record;
 	});
@@ -138,14 +169,22 @@
 </script>
 
 <div bind:this={songViewContainer} class="relative flex h-full overflow-hidden">
-	<div class="absolute left-0 top-0 h-full shrink-0">
-		<PatternOrder
-			bind:currentPatternOrderIndex={sharedPatternOrderIndex}
-			bind:patterns={patternsRecord}
-			bind:selectedRow={sharedSelectedRow}
-			bind:patternOrder
-			canvasHeight={patternOrderHeight}
-			{lineHeight} />
+	<div class="absolute top-0 left-0 h-full shrink-0">
+		<Card
+			title="Patterns Order"
+			fullHeight={true}
+			icon={IconCarbonListBoxes}
+			class="overflow-hidden p-0">
+			<PatternOrder
+				bind:currentPatternOrderIndex={sharedPatternOrderIndex}
+				bind:patterns={patternsRecord}
+				bind:selectedRow={sharedSelectedRow}
+				bind:patternOrder
+				canvasHeight={patternOrderHeight}
+				{lineHeight}
+				{songPatterns}
+				onPatternCreated={handlePatternCreated} />
+		</Card>
 	</div>
 	<div class="flex w-full justify-center overflow-hidden">
 		{#each songs as song, i}
@@ -156,7 +195,7 @@
 				class="p-0">
 				<PatternEditor
 					bind:this={patternEditors[i]}
-					patterns={song.patterns}
+					bind:patterns={song.patterns}
 					bind:patternOrder
 					bind:currentPatternOrderIndex={sharedPatternOrderIndex}
 					bind:selectedRow={sharedSelectedRow}
@@ -166,7 +205,7 @@
 						patternEditor = patternEditors[i];
 					}}
 					initAllChips={initAllChipsForPlayback}
-					getSpeedForChip={getSpeedForChip}
+					{getSpeedForChip}
 					speed={song.initialSpeed}
 					tuningTable={song.tuningTable}
 					instruments={song.instruments}

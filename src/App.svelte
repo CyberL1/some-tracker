@@ -19,7 +19,7 @@
 	import IconCarbonChip from '~icons/carbon/chip';
 	import IconCarbonWaveform from '~icons/carbon/waveform';
 	import IconCarbonInformationSquare from '~icons/carbon/information-square';
-	import Settings from './lib/components/Settings/Settings.svelte';
+	import IconCarbonDataTable from '~icons/carbon/data-table';
 
 	settingsStore.init();
 
@@ -54,7 +54,7 @@
 
 	const tabs = [
 		{ id: 'song', label: 'Song', icon: IconCarbonChip },
-		{ id: 'tables', label: 'Tables', icon: IconCarbonMusic },
+		{ id: 'tables', label: 'Tables', icon: IconCarbonDataTable },
 		{ id: 'instruments', label: 'Instruments', icon: IconCarbonWaveform },
 		{ id: 'details', label: 'Details', icon: IconCarbonInformationSquare }
 	];

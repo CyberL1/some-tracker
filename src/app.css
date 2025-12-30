@@ -5,24 +5,24 @@
 	--font-sans: 'Fira Code', sans-serif;
 	--font-mono: 'Fira Code', monospace;
 
-	/* Base theme colors - Blue Depths variant */
-	--color-pattern-bg: #0d1117;
-	--color-pattern-text: #c9d1d9;
-	--color-pattern-empty: #1a1f2a;
-	--color-pattern-empty-selected: #1f2937;
-	--color-pattern-note: #58a6ff;
-	--color-pattern-instrument: #79c0ff;
-	--color-pattern-effect: #a5d6ff;
-	--color-pattern-envelope: #388bfd;
-	--color-pattern-noise: #4b5563;
-	--color-pattern-header: #30363d;
-	--color-pattern-selected: #161b22;
-	--color-pattern-cell-selected: #1f2937;
-	--color-pattern-row-num: #58a6ff;
-	--color-pattern-row-num-alternate: #79c0ff;
-	--color-pattern-alternate: #090d13;
-	--color-pattern-alternate-empty: #161b22;
-	--color-pattern-table: #1f6feb;
+	--color-pattern-bg: #1a1b26;
+	--color-pattern-text: #a9b1d6;
+	--color-pattern-empty: #24283b;
+	--color-pattern-empty-selected: #2f3549;
+	--color-pattern-note: #7aa2f7;
+	--color-pattern-instrument: #bb9af7;
+	--color-pattern-effect: #7dcfff;
+	--color-pattern-envelope: #2ac3de;
+	--color-pattern-noise: #565f89;
+	--color-pattern-header: #1f2335;
+	--color-pattern-selected: #292e42;
+	--color-pattern-cell-selected: #3b4261;
+	--color-pattern-row-num: #7aa2f7;
+	--color-pattern-row-num-alternate: #9aa5ce;
+	--color-pattern-alternate: #16161e;
+	--color-pattern-alternate-empty: #1f2335;
+	--color-pattern-table: #73daca;
+	--color-pattern-editing: #9ece6a;
 }
 
 /* Hide number input spinners/steppers */

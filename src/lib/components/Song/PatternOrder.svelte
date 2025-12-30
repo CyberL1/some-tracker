@@ -2,7 +2,14 @@
 	import type { Pattern } from '../../models/song';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
-	import { PatternService } from '../../services/patternService';
+	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
+	import { PatternService } from '../../services/pattern-service';
+	import { PatternOrderRenderer } from '../../rendering/pattern-order-renderer';
+	import IconCarbonUnlink from '~icons/carbon/unlink';
+	import IconCarbonCopy from '~icons/carbon/copy';
+	import IconCarbonSubtract from '~icons/carbon/subtract';
+	import IconCarbonAdd from '~icons/carbon/add';
+	import PatternOrderButton from './PatternOrderButton.svelte';
 
 	interface Props {
 		currentPatternOrderIndex: number;
@@ -11,6 +18,8 @@
 		patternOrder: number[];
 		canvasHeight?: number;
 		lineHeight?: number;
+		songPatterns?: Pattern[];
+		onPatternCreated?: (pattern: Pattern) => void;
 	}
 
 	let {
@@ -18,7 +27,9 @@
 		patterns = $bindable(),
 		selectedRow = $bindable(),
 		patternOrder = $bindable(),
-		canvasHeight = 600
+		canvasHeight = 600,
+		songPatterns = [],
+		onPatternCreated
 	}: Props = $props();
 
 	const FONT_SIZE = 14;
@@ -26,39 +37,84 @@
 	const CELL_HEIGHT = 28;
 	const PADDING = 12;
 	const FADE_HEIGHT = 30;
-	const BUTTON_SIZE = 13;
-	const BUTTON_SPACING = 1;
+	const BUTTON_SIZE = 22;
+	const BUTTON_SPACING = 2;
+	const BUTTON_COLUMN_WIDTH = BUTTON_SIZE;
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
-	const canvasWidth = CELL_WIDTH + PADDING * 2 + BUTTON_SIZE * 2 + BUTTON_SPACING * 3;
+	const canvasWidth = CELL_WIDTH + PADDING * 2 + BUTTON_COLUMN_WIDTH + BUTTON_SPACING;
 
 	let COLORS = getColors();
 	let FONTS = getFonts();
+	let renderer: PatternOrderRenderer | null = null;
+
+	let lastDrawnOrderIndex = -1;
+	let lastPatternOrderLength = -1;
+	let lastHoveredIndex: number | null = null;
+	let lastCanvasHeight = -1;
+	let needsSetup = true;
 
 	$effect(() => {
 		if (!canvas) return;
 
-		ctx = canvas.getContext('2d')!;
-		setupCanvas();
-		draw();
-	});
+		if (needsSetup || !ctx) {
+			ctx = canvas.getContext('2d')!;
+			setupCanvas();
+			needsSetup = false;
+			lastDrawnOrderIndex = currentPatternOrderIndex;
+			lastPatternOrderLength = patternOrder.length;
+			lastCanvasHeight = canvasHeight;
+			draw();
+			return;
+		}
 
-	$effect(() => {
-		if (ctx) draw();
+		const sizeChanged = canvasHeight !== lastCanvasHeight;
+		const orderChanged =
+			currentPatternOrderIndex !== lastDrawnOrderIndex ||
+			patternOrder.length !== lastPatternOrderLength ||
+			sizeChanged;
+
+		if (sizeChanged) {
+			setupCanvas();
+		}
+
+		if (orderChanged) {
+			lastDrawnOrderIndex = currentPatternOrderIndex;
+			lastPatternOrderLength = patternOrder.length;
+			lastCanvasHeight = canvasHeight;
+			draw();
+			lastHoveredIndex = hoveredIndex;
+		} else if (hoveredIndex !== lastHoveredIndex) {
+			draw();
+			lastHoveredIndex = hoveredIndex;
+		}
 	});
 
 	function setupCanvas(): void {
-		const dpr = window.devicePixelRatio || 1;
-		canvas.width = canvasWidth * dpr;
-		canvas.height = canvasHeight * dpr;
-		canvas.style.width = `${canvasWidth}px`;
-		canvas.style.height = `${canvasHeight}px`;
+		setupCanvasUtil({
+			canvas,
+			ctx,
+			width: canvasWidth,
+			height: canvasHeight,
+			fontSize: FONT_SIZE,
+			fonts: FONTS,
+			textAlign: 'center',
+			textBaseline: 'middle'
+		});
 
-		ctx.scale(dpr, dpr);
-		ctx.font = `${FONT_SIZE}px ${FONTS.mono}`;
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
+		renderer = new PatternOrderRenderer({
+			ctx,
+			colors: COLORS,
+			fonts: FONTS,
+			canvasWidth,
+			canvasHeight,
+			fontSize: FONT_SIZE,
+			cellWidth: CELL_WIDTH,
+			cellHeight: CELL_HEIGHT,
+			padding: PADDING,
+			fadeHeight: FADE_HEIGHT
+		});
 	}
 
 	function getVisibleRange() {
@@ -73,20 +129,25 @@
 	}
 
 	function draw(): void {
-		if (!ctx) return;
+		if (!ctx || !renderer) return;
 
 		const centerY = canvasHeight / 2;
 
-		ctx.fillStyle = COLORS.patternBg;
-		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+		renderer.drawBackground(canvasHeight);
 
 		const { startIndex, endIndex } = getVisibleRange();
 
 		for (let i = startIndex; i <= endIndex; i++) {
 			if (i < 0 || i >= patternOrder.length) continue;
 
-			const pattern = patterns[patternOrder[i]];
-			if (!pattern) continue;
+			const patternId = patternOrder[i];
+			let pattern = patterns[patternId];
+			if (!pattern) {
+				const foundPattern = songPatterns.find((p) => p.id === patternId);
+				if (foundPattern) {
+					pattern = foundPattern;
+				}
+			}
 
 			const y = centerY - (currentPatternOrderIndex - i) * CELL_HEIGHT;
 
@@ -94,194 +155,31 @@
 
 			const isSelected = i === currentPatternOrderIndex;
 			const isHovered = hoveredIndex === i;
+			const isEditing = editingPatternIndex === i;
 
-			drawPatternCell(pattern, y, isSelected, i);
-
-			// Draw buttons only for hovered patterns
-			if (isHovered) {
-				drawPatternButtons(y, i);
-			}
+			renderer.drawPatternCell({
+				pattern,
+				patternId,
+				y,
+				isSelected,
+				isHovered,
+				isEditing,
+				editingValue: editingPatternValue,
+				index: i
+			});
 		}
 
-		drawScrollIndicators(startIndex, endIndex);
-	}
-
-	function drawPatternCell(
-		pattern: Pattern,
-		y: number,
-		isSelected: boolean,
-		index: number
-	): void {
-		const cellY = y - CELL_HEIGHT / 2;
-		const isHovered = hoveredIndex === index;
-		const isEditing = editingPatternIndex === index;
-
-		if (isSelected) {
-			ctx.fillStyle = COLORS.patternNoise;
-			ctx.fillRect(PADDING, cellY, CELL_WIDTH, CELL_HEIGHT);
-
-			ctx.strokeStyle = COLORS.patternInstrument;
-			ctx.lineWidth = 1;
-			ctx.strokeRect(PADDING + 0.5, cellY + 0.5, CELL_WIDTH - 1, CELL_HEIGHT - 1);
-		} else if (isHovered) {
-			ctx.fillStyle = COLORS.patternHeader;
-			ctx.fillRect(PADDING, cellY, CELL_WIDTH, CELL_HEIGHT);
-
-			ctx.strokeStyle = COLORS.patternInstrument;
-			ctx.lineWidth = 1;
-			ctx.strokeRect(PADDING + 0.5, cellY + 0.5, CELL_WIDTH - 1, CELL_HEIGHT - 1);
-		} else {
-			ctx.fillStyle = index % 2 === 0 ? COLORS.patternBg : COLORS.patternAlternate;
-			ctx.fillRect(PADDING, cellY, CELL_WIDTH, CELL_HEIGHT);
-
-			ctx.strokeStyle = COLORS.patternEmpty;
-			ctx.lineWidth = 1;
-			ctx.strokeRect(PADDING + 0.5, cellY + 0.5, CELL_WIDTH - 1, CELL_HEIGHT - 1);
-		}
-
-		let patternText: string;
-		if (isEditing) {
-			if (editingPatternValue === '') {
-				patternText = pattern.id.toString().padStart(2, '0');
-			} else {
-				patternText = editingPatternValue.padStart(2, '0');
-			}
-		} else {
-			patternText = pattern.id.toString().padStart(2, '0');
-		}
-
-		ctx.fillStyle = isEditing ? COLORS.patternEnvelope : COLORS.patternText;
-		ctx.fillText(patternText, PADDING + CELL_WIDTH / 2, y);
-
-		if (isEditing) {
-			const digitPosition = editingPatternValue.length;
-			const textWidth = ctx.measureText(patternText).width;
-			const charWidth = textWidth / 2;
-			const underlineY = y + FONT_SIZE / 2 + 2;
-			const centerX = PADDING + CELL_WIDTH / 2;
-			const underlineX = centerX - textWidth / 2 + digitPosition * charWidth;
-
-			ctx.strokeStyle = COLORS.patternEnvelope;
-			ctx.lineWidth = 1;
-			ctx.beginPath();
-			ctx.moveTo(underlineX, underlineY);
-			ctx.lineTo(underlineX + charWidth, underlineY);
-			ctx.stroke();
-		}
-
-		if (isSelected) {
-			ctx.save();
-			ctx.fillStyle = COLORS.patternEnvelope;
-			ctx.textAlign = 'left';
-			ctx.fillText('►', 2, y);
-			ctx.restore();
-		}
-	}
-
-	function drawButton(
-		x: number,
-		y: number,
-		text: string,
-		isHovered: boolean,
-		isEnabled: boolean = true
-	): void {
-		ctx.fillStyle = isHovered ? COLORS.patternHeader : COLORS.patternBg;
-		ctx.fillRect(x, y, BUTTON_SIZE, BUTTON_SIZE);
-
-		ctx.strokeStyle = isHovered
-			? COLORS.patternText
-			: isEnabled
-				? COLORS.patternEmpty
-				: COLORS.patternEmpty;
-		ctx.lineWidth = isHovered ? 1.5 : 1;
-		ctx.strokeRect(x + 0.5, y + 0.5, BUTTON_SIZE - 1, BUTTON_SIZE - 1);
-
-		ctx.fillStyle = isHovered
-			? COLORS.patternText
-			: isEnabled
-				? COLORS.patternText
-				: COLORS.patternEmpty;
-		ctx.fillText(text, x + BUTTON_SIZE / 2, y + BUTTON_SIZE / 2);
-	}
-
-	function drawPatternButtons(y: number, index: number): void {
-		const buttonStartX = PADDING + CELL_WIDTH + BUTTON_SPACING;
-		const buttonCenterY = y;
-
-		ctx.save();
-		ctx.font = `${BUTTON_SIZE - 3}px ${FONTS.mono}`;
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-
-		const gridHeight = BUTTON_SIZE * 2 + BUTTON_SPACING;
-		const topRowY = buttonCenterY - gridHeight / 2;
-		const bottomRowY = topRowY + BUTTON_SIZE + BUTTON_SPACING;
-		const leftColX = buttonStartX;
-		const rightColX = buttonStartX + BUTTON_SIZE + BUTTON_SPACING;
-
-		const canRemove = patternOrder.length > 1;
-
-		// Draw remove button
-		drawButton(leftColX, topRowY, '-', hoveredButton === 'remove', canRemove);
-
-		// Draw up button
-		drawButton(rightColX, topRowY, 'U', hoveredButton === 'up');
-
-		// Draw add button
-		drawButton(leftColX, bottomRowY, '+', hoveredButton === 'add');
-
-		// Draw clone button
-		drawButton(rightColX, bottomRowY, 'C', hoveredButton === 'clone');
-
-		ctx.restore();
-	}
-
-	function drawScrollIndicators(startIndex: number, endIndex: number): void {
-		const hasMoreAbove = startIndex > 0;
 		const visibleCount = Math.floor(canvasHeight / CELL_HEIGHT);
 		const halfVisible = Math.floor(visibleCount / 2);
 		const maxVisibleEndIndex = currentPatternOrderIndex + halfVisible;
+		const hasMoreAbove = startIndex > 0;
 		const hasMoreBelow = maxVisibleEndIndex < patternOrder.length - 1;
 
-		if (hasMoreAbove) {
-			const topGradient = ctx.createLinearGradient(0, 0, 0, FADE_HEIGHT);
-			topGradient.addColorStop(0, COLORS.patternBg);
-			topGradient.addColorStop(1, 'rgba(0,0,0,0)');
-			ctx.fillStyle = topGradient;
-			ctx.fillRect(0, 0, canvasWidth, FADE_HEIGHT);
-		}
-
-		if (hasMoreBelow) {
-			const bottomGradient = ctx.createLinearGradient(
-				0,
-				canvasHeight - FADE_HEIGHT,
-				0,
-				canvasHeight
-			);
-			bottomGradient.addColorStop(0, 'rgba(0,0,0,0)');
-			bottomGradient.addColorStop(1, COLORS.patternBg);
-			ctx.fillStyle = bottomGradient;
-			ctx.fillRect(0, canvasHeight - FADE_HEIGHT, canvasWidth, FADE_HEIGHT);
-		}
-
-		ctx.save();
-		ctx.fillStyle = COLORS.patternEnvelope;
-		ctx.textAlign = 'center';
-		ctx.font = `${FONT_SIZE}px ${FONTS.mono}`;
-
-		if (hasMoreAbove) {
-			ctx.textBaseline = 'top';
-			ctx.fillText('▲', canvasWidth / 2, 2);
-		}
-		if (hasMoreBelow) {
-			ctx.textBaseline = 'bottom';
-			ctx.fillText('▼', canvasWidth / 2, canvasHeight - 2);
-		}
-		ctx.restore();
+		renderer.drawScrollIndicators(hasMoreAbove, hasMoreBelow);
 	}
 
-	let editingPatternIndex: number | null = null;
-	let editingPatternValue: string = '';
+	let editingPatternIndex: number | null = $state(null);
+	let editingPatternValue: string = $state('');
 
 	function handleClick(event: MouseEvent): void {
 		const rect = canvas.getBoundingClientRect();
@@ -292,47 +190,15 @@
 		const clickedIndex = Math.round(currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT);
 
 		if (clickedIndex >= 0 && clickedIndex < patternOrder.length) {
-			const isTargetPattern = clickedIndex === hoveredIndex;
-
-			if (isTargetPattern && x > PADDING + CELL_WIDTH) {
+			if (x <= PADDING + CELL_WIDTH && x >= PADDING) {
 				finishPatternEdit();
-
-				const buttonStartX = PADDING + CELL_WIDTH + BUTTON_SPACING;
-				const buttonCenterY =
-					centerY - (currentPatternOrderIndex - clickedIndex) * CELL_HEIGHT;
-
-				const gridHeight = BUTTON_SIZE * 2 + BUTTON_SPACING;
-				const topRowY = buttonCenterY - gridHeight / 2;
-				const bottomRowY = topRowY + BUTTON_SIZE + BUTTON_SPACING;
-				const leftColX = buttonStartX;
-				const rightColX = buttonStartX + BUTTON_SIZE + BUTTON_SPACING;
-
-				if (y >= topRowY && y <= topRowY + BUTTON_SIZE) {
-					if (x >= leftColX && x <= leftColX + BUTTON_SIZE) {
-						if (patternOrder.length > 1) {
-							removePatternAtIndex(clickedIndex);
-						}
-					} else if (x >= rightColX && x <= rightColX + BUTTON_SIZE) {
-						makePatternUniqueAtIndex(clickedIndex);
-					}
-				} else if (y >= bottomRowY && y <= bottomRowY + BUTTON_SIZE) {
-					if (x >= leftColX && x <= leftColX + BUTTON_SIZE) {
-						addPatternAtIndex(clickedIndex);
-					} else if (x >= rightColX && x <= rightColX + BUTTON_SIZE) {
-						clonePatternAtIndex(clickedIndex);
-					}
-				}
-			} else if (x <= PADDING + CELL_WIDTH) {
-				if (x >= PADDING && x <= PADDING + CELL_WIDTH) {
-					finishPatternEdit();
-					switchPattern(clickedIndex);
-					editingPatternIndex = clickedIndex;
-					editingPatternValue = '';
-					draw();
-				} else {
-					finishPatternEdit();
-					switchPattern(clickedIndex);
-				}
+				switchPattern(clickedIndex);
+				editingPatternIndex = clickedIndex;
+				editingPatternValue = '';
+				draw();
+			} else {
+				finishPatternEdit();
+				switchPattern(clickedIndex);
 			}
 		} else {
 			finishPatternEdit();
@@ -392,15 +258,17 @@
 			const currentPatternId = patternOrder[editingPatternIndex];
 			const currentPattern = patterns[currentPatternId];
 
-			if (newId >= 0 && newId <= 99 && currentPattern) {
-				if (!patterns[newId]) {
-					const newPattern = PatternService.clonePattern(currentPattern, newId);
-					patterns = { ...patterns, [newId]: newPattern };
-				}
+			const result = PatternService.setPatternIdInOrder(
+				patterns,
+				patternOrder,
+				editingPatternIndex,
+				newId,
+				currentPattern
+			);
 
-				patternOrder = patternOrder.map((id, index) =>
-					index === editingPatternIndex ? newId : id
-				);
+			if (result) {
+				patterns = result.newPatterns;
+				patternOrder = result.newPatternOrder;
 			}
 		}
 
@@ -412,79 +280,51 @@
 	let lastMouseY: number | null = null;
 	let lastMouseX: number | null = null;
 	let hoveredIndex: number | null = null;
-	let hoveredButton: 'remove' | 'up' | 'add' | 'clone' | null = null;
-	let previousHoveredButton: 'remove' | 'up' | 'add' | 'clone' | null = null;
-
-	function detectButtonHover(
-		mouseX: number,
-		mouseY: number,
-		buttonStartX: number,
-		buttonCenterY: number
-	): 'remove' | 'up' | 'add' | 'clone' | null {
-		if (mouseX <= PADDING + CELL_WIDTH) return null;
-
-		const gridHeight = BUTTON_SIZE * 2 + BUTTON_SPACING;
-		const topRowY = buttonCenterY - gridHeight / 2;
-		const bottomRowY = topRowY + BUTTON_SIZE + BUTTON_SPACING;
-		const leftColX = buttonStartX;
-		const rightColX = buttonStartX + BUTTON_SIZE + BUTTON_SPACING;
-
-		if (mouseY >= topRowY && mouseY <= topRowY + BUTTON_SIZE) {
-			if (mouseX >= leftColX && mouseX <= leftColX + BUTTON_SIZE) {
-				return patternOrder.length > 1 ? 'remove' : null;
-			}
-			if (mouseX >= rightColX && mouseX <= rightColX + BUTTON_SIZE) {
-				return 'up';
-			}
-			return null;
-		}
-
-		if (mouseY >= bottomRowY && mouseY <= bottomRowY + BUTTON_SIZE) {
-			if (mouseX >= leftColX && mouseX <= leftColX + BUTTON_SIZE) {
-				return 'add';
-			}
-			if (mouseX >= rightColX && mouseX <= rightColX + BUTTON_SIZE) {
-				return 'clone';
-			}
-			return null;
-		}
-
-		return null;
-	}
+	let hoveredButton: 'remove' | 'up' | 'add' | 'clone' | null = $state(null);
 
 	function updateCursor(mouseY?: number, mouseX?: number): void {
 		if (!canvas || mouseY === undefined) return;
 
 		const centerY = canvasHeight / 2;
-		const newHoveredIndex = Math.round(
-			currentPatternOrderIndex + (mouseY - centerY) / CELL_HEIGHT
-		);
-
 		const { startIndex, endIndex } = getVisibleRange();
-		const isOverPattern =
-			newHoveredIndex >= 0 &&
-			newHoveredIndex < patternOrder.length &&
-			newHoveredIndex >= startIndex &&
-			newHoveredIndex <= endIndex;
 
-		const previousHoveredIndex = hoveredIndex;
-		hoveredIndex = isOverPattern ? newHoveredIndex : null;
+		let newHoveredIndex: number | null = null;
 
-		if (isOverPattern && mouseX !== undefined) {
-			const buttonStartX = PADDING + CELL_WIDTH + BUTTON_SPACING;
-			const buttonCenterY =
-				centerY - (currentPatternOrderIndex - newHoveredIndex) * CELL_HEIGHT;
-			hoveredButton = detectButtonHover(mouseX, mouseY, buttonStartX, buttonCenterY);
-		} else {
-			hoveredButton = null;
+		const buttonAreaLeft = PADDING + CELL_WIDTH + BUTTON_SPACING;
+		const buttonAreaRight = buttonAreaLeft + BUTTON_SIZE;
+		const totalHeight = BUTTON_SIZE * 4 + BUTTON_SPACING * 3;
+		const buttonAreaTop = centerY - totalHeight / 2;
+		const buttonAreaBottom = buttonAreaTop + totalHeight;
+
+		const isInButtonArea =
+			mouseX !== undefined &&
+			mouseX >= buttonAreaLeft &&
+			mouseX <= buttonAreaRight &&
+			mouseY >= buttonAreaTop &&
+			mouseY <= buttonAreaBottom;
+
+		if (!isInButtonArea && mouseX !== undefined && mouseX <= PADDING + CELL_WIDTH) {
+			const calculatedIndex = Math.round(
+				currentPatternOrderIndex + (mouseY - centerY) / CELL_HEIGHT
+			);
+
+			const isOverPattern =
+				calculatedIndex >= 0 &&
+				calculatedIndex < patternOrder.length &&
+				calculatedIndex >= startIndex &&
+				calculatedIndex <= endIndex;
+
+			if (isOverPattern) {
+				newHoveredIndex = calculatedIndex;
+			}
 		}
 
-		if (previousHoveredIndex !== hoveredIndex || previousHoveredButton !== hoveredButton) {
-			previousHoveredButton = hoveredButton;
+		if (hoveredIndex !== newHoveredIndex) {
+			hoveredIndex = newHoveredIndex;
 			draw();
 		}
 
-		canvas.style.cursor = isOverPattern ? 'pointer' : 'default';
+		canvas.style.cursor = newHoveredIndex !== null ? 'pointer' : 'default';
 	}
 
 	function switchPattern(index: number): void {
@@ -493,6 +333,16 @@
 
 		if (lastMouseY !== null) {
 			updateCursor(lastMouseY);
+		}
+	}
+
+	function afterPatternOperation(): void {
+		lastDrawnOrderIndex = -1;
+		lastPatternOrderLength = -1;
+		draw();
+
+		if (lastMouseY !== null && lastMouseX !== null) {
+			updateCursor(lastMouseY, lastMouseX);
 		}
 	}
 
@@ -507,14 +357,13 @@
 
 	function handleMouseLeave(): void {
 		const previousHoveredIndex = hoveredIndex;
-		const previousHoveredButton = hoveredButton;
 		hoveredIndex = null;
 		hoveredButton = null;
 		lastMouseY = null;
 		lastMouseX = null;
 		canvas.style.cursor = 'default';
 
-		if (previousHoveredIndex !== null || previousHoveredButton !== null) {
+		if (previousHoveredIndex !== null) {
 			draw();
 		}
 	}
@@ -533,9 +382,7 @@
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
 
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
-		}
+		afterPatternOperation();
 	}
 
 	function removePatternAtIndex(index: number): void {
@@ -550,13 +397,40 @@
 		);
 		selectedRow = 0;
 
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
+		afterPatternOperation();
+	}
+
+	function ensurePatternInRecord(patternId: number): Pattern | null {
+		let pattern = patterns[patternId];
+
+		if (pattern) {
+			return pattern;
 		}
+
+		const foundPattern = songPatterns.find((p) => p.id === patternId);
+
+		if (!foundPattern) {
+			return null;
+		}
+
+		pattern = foundPattern;
+		patterns = { ...patterns, [patternId]: pattern };
+
+		return pattern;
 	}
 
 	function clonePatternAtIndex(index: number): void {
-		const result = PatternService.clonePatternAfter(patterns, patternOrder, index);
+		const targetPatternId = patternOrder[index];
+		const targetPattern = ensurePatternInRecord(targetPatternId);
+
+		if (!targetPattern) return;
+
+		const result = PatternService.clonePatternAfter(
+			patterns,
+			patternOrder,
+			index,
+			targetPattern
+		);
 
 		if (!result) return;
 
@@ -565,37 +439,114 @@
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
 
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
+		const clonedPattern = result.newPatterns[result.newPatternId];
+		if (clonedPattern) {
+			onPatternCreated?.(clonedPattern);
 		}
+
+		afterPatternOperation();
 	}
 
 	function makePatternUniqueAtIndex(index: number): void {
-		const result = PatternService.makePatternUnique(patterns, patternOrder, index);
+		const targetPatternId = patternOrder[index];
+		const targetPattern = ensurePatternInRecord(targetPatternId);
+
+		if (!targetPattern) return;
+
+		const result = PatternService.makePatternUnique(
+			patterns,
+			patternOrder,
+			index,
+			targetPattern
+		);
 
 		if (!result) return;
 
 		patterns = result.newPatterns;
 		patternOrder = result.newPatternOrder;
+		onPatternCreated?.(result.newPatterns[result.newPatternId]);
 
 		if (index === currentPatternOrderIndex) {
 			selectedRow = 0;
 		}
 
-		if (lastMouseY !== null && lastMouseX !== null) {
-			updateCursor(lastMouseY, lastMouseX);
-		}
+		afterPatternOperation();
 	}
+
+	const buttonStartX = PADDING + CELL_WIDTH + BUTTON_SPACING;
+	const buttonCenterY = $derived(canvasHeight / 2);
+	const totalHeight = BUTTON_SIZE * 4 + BUTTON_SPACING * 3;
+	const startY = $derived(buttonCenterY - totalHeight / 2);
+	const canRemove = $derived(patternOrder.length > 1);
 </script>
 
-<canvas
-	bind:this={canvas}
-	tabindex="0"
-	onclick={handleClick}
-	onwheel={handleWheel}
-	onkeydown={handleKeyDown}
-	onmousemove={handleMouseMove}
-	onmouseleave={handleMouseLeave}
-	onmouseenter={handleMouseEnter}
-	class="focus:border-opacity-50 border-pattern-empty bg-pattern-bg focus:border-pattern-text block border transition-colors duration-150 focus:outline-none"
-	style="width: {canvasWidth}px; height: {canvasHeight}px;"></canvas>
+<div style="width: {canvasWidth}px; height: {canvasHeight}px;" class="relative overflow-hidden">
+	<canvas
+		bind:this={canvas}
+		tabindex="0"
+		onclick={handleClick}
+		onwheel={handleWheel}
+		onkeydown={handleKeyDown}
+		onmousemove={handleMouseMove}
+		onmouseleave={handleMouseLeave}
+		onmouseenter={handleMouseEnter}
+		class="focus:border-opacity-50 border-pattern-empty bg-pattern-bg focus:border-pattern-text block border transition-colors duration-150 focus:outline-none"
+		style="width: {canvasWidth}px; height: {canvasHeight}px;"></canvas>
+
+	<div
+		class="pointer-events-none absolute"
+		style="left: {buttonStartX}px; top: {startY}px; width: {BUTTON_SIZE}px;">
+		<PatternOrderButton
+			buttonType="up"
+			isHovered={hoveredButton === 'up'}
+			onClick={() => makePatternUniqueAtIndex(currentPatternOrderIndex)}
+			onMouseEnter={() => (hoveredButton = 'up')}
+			onMouseLeave={() => (hoveredButton = null)}
+			title="Make Unique"
+			size={BUTTON_SIZE}>
+			<IconCarbonUnlink
+				class="text-pattern-text"
+				style="height: {BUTTON_SIZE - 6}px; width: {BUTTON_SIZE - 6}px;" />
+		</PatternOrderButton>
+		<PatternOrderButton
+			buttonType="remove"
+			isHovered={hoveredButton === 'remove'}
+			onClick={() => {
+				if (canRemove) removePatternAtIndex(currentPatternOrderIndex);
+			}}
+			onMouseEnter={() => (hoveredButton = canRemove ? 'remove' : null)}
+			onMouseLeave={() => (hoveredButton = null)}
+			disabled={!canRemove}
+			title="Remove"
+			size={BUTTON_SIZE}>
+			<IconCarbonSubtract
+				class="text-pattern-text"
+				style="height: {BUTTON_SIZE - 6}px; width: {BUTTON_SIZE - 6}px;" />
+		</PatternOrderButton>
+		<PatternOrderButton
+			buttonType="add"
+			isHovered={hoveredButton === 'add'}
+			onClick={() => addPatternAtIndex(currentPatternOrderIndex)}
+			onMouseEnter={() => (hoveredButton = 'add')}
+			onMouseLeave={() => (hoveredButton = null)}
+			title="Add"
+			size={BUTTON_SIZE}>
+			<IconCarbonAdd
+				class="text-pattern-text"
+				style="height: {BUTTON_SIZE - 6}px; width: {BUTTON_SIZE - 6}px;" />
+		</PatternOrderButton>
+		<PatternOrderButton
+			buttonType="clone"
+			isHovered={hoveredButton === 'clone'}
+			onClick={() => clonePatternAtIndex(currentPatternOrderIndex)}
+			onMouseEnter={() => (hoveredButton = 'clone')}
+			onMouseLeave={() => (hoveredButton = null)}
+			title="Clone"
+			size={BUTTON_SIZE}
+			hasMargin={false}>
+			<IconCarbonCopy
+				class="text-pattern-text"
+				style="height: {BUTTON_SIZE - 6}px; width: {BUTTON_SIZE - 6}px;" />
+		</PatternOrderButton>
+	</div>
+</div>
