@@ -20,6 +20,7 @@
 	import IconCarbonWaveform from '~icons/carbon/waveform';
 	import IconCarbonInformationSquare from '~icons/carbon/information-square';
 	import IconCarbonDataTable from '~icons/carbon/data-table';
+	import Settings from './lib/components/Settings/Settings.svelte';
 
 	settingsStore.init();
 
