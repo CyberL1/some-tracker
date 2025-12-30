@@ -14,11 +14,15 @@
 	import { TablesView } from './lib/components/Tables';
 	import { DetailsView } from './lib/components/Details';
 	import { playbackStore } from './lib/stores/playback.svelte';
+	import { settingsStore } from './lib/stores/settings.svelte';
 	import IconCarbonMusic from '~icons/carbon/music';
 	import IconCarbonChip from '~icons/carbon/chip';
 	import IconCarbonWaveform from '~icons/carbon/waveform';
 	import IconCarbonInformationSquare from '~icons/carbon/information-square';
 	import IconCarbonDataTable from '~icons/carbon/data-table';
+	import Settings from './lib/components/Settings/Settings.svelte';
+
+	settingsStore.init();
 
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
@@ -129,6 +133,11 @@
 				return;
 			}
 
+			if (data.action === 'settings') {
+				activeTabId = 'settings';
+				return;
+			}
+
 			const importedProject = await handleFileImport(data.action);
 			if (importedProject) {
 				playbackStore.isPlaying = false;
@@ -184,6 +193,9 @@
 					<DetailsView
 						chipProcessors={container.audioService.chipProcessors}
 						bind:values={projectSettings} />
+				{/if}
+				{#if tabId === 'settings'}
+					<Settings />
 				{/if}
 			{/snippet}
 		</TabView>

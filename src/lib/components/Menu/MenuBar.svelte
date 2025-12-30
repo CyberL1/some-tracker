@@ -6,6 +6,9 @@
 	import IconCarbonPauseFilled from '~icons/carbon/pause-filled';
 	import IconCarbonSkipBackFilled from '~icons/carbon/skip-back-filled';
 	import IconCarbonPlay from '~icons/carbon/play';
+	import { settingsStore } from '../../stores/settings.svelte';
+
+	const settings = settingsStore.get();
 
 	let activeMenu = $state('');
 	let {
