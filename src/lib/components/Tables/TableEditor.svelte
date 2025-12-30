@@ -26,8 +26,7 @@
 	let isDragging = $state(false);
 	let dragMode: 'pitch' | 'shift' | null = null;
 	let offsetInputRefs: (HTMLInputElement | null)[] = $state([]);
-	let lastTableId = $state(table.id);
-	let lastSyncedName = $state(table.name);
+	let lastSyncedTable = $state(table);
 
 	function initRowRepresentations() {
 		pitches = rows.map((offset) => offsetToPitch(offset));
@@ -215,22 +214,24 @@
 	initRowRepresentations();
 
 	$effect(() => {
-		if (table.id !== lastTableId) {
-			lastTableId = table.id;
+		if (
+			table.id !== lastSyncedTable.id ||
+			table.rows.length !== lastSyncedTable.rows.length ||
+			table.rows.some((row, i) => row !== lastSyncedTable.rows[i]) ||
+			table.loop !== lastSyncedTable.loop ||
+			table.name !== lastSyncedTable.name
+		) {
+			lastSyncedTable = table;
 			rows = [...table.rows];
 			loopRow = table.loop;
 			name = table.name;
-			lastSyncedName = table.name;
 			initRowRepresentations();
-		} else if (table.name !== lastSyncedName) {
-			name = table.name;
-			lastSyncedName = table.name;
 		}
 	});
 
 	$effect(() => {
-		if (name !== lastSyncedName) {
-			onTableChange({ ...table, name });
+		if (name !== table.name) {
+			updateTable({ name });
 		}
 	});
 
