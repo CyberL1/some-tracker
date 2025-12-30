@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
 	import type { Table } from '../../models/project';
-	import type { AudioService } from '../../services/audio-service';
+	import IconCarbonTrashCan from '~icons/carbon/trash-can';
+	import IconCarbonDelete from '~icons/carbon/delete';
+	import Input from '../Input/Input.svelte';
 
 	let {
 		table,
@@ -13,8 +14,8 @@
 		onTableChange: (table: Table) => void;
 	} = $props();
 
-	const PITCH_VALUES = Array.from({ length: 23 }, (_, i) => i - 11); // -11 … 11
-	const SHIFT_VALUES = Array.from({ length: 9 }, (_, i) => i - 4); // -4 … 4
+	const PITCH_VALUES = Array.from({ length: 23 }, (_, i) => i - 11);
+	const SHIFT_VALUES = Array.from({ length: 9 }, (_, i) => i - 4);
 
 	let rows = $state([...table.rows]);
 	let loopRow = $state(table.loop);
@@ -24,6 +25,9 @@
 
 	let isDragging = $state(false);
 	let dragMode: 'pitch' | 'shift' | null = null;
+	let offsetInputRefs: (HTMLInputElement | null)[] = $state([]);
+	let lastTableId = $state(table.id);
+	let lastSyncedName = $state(table.name);
 
 	function initRowRepresentations() {
 		pitches = rows.map((offset) => offsetToPitch(offset));
@@ -46,16 +50,20 @@
 		rows = [...rows];
 	}
 
+	function updateTable(updates: Partial<Table>) {
+		onTableChange({ ...table, ...updates });
+	}
+
 	function setPitch(index: number, pitch: number) {
 		pitches[index] = pitch;
 		recalcRow(index);
-		onTableChange({ ...table, rows });
+		updateTable({ rows });
 	}
 
 	function setShift(index: number, shift: number) {
 		shifts[index] = shift;
 		recalcRow(index);
-		onTableChange({ ...table, rows });
+		updateTable({ rows });
 	}
 
 	function adjustRowOffset(index: number, newOffset: number) {
@@ -101,35 +109,79 @@
 			adjustRowOffset(index, parsed);
 		}
 
-		onTableChange({ ...table, rows });
+		updateTable({ rows });
 	}
 
-	function handleOffsetKeyDown(event: KeyboardEvent) {
+	function focusInputInRow(row: HTMLTableRowElement | null) {
+		if (!row) return;
+		const input = row.querySelector('input[type="text"]') as HTMLInputElement | null;
+		if (input) {
+			input.focus();
+			input.select();
+		}
+	}
+
+	function handleOffsetKeyDown(index: number, event: KeyboardEvent) {
 		const key = event.key;
+
+		if (key === 'ArrowDown') {
+			event.preventDefault();
+			const nextIndex = index + 1;
+			if (nextIndex < rows.length) {
+				const currentRow = (event.target as HTMLInputElement).closest('tr');
+				focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null);
+			} else if (nextIndex === rows.length) {
+				addRow();
+				setTimeout(() => {
+					const currentRow = (event.target as HTMLInputElement).closest('tr');
+					focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null);
+				}, 0);
+			}
+			return;
+		}
+
+		if (key === 'ArrowUp') {
+			event.preventDefault();
+			const prevIndex = index - 1;
+			if (prevIndex >= 0) {
+				const currentRow = (event.target as HTMLInputElement).closest('tr');
+				focusInputInRow(currentRow?.previousElementSibling as HTMLTableRowElement | null);
+			}
+			return;
+		}
+
 		if (key.length > 1) return;
 		const pattern = asHex ? /^[0-9a-fA-F-]$/ : /^[0-9-]$/;
 		if (!pattern.test(key)) event.preventDefault();
 	}
 
+	function updateArraysAfterRowChange(newRows: number[]) {
+		rows = newRows;
+		pitches = rows.map((offset) => offsetToPitch(offset));
+		shifts = rows.map((offset, idx) => Math.trunc((offset - pitches[idx]) / 12));
+		if (loopRow >= rows.length) loopRow = rows.length - 1;
+		updateTable({ rows });
+	}
+
 	function addRow() {
-		rows = [...rows, 0];
-		pitches = [...pitches, 0];
-		shifts = [...shifts, 0];
-		onTableChange({ ...table, rows });
+		updateArraysAfterRowChange([...rows, 0]);
 	}
 
 	function removeRow(index: number) {
 		if (rows.length === 1) return;
-		rows = rows.filter((_, i) => i !== index);
-		pitches = pitches.filter((_, i) => i !== index);
-		shifts = shifts.filter((_, i) => i !== index);
-		if (loopRow >= rows.length) loopRow = rows.length - 1;
-		onTableChange({ ...table, rows });
+		updateArraysAfterRowChange(rows.filter((_, i) => i !== index));
+	}
+
+	function removeRowsFromBottom(index: number) {
+		if (rows.length === 1) return;
+		const rowsToKeep = index + 1;
+		if (rowsToKeep >= rows.length) return;
+		updateArraysAfterRowChange(rows.slice(0, rowsToKeep));
 	}
 
 	function setLoop(index: number) {
 		loopRow = index;
-		onTableChange({ ...table, loop: loopRow });
+		updateTable({ loop: loopRow });
 	}
 
 	export function addRowExternal() {
@@ -140,31 +192,57 @@
 		removeRow(rows.length - 1);
 	}
 
-	function beginPitchDrag(index: number, pitch: number) {
+	function beginDrag(mode: 'pitch' | 'shift', index: number, value: number) {
 		isDragging = true;
-		dragMode = 'pitch';
-		setPitch(index, pitch);
-	}
-
-	function pitchDragOver(index: number, pitch: number) {
-		if (isDragging && dragMode === 'pitch') {
-			setPitch(index, pitch);
+		dragMode = mode;
+		if (mode === 'pitch') {
+			setPitch(index, value);
+		} else {
+			setShift(index, value);
 		}
 	}
 
-	function beginShiftDrag(index: number, shift: number) {
-		isDragging = true;
-		dragMode = 'shift';
-		setShift(index, shift);
-	}
-
-	function shiftDragOver(index: number, shift: number) {
-		if (isDragging && dragMode === 'shift') {
-			setShift(index, shift);
+	function dragOver(mode: 'pitch' | 'shift', index: number, value: number) {
+		if (isDragging && dragMode === mode) {
+			if (mode === 'pitch') {
+				setPitch(index, value);
+			} else {
+				setShift(index, value);
+			}
 		}
 	}
 
 	initRowRepresentations();
+
+	$effect(() => {
+		if (table.id !== lastTableId) {
+			lastTableId = table.id;
+			rows = [...table.rows];
+			loopRow = table.loop;
+			name = table.name;
+			lastSyncedName = table.name;
+			initRowRepresentations();
+		} else if (table.name !== lastSyncedName) {
+			name = table.name;
+			lastSyncedName = table.name;
+		}
+	});
+
+	$effect(() => {
+		if (name !== lastSyncedName) {
+			onTableChange({ ...table, name });
+		}
+	});
+
+	$effect(() => {
+		if (offsetInputRefs.length !== rows.length) {
+			const newRefs = new Array(rows.length).fill(null);
+			for (let i = 0; i < Math.min(offsetInputRefs.length, rows.length); i++) {
+				newRefs[i] = offsetInputRefs[i];
+			}
+			offsetInputRefs = newRefs;
+		}
+	});
 
 	$effect(() => {
 		const stop = () => {
@@ -178,62 +256,82 @@
 
 <div class="w-full overflow-x-auto">
 	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
-		<span class="text-sm text-neutral-400">Name:</span>
-		<input
-			class="w-48 rounded bg-neutral-800 px-2 py-1 text-neutral-200 outline-none"
-			value={name}
-			oninput={(e) => {
-				name = (e.target as HTMLInputElement).value;
-				onTableChange({ ...table, name });
-			}} />
+		<span class="text-xs text-neutral-400">Name:</span>
+		<Input class="w-48 text-xs" bind:value={name} />
 	</div>
 
 	<div class="flex gap-2 overflow-x-auto">
 		<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
 			<thead>
 				<tr>
-					<th class="px-2">row</th>
-					<th class="w-1 px-1">loop</th>
-					<th class="w-12 px-1">offset</th>
+					<th class="px-2 py-1.5">row</th>
+					<th class="w-8 px-1.5"></th>
+					<th class="w-6 px-1.5">loop</th>
+					<th class="w-14 px-1.5">offset</th>
 					<th colspan="25" class="px-2">note key offset</th>
 				</tr>
 				<tr>
 					<th></th>
 					<th></th>
 					<th></th>
+					<th></th>
 					{#each PITCH_VALUES as p}
-						<th
-							class="w-[1.25rem] min-w-[1.25rem] bg-neutral-800 text-center"
-							title={String(p)}></th>
+						<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(p)}></th>
 					{/each}
 				</tr>
 			</thead>
 			<tbody>
 				{#each rows as offset, index}
-					<tr class="h-6">
-						<td class="border border-neutral-700 bg-neutral-800 px-2 text-right"
+					<tr class="h-8">
+						<td class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
 							>{index}</td>
+						<td class="border border-neutral-700 bg-neutral-800 px-1.5">
+							<div class="flex items-center justify-center gap-1">
+								<button
+									class="flex items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-400"
+									onclick={(e) => {
+										e.stopPropagation();
+										removeRow(index);
+									}}
+									title="Remove this row">
+									<IconCarbonTrashCan class="h-3.5 w-3.5" />
+								</button>
+								{#if index < rows.length - 1}
+									<button
+										class="flex items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-500"
+										onclick={(e) => {
+											e.stopPropagation();
+											removeRowsFromBottom(index);
+										}}
+										title="Remove all rows from bottom up to this one">
+										<IconCarbonDelete class="h-3.5 w-3.5" />
+									</button>
+								{/if}
+							</div>
+						</td>
 						<td
-							class="w-6 cursor-pointer px-1 text-center"
+							class="w-6 cursor-pointer px-1.5 text-center text-sm"
 							onclick={() => setLoop(index)}>
 							{loopRow === index ? '>' : ''}
 						</td>
-						<td class="w-12 px-1">
+						<td class="w-14 px-1.5">
 							<input
 								type="text"
-								class="w-full rounded bg-neutral-800 px-1 text-neutral-100 outline-none"
+								bind:this={offsetInputRefs[index]}
+								class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
 								value={formatOffset(offset)}
-								onkeydown={handleOffsetKeyDown}
+								onkeydown={(e) => handleOffsetKeyDown(index, e)}
+								onfocus={(e) => (e.target as HTMLInputElement).select()}
 								oninput={(e) => onOffsetInput(index, e)} />
 						</td>
 						{#each PITCH_VALUES as p}
 							<td
-								class={`group h-6 w-[1.25rem] min-w-[1.25rem] cursor-pointer border border-neutral-700 text-center text-[0.6rem] leading-none ${p === pitches[index] ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
+								class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${p === pitches[index] ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
 								tabindex="0"
 								title={String(p)}
-								onmousedown={() => beginPitchDrag(index, p)}
-								onmouseover={() => pitchDragOver(index, p)}
-								onfocus={() => pitchDragOver(index, p)}>
+								onmousedown={() => beginDrag('pitch', index, p)}
+								onmouseover={() => dragOver('pitch', index, p)}
+								onfocus={() => dragOver('pitch', index, p)}>
 								{#if p === pitches[index]}
 									{formatNum(p)}
 								{:else}
@@ -250,31 +348,32 @@
 		<table class="table-fixed bg-neutral-900 font-mono text-xs select-none">
 			<thead>
 				<tr>
-					<th class="px-2">row</th>
+					<th class="px-2 py-1.5">row</th>
+					<th class="w-8 px-1.5"></th>
 					<th colspan="9" class="px-2">octave shift</th>
 				</tr>
 				<tr>
 					<th></th>
+					<th></th>
 					{#each SHIFT_VALUES as s}
-						<th
-							class="w-[1.25rem] min-w-[1.25rem] bg-neutral-800 text-center"
-							title={String(s)}></th>
+						<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(s)}></th>
 					{/each}
 				</tr>
 			</thead>
 			<tbody>
 				{#each rows as _, index}
-					<tr class="h-6">
-						<td class="border border-neutral-700 bg-neutral-800 px-2 text-right"
+					<tr class="h-8">
+						<td class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
 							>{index}</td>
+						<td class="border border-neutral-700 bg-neutral-800 px-1.5"></td>
 						{#each SHIFT_VALUES as s}
 							<td
-								class={`group h-6 w-[1.25rem] min-w-[1.25rem] cursor-pointer border border-neutral-700 text-center text-[0.6rem] leading-none ${s === shifts[index] ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
+								class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${s === shifts[index] ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
 								tabindex="0"
 								title={String(s)}
-								onmousedown={() => beginShiftDrag(index, s)}
-								onmouseover={() => shiftDragOver(index, s)}
-								onfocus={() => shiftDragOver(index, s)}>
+								onmousedown={() => beginDrag('shift', index, s)}
+								onmouseover={() => dragOver('shift', index, s)}
+								onfocus={() => dragOver('shift', index, s)}>
 								{#if s === shifts[index]}
 									{formatNum(s)}
 								{:else}
