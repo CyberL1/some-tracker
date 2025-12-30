@@ -15,9 +15,13 @@
 	} = $props();
 
 	const PITCH_VALUES = Array.from({ length: 23 }, (_, i) => i - 11);
-	const SHIFT_VALUES = Array.from({ length: 9 }, (_, i) => i - 4);
+	const SHIFT_VALUES = Array.from({ length: 15 }, (_, i) => i - 7);
 
-	let rows = $state([...table.rows]);
+	function ensureNonEmptyRows(rowsArray: number[]): number[] {
+		return rowsArray.length === 0 ? [0] : rowsArray;
+	}
+
+	let rows = $state(ensureNonEmptyRows([...table.rows]));
 	let loopRow = $state(table.loop);
 	let name = $state(table.name);
 	let pitches = $state<number[]>([]);
@@ -26,9 +30,13 @@
 	let isDragging = $state(false);
 	let dragMode: 'pitch' | 'shift' | null = null;
 	let offsetInputRefs: (HTMLInputElement | null)[] = $state([]);
-	let lastSyncedTable = $state(table);
+	let lastTableId = $state(table.id);
+	let lastSyncedName = $state(table.name);
+	let lastSyncedRows = $state([...table.rows]);
+	let lastSyncedLoop = $state(table.loop);
 
 	function initRowRepresentations() {
+		rows = ensureNonEmptyRows(rows);
 		pitches = rows.map((offset) => offsetToPitch(offset));
 		shifts = rows.map((offset, idx) => Math.trunc((offset - pitches[idx]) / 12));
 	}
@@ -53,14 +61,12 @@
 		onTableChange({ ...table, ...updates });
 	}
 
-	function setPitch(index: number, pitch: number) {
-		pitches[index] = pitch;
-		recalcRow(index);
-		updateTable({ rows });
-	}
-
-	function setShift(index: number, shift: number) {
-		shifts[index] = shift;
+	function setValue(mode: 'pitch' | 'shift', index: number, value: number) {
+		if (mode === 'pitch') {
+			pitches[index] = value;
+		} else {
+			shifts[index] = value;
+		}
 		recalcRow(index);
 		updateTable({ rows });
 	}
@@ -106,9 +112,8 @@
 		}
 		if (parsed !== null) {
 			adjustRowOffset(index, parsed);
+			updateTable({ rows });
 		}
-
-		updateTable({ rows });
 	}
 
 	function focusInputInRow(row: HTMLTableRowElement | null) {
@@ -194,48 +199,61 @@
 	function beginDrag(mode: 'pitch' | 'shift', index: number, value: number) {
 		isDragging = true;
 		dragMode = mode;
-		if (mode === 'pitch') {
-			setPitch(index, value);
-		} else {
-			setShift(index, value);
-		}
+		setValue(mode, index, value);
 	}
 
 	function dragOver(mode: 'pitch' | 'shift', index: number, value: number) {
 		if (isDragging && dragMode === mode) {
-			if (mode === 'pitch') {
-				setPitch(index, value);
-			} else {
-				setShift(index, value);
-			}
+			setValue(mode, index, value);
 		}
 	}
 
 	initRowRepresentations();
 
+	function syncFromTable() {
+		rows = ensureNonEmptyRows([...table.rows]);
+		loopRow = table.loop;
+		name = table.name;
+		lastSyncedRows = [...table.rows];
+		lastSyncedLoop = table.loop;
+		lastSyncedName = table.name;
+		initRowRepresentations();
+	}
+
 	$effect(() => {
-		if (
-			table.id !== lastSyncedTable.id ||
-			table.rows.length !== lastSyncedTable.rows.length ||
-			table.rows.some((row, i) => row !== lastSyncedTable.rows[i]) ||
-			table.loop !== lastSyncedTable.loop ||
-			table.name !== lastSyncedTable.name
-		) {
-			lastSyncedTable = table;
-			rows = [...table.rows];
-			loopRow = table.loop;
-			name = table.name;
-			initRowRepresentations();
+		if (table.id !== lastTableId) {
+			lastTableId = table.id;
+			syncFromTable();
+		} else {
+			const rowsChanged =
+				table.rows.length !== lastSyncedRows.length ||
+				table.rows.some((row, i) => row !== lastSyncedRows[i]);
+			const loopChanged = table.loop !== lastSyncedLoop;
+			const nameChanged = table.name !== lastSyncedName;
+
+			if (rowsChanged || loopChanged) {
+				rows = ensureNonEmptyRows([...table.rows]);
+				loopRow = table.loop;
+				lastSyncedRows = [...table.rows];
+				lastSyncedLoop = table.loop;
+				initRowRepresentations();
+			}
+
+			if (nameChanged) {
+				name = table.name;
+				lastSyncedName = table.name;
+			}
 		}
 	});
 
 	$effect(() => {
-		if (name !== table.name) {
+		if (name !== lastSyncedName) {
 			updateTable({ name });
 		}
 	});
 
 	$effect(() => {
+		rows = ensureNonEmptyRows(rows);
 		if (offsetInputRefs.length !== rows.length) {
 			const newRefs = new Array(rows.length).fill(null);
 			for (let i = 0; i < Math.min(offsetInputRefs.length, rows.length); i++) {
@@ -254,6 +272,23 @@
 		return () => window.removeEventListener('mouseup', stop);
 	});
 </script>
+
+{#snippet valueCell(mode: 'pitch' | 'shift', index: number, value: number, isSelected: boolean)}
+	<td
+		class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${isSelected ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
+		tabindex="0"
+		title={String(value)}
+		onmousedown={() => beginDrag(mode, index, value)}
+		onmouseover={() => dragOver(mode, index, value)}
+		onfocus={() => dragOver(mode, index, value)}>
+		{#if isSelected}
+			{formatNum(value)}
+		{:else}
+			<span class="text-neutral-300 opacity-0 group-hover:opacity-100"
+				>{formatNum(value)}</span>
+		{/if}
+	</td>
+{/snippet}
 
 <div class="w-full overflow-x-auto">
 	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
@@ -326,35 +361,20 @@
 								oninput={(e) => onOffsetInput(index, e)} />
 						</td>
 						{#each PITCH_VALUES as p}
-							<td
-								class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${p === pitches[index] ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
-								tabindex="0"
-								title={String(p)}
-								onmousedown={() => beginDrag('pitch', index, p)}
-								onmouseover={() => dragOver('pitch', index, p)}
-								onfocus={() => dragOver('pitch', index, p)}>
-								{#if p === pitches[index]}
-									{formatNum(p)}
-								{:else}
-									<span class="text-neutral-300 opacity-0 group-hover:opacity-100"
-										>{formatNum(p)}</span>
-								{/if}
-							</td>
+							{@render valueCell('pitch', index, p, p === pitches[index])}
 						{/each}
 					</tr>
 				{/each}
 			</tbody>
 		</table>
 
-		<table class="table-fixed bg-neutral-900 font-mono text-xs select-none">
+		<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
 			<thead>
 				<tr>
 					<th class="px-2 py-1.5">row</th>
-					<th class="w-8 px-1.5"></th>
-					<th colspan="9" class="px-2">octave shift</th>
+					<th colspan="15" class="px-2">octave shift</th>
 				</tr>
 				<tr>
-					<th></th>
 					<th></th>
 					{#each SHIFT_VALUES as s}
 						<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(s)}></th>
@@ -366,22 +386,8 @@
 					<tr class="h-8">
 						<td class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
 							>{index}</td>
-						<td class="border border-neutral-700 bg-neutral-800 px-1.5"></td>
 						{#each SHIFT_VALUES as s}
-							<td
-								class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${s === shifts[index] ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
-								tabindex="0"
-								title={String(s)}
-								onmousedown={() => beginDrag('shift', index, s)}
-								onmouseover={() => dragOver('shift', index, s)}
-								onfocus={() => dragOver('shift', index, s)}>
-								{#if s === shifts[index]}
-									{formatNum(s)}
-								{:else}
-									<span class="text-neutral-300 opacity-0 group-hover:opacity-100"
-										>{formatNum(s)}</span>
-								{/if}
-							</td>
+							{@render valueCell('shift', index, s, s === shifts[index])}
 						{/each}
 					</tr>
 				{/each}

@@ -10,7 +10,7 @@ class Project {
 		public aymChipType: 'AY' | 'YM' = 'AY',
 		public aymFrequency: number = 1773400,
 		public intFrequency: number = 50,
-		public tables: Table[] = []
+		public tables: Table[] = Array.from({ length: 32 }, (_, i) => new Table(i, [], 0, `Table ${i + 1}`))
 	) {}
 }
 
