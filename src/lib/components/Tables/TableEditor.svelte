@@ -2,6 +2,7 @@
 	import type { Table } from '../../models/project';
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
 	import IconCarbonDelete from '~icons/carbon/delete';
+	import IconCarbonAdd from '~icons/carbon/add';
 	import Input from '../Input/Input.svelte';
 
 	let {
@@ -296,77 +297,96 @@
 		<Input class="w-48 text-xs" bind:value={name} />
 	</div>
 
-	<div class="flex gap-2 overflow-x-auto">
-		<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
-			<thead>
-				<tr>
-					<th class="px-2 py-1.5">row</th>
-					<th class="w-8 px-1.5"></th>
-					<th class="w-6 px-1.5">loop</th>
-					<th class="w-14 px-1.5">offset</th>
-					<th colspan="25" class="px-2">note key offset</th>
-				</tr>
-				<tr>
-					<th></th>
-					<th></th>
-					<th></th>
-					<th></th>
-					{#each PITCH_VALUES as p}
-						<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(p)}></th>
-					{/each}
-				</tr>
-			</thead>
-			<tbody>
-				{#each rows as offset, index}
-					<tr class="h-8">
-						<td class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
-							>{index}</td>
-						<td class="border border-neutral-700 bg-neutral-800 px-1.5">
-							<div class="flex items-center justify-center gap-1">
-								<button
-									class="flex items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-400"
-									onclick={(e) => {
-										e.stopPropagation();
-										removeRow(index);
-									}}
-									title="Remove this row">
-									<IconCarbonTrashCan class="h-3.5 w-3.5" />
-								</button>
-								{#if index < rows.length - 1}
-									<button
-										class="flex items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-500"
-										onclick={(e) => {
-											e.stopPropagation();
-											removeRowsFromBottom(index);
-										}}
-										title="Remove all rows from bottom up to this one">
-										<IconCarbonDelete class="h-3.5 w-3.5" />
-									</button>
-								{/if}
-							</div>
-						</td>
-						<td
-							class="w-6 cursor-pointer px-1.5 text-center text-sm"
-							onclick={() => setLoop(index)}>
-							{loopRow === index ? '>' : ''}
-						</td>
-						<td class="w-14 px-1.5">
-							<input
-								type="text"
-								bind:this={offsetInputRefs[index]}
-								class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
-								value={formatOffset(offset)}
-								onkeydown={(e) => handleOffsetKeyDown(index, e)}
-								onfocus={(e) => (e.target as HTMLInputElement).select()}
-								oninput={(e) => onOffsetInput(index, e)} />
-						</td>
+	<div class="flex items-start gap-2 overflow-x-auto">
+		<div class="flex flex-col">
+			<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+				<thead>
+					<tr>
+						<th class="px-2 py-1.5">row</th>
+						<th class="w-8 px-1.5"></th>
+						<th class="w-6 px-1.5">loop</th>
+						<th class="w-14 px-1.5">offset</th>
+						<th colspan="25" class="px-2">note key offset</th>
+					</tr>
+					<tr>
+						<th></th>
+						<th></th>
+						<th></th>
+						<th></th>
 						{#each PITCH_VALUES as p}
-							{@render valueCell('pitch', index, p, p === pitches[index])}
+							<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(p)}
+							></th>
 						{/each}
 					</tr>
-				{/each}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{#each rows as offset, index}
+						<tr class="h-8">
+							<td
+								class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
+								>{index}</td>
+							<td class="border border-neutral-700 bg-neutral-800 px-1.5">
+								<div class="flex items-center justify-center gap-1">
+									<button
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-400"
+										onclick={(e) => {
+											e.stopPropagation();
+											removeRow(index);
+										}}
+										title="Remove this row">
+										<IconCarbonTrashCan class="h-3.5 w-3.5" />
+									</button>
+									{#if index < rows.length - 1}
+										<button
+											class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-500"
+											onclick={(e) => {
+												e.stopPropagation();
+												removeRowsFromBottom(index);
+											}}
+											title="Remove all rows from bottom up to this one">
+											<IconCarbonDelete class="h-3.5 w-3.5" />
+										</button>
+									{/if}
+								</div>
+							</td>
+							<td
+								class="w-6 cursor-pointer px-1.5 text-center text-sm"
+								onclick={() => setLoop(index)}>
+								{loopRow === index ? '>' : ''}
+							</td>
+							<td class="w-14 px-1.5">
+								<input
+									type="text"
+									bind:this={offsetInputRefs[index]}
+									class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+									value={formatOffset(offset)}
+									onkeydown={(e) => handleOffsetKeyDown(index, e)}
+									onfocus={(e) => (e.target as HTMLInputElement).select()}
+									oninput={(e) => onOffsetInput(index, e)} />
+							</td>
+							{#each PITCH_VALUES as p}
+								{@render valueCell('pitch', index, p, p === pitches[index])}
+							{/each}
+						</tr>
+					{/each}
+				</tbody>
+				<tfoot>
+					<tr>
+						<td colspan="4"></td>
+						<td colspan="25" class="px-2 py-1">
+							<div class="flex items-center justify-center">
+								<button
+									class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
+									onclick={addRow}
+									title="Add new row">
+									<IconCarbonAdd class="h-3.5 w-3.5" />
+								</button>
+							</div>
+						</td>
+					</tr>
+				</tfoot>
+			</table>
+		</div>
 
 		<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
 			<thead>
