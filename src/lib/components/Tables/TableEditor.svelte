@@ -31,6 +31,8 @@
 	let isDragging = $state(false);
 	let dragMode: 'pitch' | 'shift' | null = null;
 	let offsetInputRefs: (HTMLInputElement | null)[] = $state([]);
+	let loopColumnRef: HTMLTableCellElement | null = $state(null);
+	let tableRef: HTMLTableElement | null = $state(null);
 	let lastTableId = $state(table.id);
 	let lastSyncedName = $state(table.name);
 	let lastSyncedRows = $state([...table.rows]);
@@ -298,13 +300,35 @@
 	</div>
 
 	<div class="flex items-start gap-2 overflow-x-auto">
-		<div class="flex flex-col">
-			<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+		<div class="relative flex flex-col">
+			{#if loopRow >= 0 && loopRow < rows.length && loopColumnRef && tableRef}
+				{@const tbody = tableRef.querySelector('tbody')}
+				{@const firstRow = tbody?.querySelector('tr') as HTMLTableRowElement | null}
+				{@const rowTop = firstRow ? firstRow.offsetTop : 0}
+				<div
+					class="pointer-events-none absolute top-0 z-0"
+					style="left: calc({loopColumnRef.offsetLeft}px + 1rem); margin-top: calc({rowTop}px + 2rem * {loopRow}); height: calc(2rem * {rows.length -
+						loopRow});">
+					<div class="relative h-full">
+						<div class="absolute top-0 left-0 h-full w-0.5 border-l-2 border-blue-200">
+						</div>
+						<div
+							class="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-blue-200">
+						</div>
+						<div
+							class="absolute bottom-0 left-0 h-2 w-2 border-b-2 border-l-2 border-blue-200">
+						</div>
+					</div>
+				</div>
+			{/if}
+			<table
+				bind:this={tableRef}
+				class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
 				<thead>
 					<tr>
 						<th class="px-2 py-1.5">row</th>
 						<th class="w-8 px-1.5"></th>
-						<th class="w-6 px-1.5">loop</th>
+						<th class="w-6 px-1.5" bind:this={loopColumnRef}>loop</th>
 						<th class="w-14 px-1.5">offset</th>
 						<th colspan="25" class="px-2">note key offset</th>
 					</tr>
@@ -352,7 +376,6 @@
 							<td
 								class="w-6 cursor-pointer px-1.5 text-center text-sm"
 								onclick={() => setLoop(index)}>
-								{loopRow === index ? '>' : ''}
 							</td>
 							<td class="w-14 px-1.5">
 								<input
