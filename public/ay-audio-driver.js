@@ -1,7 +1,76 @@
+const PT3_VOL = [
+	[
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00
+	],
+	[
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+		0x01
+	],
+	[
+		0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02,
+		0x02
+	],
+	[
+		0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03,
+		0x03
+	],
+	[
+		0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x04,
+		0x04
+	],
+	[
+		0x00, 0x00, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x03, 0x03, 0x03, 0x04, 0x04, 0x04, 0x05,
+		0x05
+	],
+	[
+		0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x04, 0x05, 0x05, 0x06,
+		0x06
+	],
+	[
+		0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07,
+		0x07
+	],
+	[
+		0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x06, 0x07, 0x07,
+		0x08
+	],
+	[
+		0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x04, 0x04, 0x05, 0x05, 0x06, 0x07, 0x07, 0x08, 0x08,
+		0x09
+	],
+	[
+		0x00, 0x01, 0x01, 0x02, 0x03, 0x03, 0x04, 0x05, 0x05, 0x06, 0x07, 0x07, 0x08, 0x09, 0x09,
+		0x0a
+	],
+	[
+		0x00, 0x01, 0x01, 0x02, 0x03, 0x04, 0x04, 0x05, 0x06, 0x07, 0x07, 0x08, 0x09, 0x0a, 0x0a,
+		0x0b
+	],
+	[
+		0x00, 0x01, 0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0a, 0x0b,
+		0x0c
+	],
+	[
+		0x00, 0x01, 0x02, 0x03, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0a, 0x0b, 0x0c,
+		0x0d
+	],
+	[
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+		0x0e
+	],
+	[0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
+];
+
 class AYAudioDriver {
 	constructor(wasmModule, ayumiPtr) {
 		this.wasmModule = wasmModule;
 		this.ayumiPtr = ayumiPtr;
+		this.channelMixerState = [
+			{ tone: true, noise: true, envelope: false },
+			{ tone: true, noise: true, envelope: false },
+			{ tone: true, noise: true, envelope: false }
+		];
 	}
 
 	setTone(channelIndex, regValue) {
@@ -12,17 +81,237 @@ class AYAudioDriver {
 		this.wasmModule.ayumi_set_volume(this.ayumiPtr, channelIndex, volume);
 	}
 
-	setMixer(channelIndex) {
-		this.wasmModule.ayumi_set_mixer(this.ayumiPtr, channelIndex, 0, 1, 0);
+	calculateVolume(
+		patternVolume,
+		instrumentVolume,
+		amplitudeSliding,
+		instrumentEnvelopeEnabled,
+		channelEnvelopeEnabled
+	) {
+		let vol = instrumentVolume + amplitudeSliding;
+		if (vol < 0) vol = 0;
+		if (vol > 15) vol = 15;
+
+		let finalVolume = PT3_VOL[patternVolume][vol];
+
+		if (instrumentEnvelopeEnabled && channelEnvelopeEnabled) {
+			finalVolume = finalVolume | 16;
+		}
+
+		return finalVolume;
 	}
 
-	processPatternRow(patternRow) {
+	setMixer(channelIndex) {
+		const state = this.channelMixerState[channelIndex];
+		this.wasmModule.ayumi_set_mixer(
+			this.ayumiPtr,
+			channelIndex,
+			state.tone ? 0 : 1,
+			state.noise ? 0 : 1,
+			state.envelope ? 1 : 0
+		);
+	}
+
+	setMixerTone(channelIndex, enabled) {
+		this.channelMixerState[channelIndex].tone = enabled;
+		this.setMixer(channelIndex);
+	}
+
+	setMixerNoise(channelIndex, enabled) {
+		this.channelMixerState[channelIndex].noise = enabled;
+		this.setMixer(channelIndex);
+	}
+
+	setMixerEnvelope(channelIndex, enabled) {
+		this.channelMixerState[channelIndex].envelope = enabled;
+		this.setMixer(channelIndex);
+	}
+
+	setNoise(noiseValue) {
+		this.wasmModule.ayumi_set_noise(this.ayumiPtr, noiseValue);
+	}
+
+	setEnvelope(shape, period) {
+		this.wasmModule.ayumi_set_envelope_shape(this.ayumiPtr, shape);
+		this.wasmModule.ayumi_set_envelope(this.ayumiPtr, period);
+	}
+
+	resetInstrumentAccumulators(state, channelIndex) {
+		state.channelToneAccumulator[channelIndex] = 0;
+		state.channelNoiseAccumulator[channelIndex] = 0;
+		state.channelEnvelopeAccumulator[channelIndex] = 0;
+		state.channelAmplitudeSliding[channelIndex] = 0;
+	}
+
+	processPatternRow(state, pattern, rowIndex, patternRow) {
 		if (patternRow.noiseValue > 0) {
 			this.wasmModule.ayumi_set_noise(this.ayumiPtr, patternRow.noiseValue);
 		}
 
-		if (patternRow.envelopeValue > 0) {
-			this.wasmModule.ayumi_set_envelope(this.ayumiPtr, patternRow.envelopeValue);
+		for (let channelIndex = 0; channelIndex < pattern.channels.length; channelIndex++) {
+			const channel = pattern.channels[channelIndex];
+			const row = channel.rows[rowIndex];
+
+			this._processNote(state, channelIndex, row);
+			this._processInstrument(state, channelIndex, row);
+			this._processEnvelope(state, channelIndex, row, patternRow);
+		}
+	}
+
+	_processNote(state, channelIndex, row) {
+		if (row.note.name === 1) {
+			this.setTone(channelIndex, 0);
+			this.resetInstrumentAccumulators(state, channelIndex);
+		} else if (row.note.name !== 0) {
+			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
+			if (noteValue >= 0 && noteValue < state.currentTuningTable.length) {
+				const regValue = state.currentTuningTable[noteValue];
+				this.setTone(channelIndex, regValue);
+			}
+			if (state.instrumentPositions) {
+				state.instrumentPositions[channelIndex] = 0;
+			}
+			this.resetInstrumentAccumulators(state, channelIndex);
+		}
+	}
+
+	_processInstrument(state, channelIndex, row) {
+		if (!state.channelInstruments || !state.instruments) return;
+
+		if (row.instrument > 0) {
+			const instrumentIndex = row.instrument - 1;
+			if (state.instruments[instrumentIndex]) {
+				state.channelInstruments[channelIndex] = instrumentIndex;
+				state.instrumentPositions[channelIndex] = 0;
+				this.resetInstrumentAccumulators(state, channelIndex);
+			}
+		}
+
+		if (state.channelInstruments[channelIndex] < 0) {
+			state.channelInstruments[channelIndex] = 0;
+		}
+	}
+
+	_processEnvelope(state, channelIndex, row, patternRow) {
+		if (!state.channelEnvelopeEnabled) return;
+
+		if (row.envelopeShape !== 0 && row.envelopeShape !== 15) {
+			if (patternRow.envelopeValue > 0) {
+				this.setEnvelope(row.envelopeShape, patternRow.envelopeValue);
+				state.channelEnvelopeEnabled[channelIndex] = true;
+				this.setMixerEnvelope(channelIndex, true);
+			}
+		} else if (row.envelopeShape === 15) {
+			state.channelEnvelopeEnabled[channelIndex] = false;
+			this.setMixerEnvelope(channelIndex, false);
+		}
+	}
+
+	processInstruments(state) {
+		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
+			const instrumentIndex = state.channelInstruments[channelIndex];
+			const instrument = state.instruments[instrumentIndex];
+
+			if (!instrument || !instrument.rows || instrument.rows.length === 0) {
+				continue;
+			}
+
+			const instrumentRow = instrument.rows[state.instrumentPositions[channelIndex]];
+			if (!instrumentRow) {
+				state.instrumentPositions[channelIndex]++;
+				if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {
+					if (instrument.loop > 0 && instrument.loop < instrument.rows.length) {
+						state.instrumentPositions[channelIndex] = instrument.loop;
+					} else {
+						state.instrumentPositions[channelIndex] = 0;
+					}
+				}
+				continue;
+			}
+
+			const currentNote = state.channelCurrentNotes[channelIndex];
+			let noteTone = 0;
+			if (currentNote >= 0 && currentNote < state.currentTuningTable.length) {
+				noteTone = state.currentTuningTable[currentNote];
+			}
+
+			if (noteTone === 0) {
+				state.instrumentPositions[channelIndex]++;
+				if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {
+					if (instrument.loop > 0 && instrument.loop < instrument.rows.length) {
+						state.instrumentPositions[channelIndex] = instrument.loop;
+					} else {
+						state.instrumentPositions[channelIndex] = 0;
+					}
+				}
+				continue;
+			}
+
+			let sampleTone = state.channelToneAccumulator[channelIndex];
+			if (instrumentRow.toneAdd !== 0) {
+				sampleTone = sampleTone + instrumentRow.toneAdd;
+			}
+
+			if (instrumentRow.toneAccumulation) {
+				state.channelToneAccumulator[channelIndex] = sampleTone;
+			}
+
+			const finalTone = (noteTone + sampleTone) & 0xfff;
+			this.setTone(channelIndex, finalTone);
+
+			if (instrumentRow.noiseAdd !== 0) {
+				state.channelNoiseAccumulator[channelIndex] += instrumentRow.noiseAdd;
+				if (instrumentRow.noiseAccumulation) {
+				}
+				const noiseValue = state.channelNoiseAccumulator[channelIndex] & 31;
+				this.setNoise(noiseValue);
+			}
+
+			if (instrumentRow.volume >= 0) {
+				state.channelInstrumentVolumes[channelIndex] = instrumentRow.volume;
+			}
+
+			if (instrumentRow.amplitudeSliding) {
+				if (instrumentRow.amplitudeSlideUp) {
+					if (state.channelAmplitudeSliding[channelIndex] < 15) {
+						state.channelAmplitudeSliding[channelIndex]++;
+					}
+				} else {
+					if (state.channelAmplitudeSliding[channelIndex] > -15) {
+						state.channelAmplitudeSliding[channelIndex]--;
+					}
+				}
+			}
+
+			const patternVolume = state.channelPatternVolumes[channelIndex];
+			const instrumentVolume = state.channelInstrumentVolumes[channelIndex];
+			const amplitudeSliding = state.channelAmplitudeSliding[channelIndex];
+			const finalVolume = this.calculateVolume(
+				patternVolume,
+				instrumentVolume,
+				amplitudeSliding,
+				instrumentRow.envelope,
+				state.channelEnvelopeEnabled[channelIndex]
+			);
+			this.setVolume(channelIndex, finalVolume);
+
+			this.setMixerTone(channelIndex, instrumentRow.tone);
+			this.setMixerNoise(channelIndex, instrumentRow.noise);
+
+			if (instrumentRow.envelope && state.channelEnvelopeEnabled[channelIndex]) {
+				this.setMixerEnvelope(channelIndex, true);
+			} else {
+				this.setMixerEnvelope(channelIndex, false);
+			}
+
+			state.instrumentPositions[channelIndex]++;
+			if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {
+				if (instrument.loop > 0 && instrument.loop < instrument.rows.length) {
+					state.instrumentPositions[channelIndex] = instrument.loop;
+				} else {
+					state.instrumentPositions[channelIndex] = 0;
+				}
+			}
 		}
 	}
 }

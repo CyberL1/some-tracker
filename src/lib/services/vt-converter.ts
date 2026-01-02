@@ -43,6 +43,10 @@ interface VT2SampleLine {
 	noiseAdd: number;
 	volume: number;
 	loop: boolean;
+	amplitudeSliding?: boolean;
+	amplitudeSlideUp?: boolean;
+	toneAccumulation?: boolean;
+	noiseAccumulation?: boolean;
 }
 
 interface VT2PatternRow {
@@ -121,7 +125,11 @@ class VT2Converter {
 						line.toneAdd,
 						line.noiseAdd,
 						line.volume,
-						line.loop
+						line.loop,
+						line.amplitudeSliding || false,
+						line.amplitudeSlideUp || false,
+						line.toneAccumulation || false,
+						line.noiseAccumulation || false
 					);
 				}),
 				loopPoint
@@ -250,7 +258,11 @@ class VT2Converter {
 						line.toneAdd,
 						line.noiseAdd,
 						line.volume,
-						line.loop
+						line.loop,
+						line.amplitudeSliding || false,
+						line.amplitudeSlideUp || false,
+						line.toneAccumulation || false,
+						line.noiseAccumulation || false
 					);
 				}),
 				loopPoint
@@ -354,7 +366,9 @@ class VT2Converter {
 					module.speed = parseInt(value) || 6;
 					break;
 				case 'PlayOrder':
-					module.playOrder = this.parsePlayOrder(value);
+					const { patternOrder, loopPoint } = this.parsePlayOrder(value);
+					module.playOrder = patternOrder;
+					module.loopPoint = loopPoint;
 					break;
 				case 'NoteTable':
 					module.noteTable = parseInt(value) || 0;
@@ -371,12 +385,28 @@ class VT2Converter {
 		return module;
 	}
 
-	private parsePlayOrder(orderString: string): number[] {
-		return orderString
-			.split(',')
-			.map((part) => part.trim())
-			.map((part) => parseInt(part.startsWith('L') ? part.substring(1) : part))
-			.filter((num) => !isNaN(num));
+	private parsePlayOrder(orderString: string): { patternOrder: number[]; loopPoint: number } {
+		const parts = orderString.split(',').map((part) => part.trim());
+		const patternOrder: number[] = [];
+		let loopPoint = 0;
+
+		for (let i = 0; i < parts.length; i++) {
+			const part = parts[i];
+			if (part.startsWith('L')) {
+				loopPoint = i;
+				const patternIndex = parseInt(part.substring(1));
+				if (!isNaN(patternIndex)) {
+					patternOrder.push(patternIndex);
+				}
+			} else {
+				const patternIndex = parseInt(part);
+				if (!isNaN(patternIndex)) {
+					patternOrder.push(patternIndex);
+				}
+			}
+		}
+
+		return { patternOrder, loopPoint };
 	}
 
 	private parseTables(lines: string[]): VT2Table[] {
@@ -437,14 +467,29 @@ class VT2Converter {
 
 		const [flags, toneStr, noiseStr, volumeStr, ...rest] = parts;
 
+		const toneAccumulation = toneStr.includes('^');
+		const toneValue = this.parseSignedHex(toneStr.replace('^', ''));
+
+		const noiseAccumulation = noiseStr.includes('^');
+		const noiseValue = this.parseSignedHex(noiseStr.replace('^', ''));
+
+		const volumeCleaned = volumeStr.replace('_', '');
+		const hasAmplitudeSliding = volumeCleaned.includes('+') || volumeCleaned.includes('-');
+		const amplitudeSlideUp = volumeCleaned.includes('+');
+		const volumeValue = parseInt(volumeCleaned.replace(/[+-]/g, ''), 16) || 0;
+
 		return {
 			tone: flags.includes('T'),
 			noise: flags.includes('N'),
 			envelope: flags.includes('E'),
-			toneAdd: this.parseSignedHex(toneStr),
-			noiseAdd: this.parseSignedHex(noiseStr),
-			volume: parseInt(volumeStr.replace('_', ''), 16) || 0,
-			loop: rest.includes('L')
+			toneAdd: toneValue,
+			noiseAdd: noiseValue,
+			volume: volumeValue,
+			loop: rest.includes('L'),
+			amplitudeSliding: hasAmplitudeSliding,
+			amplitudeSlideUp: amplitudeSlideUp,
+			toneAccumulation: toneAccumulation,
+			noiseAccumulation: noiseAccumulation
 		};
 	}
 
@@ -517,7 +562,7 @@ class VT2Converter {
 		let envelopeShape = 0;
 
 		if (sampleAndVol.length >= 4) {
-			instrument = this.parseHexDigit(sampleAndVol[0]);
+			instrument = this.parseBase36Digit(sampleAndVol[0]);
 			envelopeShape = this.parseHexDigit(sampleAndVol[1]);
 			table = this.parseHexDigit(sampleAndVol[2]);
 			volume = this.parseHexDigit(sampleAndVol[3]);
@@ -566,10 +611,10 @@ class VT2Converter {
 
 				const { noteName, octave } = this.parseNote(vt2ChannelData.note || '---');
 				row.note = new Note(noteName, octave);
-				row.instrument = vt2ChannelData.instrument || 0;
-				row.volume = vt2ChannelData.volume || 0;
-				row.table = vt2ChannelData.table || 0;
-				row.envelopeShape = vt2ChannelData.envelopeShape || 0;
+				row.instrument = vt2ChannelData.instrument ?? 0;
+				row.volume = vt2ChannelData.volume ?? 0;
+				row.table = vt2ChannelData.table ?? 0;
+				row.envelopeShape = vt2ChannelData.envelopeShape ?? 0;
 				row.effects = this.parseEffects(vt2ChannelData.effects || '');
 			}
 		}
@@ -642,6 +687,18 @@ class VT2Converter {
 		if (char >= '0' && char <= '9') return parseInt(char);
 		if (char >= 'A' && char <= 'F') return char.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
 		if (char >= 'a' && char <= 'f') return char.charCodeAt(0) - 'a'.charCodeAt(0) + 10;
+		return 0;
+	}
+
+	private parseBase36Digit(char: string): number {
+		if (!char || char === '.') return 0;
+		const upperChar = char.toUpperCase();
+		if (upperChar >= '0' && upperChar <= '9') {
+			return parseInt(upperChar, 10);
+		}
+		if (upperChar >= 'A' && upperChar <= 'Z') {
+			return upperChar.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+		}
 		return 0;
 	}
 

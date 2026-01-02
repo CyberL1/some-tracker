@@ -14,6 +14,7 @@
 	import { TabView } from '../TabView';
 	import { TablesView } from '../Tables';
 	import { DetailsView } from '../Details';
+	import { InstrumentsView } from '../Instruments';
 	import IconCarbonChip from '~icons/carbon/chip';
 	import IconCarbonListBoxes from '~icons/carbon/list-boxes';
 	import IconCarbonDataTable from '~icons/carbon/data-table';
@@ -261,9 +262,7 @@
 				{#if tabId === 'tables'}
 					<TablesView bind:tables isExpanded={isRightPanelExpanded} />
 				{:else if tabId === 'instruments'}
-					<div class="flex h-full items-center justify-center">
-						<p class="text-sm text-neutral-500">Instruments editor coming soon...</p>
-					</div>
+					<InstrumentsView {songs} isExpanded={isRightPanelExpanded} />
 				{:else if tabId === 'details'}
 					<DetailsView {chipProcessors} bind:values={projectSettings} />
 				{/if}

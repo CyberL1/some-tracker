@@ -59,6 +59,10 @@ class InstrumentRow {
 	noiseAdd: number = 0;
 	volume: number = 0;
 	loop: boolean = false;
+	amplitudeSliding: boolean = false;
+	amplitudeSlideUp: boolean = false;
+	toneAccumulation: boolean = false;
+	noiseAccumulation: boolean = false;
 
 	constructor(
 		tone: boolean,
@@ -67,7 +71,11 @@ class InstrumentRow {
 		toneAdd: number,
 		noiseAdd: number,
 		volume: number,
-		loop: boolean
+		loop: boolean,
+		amplitudeSliding: boolean = false,
+		amplitudeSlideUp: boolean = false,
+		toneAccumulation: boolean = false,
+		noiseAccumulation: boolean = false
 	) {
 		this.tone = tone;
 		this.noise = noise;
@@ -76,6 +84,10 @@ class InstrumentRow {
 		this.noiseAdd = noiseAdd;
 		this.volume = volume;
 		this.loop = loop;
+		this.amplitudeSliding = amplitudeSliding;
+		this.amplitudeSlideUp = amplitudeSlideUp;
+		this.toneAccumulation = toneAccumulation;
+		this.noiseAccumulation = noiseAccumulation;
 	}
 }
 

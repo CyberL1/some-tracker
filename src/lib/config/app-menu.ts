@@ -25,8 +25,8 @@ export const menuItems: MenuItem[] = [
 				type: 'expandable',
 				items: [{ label: 'VT2 Module', type: 'normal', action: 'import-vt2' }]
 			},
-			{ label: 'Save', type: 'normal' },
-			{ label: 'Save As', type: 'normal' },
+			{ label: 'Save', type: 'normal', action: 'save' },
+			{ label: 'Save As', type: 'normal', action: 'save-as' },
 			{ label: 'Settings', type: 'normal', action: 'settings' },
 			{ label: 'Exit', type: 'normal' }
 		]

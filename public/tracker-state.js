@@ -17,24 +17,26 @@ class TrackerState {
 		this.currentTick = 0;
 		this.currentSpeed = DEFAULT_SPEED;
 
-		this.channelVolumes = Array(channelCount).fill(0);
+		this.channelPatternVolumes = Array(channelCount).fill(0);
 
 		this.tables = [];
 		this.channelTables = Array(channelCount).fill(-1);
 		this.tablePositions = Array(channelCount).fill(0);
 		this.tableCounters = Array(channelCount).fill(0);
 		this.channelBaseNotes = Array(channelCount).fill(0);
+		this.channelCurrentNotes = Array(channelCount).fill(0);
 	}
 
 	reset() {
 		this.sampleCounter = 0;
 		this.currentRow = 0;
 		this.currentTick = 0;
-		this.channelVolumes.fill(0);
+		this.channelPatternVolumes.fill(0);
 		this.channelTables.fill(-1);
 		this.tablePositions.fill(0);
 		this.tableCounters.fill(0);
 		this.channelBaseNotes.fill(0);
+		this.channelCurrentNotes.fill(0);
 	}
 
 	setTuningTable(table) {

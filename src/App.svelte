@@ -3,6 +3,7 @@
 	import './app.css';
 	import { menuItems } from './lib/config/app-menu';
 	import { handleFileImport } from './lib/services/file-import';
+	import { handleFileExport } from './lib/services/file-export';
 	import { Project } from './lib/models/project';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import { setContext } from 'svelte';
@@ -120,6 +121,22 @@
 
 			if (data.action === 'settings') {
 				showSettings = !showSettings;
+				return;
+			}
+
+			if (data.action === 'save' || data.action === 'save-as') {
+				const currentProject = new Project(
+					projectSettings.title,
+					projectSettings.author,
+					songs,
+					0,
+					patternOrder,
+					projectSettings.aymChipType,
+					projectSettings.aymFrequency,
+					projectSettings.intFrequency,
+					tables
+				);
+				await handleFileExport(data.action, currentProject);
 				return;
 			}
 
