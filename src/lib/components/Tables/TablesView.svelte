@@ -13,9 +13,11 @@
 	const TOTAL_TABLES = 32;
 
 	let {
-		tables = $bindable()
+		tables = $bindable(),
+		isExpanded = false
 	}: {
 		tables: Table[];
+		isExpanded: boolean;
 	} = $props();
 
 	let asHex = $state(false);
@@ -64,7 +66,7 @@
 	]);
 </script>
 
-<div class="mx-50 flex h-full flex-col">
+<div class="flex h-full flex-col">
 	<Card
 		title="Tables (Arpeggios)"
 		icon={IconCarbonDataTable}
@@ -111,6 +113,7 @@
 						bind:this={tableEditor}
 						table={tables[selectedTableIndex]}
 						{asHex}
+						{isExpanded}
 						onTableChange={handleTableChange} />
 				{/key}
 			</div>

@@ -9,17 +9,9 @@
 	import { AudioService } from './lib/services/audio-service';
 	import { ProjectService } from './lib/services/project-service';
 	import { AY_CHIP } from './lib/models/chips';
-	import { TabView } from './lib/components/TabView';
 	import SongView from './lib/components/Song/SongView.svelte';
-	import { TablesView } from './lib/components/Tables';
-	import { DetailsView } from './lib/components/Details';
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
-	import IconCarbonMusic from '~icons/carbon/music';
-	import IconCarbonChip from '~icons/carbon/chip';
-	import IconCarbonWaveform from '~icons/carbon/waveform';
-	import IconCarbonInformationSquare from '~icons/carbon/information-square';
-	import IconCarbonDataTable from '~icons/carbon/data-table';
 	import Settings from './lib/components/Settings/Settings.svelte';
 
 	settingsStore.init();
@@ -51,14 +43,7 @@
 	});
 
 	let patternEditor: PatternEditor | null = $state(null);
-	let activeTabId = $state('song');
-
-	const tabs = [
-		{ id: 'song', label: 'Song', icon: IconCarbonChip },
-		{ id: 'tables', label: 'Tables', icon: IconCarbonDataTable },
-		{ id: 'instruments', label: 'Instruments', icon: IconCarbonWaveform },
-		{ id: 'details', label: 'Details', icon: IconCarbonInformationSquare }
-	];
+	let showSettings = $state(false);
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
@@ -134,7 +119,7 @@
 			}
 
 			if (data.action === 'settings') {
-				activeTabId = 'settings';
+				showSettings = !showSettings;
 				return;
 			}
 
@@ -174,30 +159,16 @@
 	class="flex h-screen flex-col gap-1 overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
 	<div class="flex-1 overflow-hidden">
-		<TabView {tabs} bind:activeTabId>
-			{#snippet children(tabId)}
-				<div class={tabId !== 'song' ? 'hidden' : 'h-full w-full'}>
-					<SongView
-						bind:songs
-						bind:patternOrder
-						bind:patternEditor
-						chipProcessors={container.audioService.chipProcessors} />
-				</div>
-				{#if tabId === 'tables'}
-					<TablesView bind:tables />
-				{:else if tabId === 'instruments'}
-					<div class="flex h-full items-center justify-center">
-						<p class="text-sm text-neutral-500">Instruments editor coming soon...</p>
-					</div>
-				{:else if tabId === 'details'}
-					<DetailsView
-						chipProcessors={container.audioService.chipProcessors}
-						bind:values={projectSettings} />
-				{/if}
-				{#if tabId === 'settings'}
-					<Settings />
-				{/if}
-			{/snippet}
-		</TabView>
+		{#if showSettings}
+			<Settings />
+		{:else}
+			<SongView
+				bind:songs
+				bind:patternOrder
+				bind:patternEditor
+				bind:tables
+				bind:projectSettings
+				chipProcessors={container.audioService.chipProcessors} />
+		{/if}
 	</div>
 </main>

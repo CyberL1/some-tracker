@@ -3,15 +3,19 @@
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
 	import IconCarbonDelete from '~icons/carbon/delete';
 	import IconCarbonAdd from '~icons/carbon/add';
+	import IconCarbonGrid from '~icons/carbon/grid';
 	import Input from '../Input/Input.svelte';
+	import { settingsStore } from '../../stores/settings.svelte';
 
 	let {
 		table,
 		asHex = false,
+		isExpanded = false,
 		onTableChange
 	}: {
 		table: Table;
 		asHex: boolean;
+		isExpanded: boolean;
 		onTableChange: (table: Table) => void;
 	} = $props();
 
@@ -37,6 +41,17 @@
 	let lastSyncedName = $state(table.name);
 	let lastSyncedRows = $state([...table.rows]);
 	let lastSyncedLoop = $state(table.loop);
+
+	const userPrefersVisualGrid = $derived(settingsStore.get().showVisualGrid ?? true);
+
+	const showOffsetGrid = $derived(isExpanded && userPrefersVisualGrid);
+	const showOctaveGrid = $derived(isExpanded && userPrefersVisualGrid);
+
+	function getGridButtonClass(isActive: boolean): string {
+		const baseClass =
+			'flex cursor-pointer items-center gap-1.5 rounded border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100';
+		return isActive ? `${baseClass} border-blue-500 bg-blue-900/30 text-blue-200` : baseClass;
+	}
 
 	function initRowRepresentations() {
 		rows = ensureNonEmptyRows(rows);
@@ -297,6 +312,17 @@
 	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
 		<span class="text-xs text-neutral-400">Name:</span>
 		<Input class="w-48 text-xs" bind:value={name} />
+		{#if isExpanded}
+			<button
+				class="ml-4 {getGridButtonClass(showOffsetGrid || showOctaveGrid)}"
+				onclick={() => {
+					settingsStore.set('showVisualGrid', !userPrefersVisualGrid);
+				}}
+				title="Toggle visual grids (offset and octave)">
+				<IconCarbonGrid class="h-3.5 w-3.5" />
+				<span>Visual Grid</span>
+			</button>
+		{/if}
 	</div>
 
 	<div class="flex items-start gap-2 overflow-x-auto">
@@ -330,18 +356,22 @@
 						<th class="w-8 px-1.5"></th>
 						<th class="w-6 px-1.5" bind:this={loopColumnRef}>loop</th>
 						<th class="w-14 px-1.5">offset</th>
-						<th colspan="25" class="px-2">note key offset</th>
+						{#if showOffsetGrid}
+							<th colspan="25" class="px-2">note key offset</th>
+						{/if}
 					</tr>
-					<tr>
-						<th></th>
-						<th></th>
-						<th></th>
-						<th></th>
-						{#each PITCH_VALUES as p}
-							<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(p)}
-							></th>
-						{/each}
-					</tr>
+					{#if showOffsetGrid}
+						<tr>
+							<th></th>
+							<th></th>
+							<th></th>
+							<th></th>
+							{#each PITCH_VALUES as p}
+								<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(p)}
+								></th>
+							{/each}
+						</tr>
+					{/if}
 				</thead>
 				<tbody>
 					{#each rows as offset, index}
@@ -387,54 +417,75 @@
 									onfocus={(e) => (e.target as HTMLInputElement).select()}
 									oninput={(e) => onOffsetInput(index, e)} />
 							</td>
-							{#each PITCH_VALUES as p}
-								{@render valueCell('pitch', index, p, p === pitches[index])}
-							{/each}
+							{#if showOffsetGrid}
+								{#each PITCH_VALUES as p}
+									{@render valueCell('pitch', index, p, p === pitches[index])}
+								{/each}
+							{/if}
 						</tr>
 					{/each}
 				</tbody>
 				<tfoot>
 					<tr>
-						<td colspan="4"></td>
-						<td colspan="25" class="px-2 py-1">
-							<div class="flex items-center justify-center">
-								<button
-									class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
-									onclick={addRow}
-									title="Add new row">
-									<IconCarbonAdd class="h-3.5 w-3.5" />
-								</button>
-							</div>
-						</td>
+						{#if showOffsetGrid}
+							<td colspan="4"></td>
+							<td colspan="25" class="px-2 py-1">
+								<div class="flex items-center justify-center">
+									<button
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
+										onclick={addRow}
+										title="Add new row">
+										<IconCarbonAdd class="mr-1 h-3.5 w-3.5" />
+										<span class="mr-1 text-xs">Add new row</span>
+									</button>
+								</div>
+							</td>
+						{:else}
+							<td colspan="4" class="px-2 py-1">
+								<div class="flex items-center justify-center">
+									<button
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
+										onclick={addRow}
+										title="Add new row">
+										<IconCarbonAdd class="mr-1 h-3.5 w-3.5" />
+										<span class="mr-1 text-xs">Add new row</span>
+									</button>
+								</div>
+							</td>
+						{/if}
 					</tr>
 				</tfoot>
 			</table>
 		</div>
 
-		<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
-			<thead>
-				<tr>
-					<th class="px-2 py-1.5">row</th>
-					<th colspan="15" class="px-2">octave shift</th>
-				</tr>
-				<tr>
-					<th></th>
-					{#each SHIFT_VALUES as s}
-						<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(s)}></th>
-					{/each}
-				</tr>
-			</thead>
-			<tbody>
-				{#each rows as _, index}
-					<tr class="h-8">
-						<td class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
-							>{index}</td>
+		{#if showOctaveGrid}
+			<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+				<thead>
+					<tr>
+						<th class="px-2 py-1.5">row</th>
+						<th colspan="15" class="px-2">octave shift</th>
+					</tr>
+					<tr>
+						<th></th>
 						{#each SHIFT_VALUES as s}
-							{@render valueCell('shift', index, s, s === shifts[index])}
+							<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(s)}
+							></th>
 						{/each}
 					</tr>
-				{/each}
-			</tbody>
-		</table>
+				</thead>
+				<tbody>
+					{#each rows as _, index}
+						<tr class="h-8">
+							<td
+								class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
+								>{index}</td>
+							{#each SHIFT_VALUES as s}
+								{@render valueCell('shift', index, s, s === shifts[index])}
+							{/each}
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		{/if}
 	</div>
 </div>

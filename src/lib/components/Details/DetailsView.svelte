@@ -77,7 +77,7 @@
 	});
 </script>
 
-<div class="mx-100 flex h-full flex-col gap-3 overflow-auto p-4">
+<div class="flex h-full flex-col gap-3 overflow-auto p-4">
 	<Card title="Project Info" icon={IconCarbonFolders} class="flex w-full flex-col gap-2 p-3">
 		{#each projectSettings as setting}
 			<CardElement label={setting.label}>

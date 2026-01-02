@@ -7,11 +7,20 @@
 	} from '../../core/chip-processor';
 	import type { Chip } from '../../models/chips';
 	import type { AudioService } from '../../services/audio-service';
+	import type { Table } from '../../models/project';
 	import Card from '../Card/Card.svelte';
 	import PatternEditor from './PatternEditor.svelte';
 	import PatternOrder from './PatternOrder.svelte';
+	import { TabView } from '../TabView';
+	import { TablesView } from '../Tables';
+	import { DetailsView } from '../Details';
 	import IconCarbonChip from '~icons/carbon/chip';
 	import IconCarbonListBoxes from '~icons/carbon/list-boxes';
+	import IconCarbonDataTable from '~icons/carbon/data-table';
+	import IconCarbonWaveform from '~icons/carbon/waveform';
+	import IconCarbonInformationSquare from '~icons/carbon/information-square';
+	import IconCarbonMaximize from '~icons/carbon/maximize';
+	import IconCarbonMinimize from '~icons/carbon/minimize';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { getContext } from 'svelte';
 
@@ -19,12 +28,16 @@
 		songs = $bindable(),
 		patternOrder = $bindable(),
 		chipProcessors,
-		patternEditor = $bindable()
+		patternEditor = $bindable(),
+		tables = $bindable(),
+		projectSettings = $bindable()
 	}: {
 		songs: Song[];
 		patternOrder: number[];
 		chipProcessors: ChipProcessor[];
 		patternEditor?: PatternEditor | null;
+		tables: Table[];
+		projectSettings: Record<string, unknown>;
 	} = $props();
 
 	let sharedPatternOrderIndex = $state(0);
@@ -32,6 +45,12 @@
 	let activeEditorIndex = $state(0);
 	let songViewContainer: HTMLDivElement;
 	let patternEditors: PatternEditor[] = $state([]);
+	let rightPanelActiveTabId = $state('tables');
+	let isRightPanelExpanded = $state(false);
+
+	const blurredContentClass = $derived(
+		isRightPanelExpanded ? 'pointer-events-none opacity-50 blur-sm' : ''
+	);
 
 	const services: { audioService: AudioService } = getContext('container');
 
@@ -146,6 +165,12 @@
 
 	let patternOrderHeight = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_HEIGHT);
 
+	const rightPanelTabs = [
+		{ id: 'tables', label: 'Tables', icon: IconCarbonDataTable },
+		{ id: 'instruments', label: 'Instruments', icon: IconCarbonWaveform },
+		{ id: 'details', label: 'Details', icon: IconCarbonInformationSquare }
+	];
+
 	$effect(() => {
 		if (!songViewContainer) return;
 
@@ -169,7 +194,7 @@
 </script>
 
 <div bind:this={songViewContainer} class="relative flex h-full overflow-hidden">
-	<div class="absolute top-0 left-0 h-full shrink-0">
+	<div class="h-full shrink-0 transition-all duration-300 {blurredContentClass}">
 		<Card
 			title="Patterns Order"
 			fullHeight={true}
@@ -186,7 +211,8 @@
 				onPatternCreated={handlePatternCreated} />
 		</Card>
 	</div>
-	<div class="flex w-full justify-center overflow-hidden">
+	<div
+		class="flex flex-1 justify-center overflow-hidden transition-all duration-300 {blurredContentClass}">
 		{#each songs as song, i}
 			<Card
 				title={`${chipProcessors[i].chip.name} - (${i + 1})`}
@@ -213,5 +239,35 @@
 					chipProcessor={chipProcessors[i]} />
 			</Card>
 		{/each}
+	</div>
+	<div
+		class="relative z-10 h-full shrink-0 border-l border-neutral-700 bg-neutral-800 transition-all duration-300 {isRightPanelExpanded
+			? 'w-[1200px]'
+			: 'w-96'}">
+		<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
+			{#snippet headerActions()}
+				<button
+					class="flex cursor-pointer items-center justify-center rounded px-2 py-1 text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100"
+					onclick={() => (isRightPanelExpanded = !isRightPanelExpanded)}
+					title={isRightPanelExpanded ? 'Collapse panel' : 'Expand panel'}>
+					{#if isRightPanelExpanded}
+						<IconCarbonMinimize class="h-4 w-4" />
+					{:else}
+						<IconCarbonMaximize class="h-4 w-4" />
+					{/if}
+				</button>
+			{/snippet}
+			{#snippet children(tabId)}
+				{#if tabId === 'tables'}
+					<TablesView bind:tables isExpanded={isRightPanelExpanded} />
+				{:else if tabId === 'instruments'}
+					<div class="flex h-full items-center justify-center">
+						<p class="text-sm text-neutral-500">Instruments editor coming soon...</p>
+					</div>
+				{:else if tabId === 'details'}
+					<DetailsView {chipProcessors} bind:values={projectSettings} />
+				{/if}
+			{/snippet}
+		</TabView>
 	</div>
 </div>

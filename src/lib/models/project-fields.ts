@@ -14,4 +14,3 @@ export const PROJECT_FIELDS: ChipSetting[] = [
 		group: 'project'
 	}
 ];
-
