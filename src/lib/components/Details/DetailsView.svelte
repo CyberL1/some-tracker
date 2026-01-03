@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { ChipProcessor } from '../../core/chip-processor';
-	import type { ChipSetting } from '../../models/chips/schema';
+	import type { ChipProcessor } from '../../chips/base/processor';
+	import type { ChipSetting } from '../../chips/base/schema';
 	import type { Song } from '../../models/song';
 	import { PROJECT_FIELDS } from '../../models/project-fields';
-	import { getChipByType } from '../../services/chip-registry';
+	import { getChipByType } from '../../chips/registry';
 	import Card from '../Card/Card.svelte';
 	import CardElement from '../Card/CardElement.svelte';
 	import DynamicField from './DynamicField.svelte';
 	import IconCarbonChip from '~icons/carbon/chip';
 	import IconCarbonFolders from '~icons/carbon/folders';
 	import { getContext } from 'svelte';
-	import type { AudioService } from '../../services/audio-service';
+	import type { AudioService } from '../../services/audio/audio-service';
 
 	let {
 		chipProcessors,

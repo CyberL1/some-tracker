@@ -4,26 +4,25 @@
 		ChipProcessor,
 		TuningTableSupport,
 		InstrumentSupport
-	} from '../../core/chip-processor';
-	import type { AudioService } from '../../services/audio-service';
-	import type { Chip } from '../../models/chips';
+	} from '../../chips/base/processor';
+	import type { AudioService } from '../../services/audio/audio-service';
+	import type { Chip } from '../../chips/types';
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
 	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
 	import { getContext } from 'svelte';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { playbackStore } from '../../stores/playback.svelte';
-	import { getFormatter } from '../../models/formatters/formatter-factory';
-	import { getConverter } from '../../models/adapters/converter-factory';
-	import { PatternService } from '../../services/pattern-service';
-	import { PatternNavigationService } from '../../services/pattern-navigation';
+	import { getFormatter, getConverter } from '../../chips/registry';
+	import { PatternService } from '../../services/pattern/pattern-service';
+	import { PatternNavigationService } from '../../services/pattern/pattern-navigation';
 	import {
 		PatternVisibleRowsService,
 		type VisibleRow,
 		type VisibleRowsCache
-	} from '../../services/pattern-visible-rows';
-	import { PatternEditorRenderer } from '../../rendering/pattern-editor-renderer';
-	import { PatternEditorTextParser } from '../../rendering/pattern-editor-text-parser';
+	} from '../../services/pattern/pattern-visible-rows';
+	import { PatternEditorRenderer } from '../../ui-rendering/pattern-editor-renderer';
+	import { PatternEditorTextParser } from '../../ui-rendering/pattern-editor-text-parser';
 	import { Cache } from '../../utils/memoize';
 
 	let {

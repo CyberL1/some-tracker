@@ -4,9 +4,9 @@
 		ChipProcessor,
 		TuningTableSupport,
 		InstrumentSupport
-	} from '../../core/chip-processor';
-	import type { Chip } from '../../models/chips';
-	import type { AudioService } from '../../services/audio-service';
+	} from '../../chips/base/processor';
+	import type { Chip } from '../../chips/types';
+	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Table } from '../../models/project';
 	import Card from '../Card/Card.svelte';
 	import PatternEditor from './PatternEditor.svelte';

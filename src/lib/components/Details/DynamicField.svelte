@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ChipSetting } from '../../models/chips/schema';
+	import type { ChipSetting } from '../../chips/base/schema';
 	import Input from '../Input/Input.svelte';
 	import Button from '../Button/Button.svelte';
 	import Select from '../AppLayout/Select.svelte';

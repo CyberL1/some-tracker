@@ -1,4 +1,4 @@
-import type { ChipSetting } from './chips/schema';
+import type { ChipSetting } from '../chips/base/schema';
 
 export const PROJECT_FIELDS: ChipSetting[] = [
 	{

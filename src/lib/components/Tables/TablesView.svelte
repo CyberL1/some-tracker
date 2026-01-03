@@ -7,7 +7,7 @@
 	import TableEditor from './TableEditor.svelte';
 	import Card from '../Card/Card.svelte';
 	import { getContext } from 'svelte';
-	import type { AudioService } from '../../services/audio-service';
+	import type { AudioService } from '../../services/audio/audio-service';
 
 	const services: { audioService: AudioService } = getContext('container');
 	const TOTAL_TABLES = 32;

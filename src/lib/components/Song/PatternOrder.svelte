@@ -3,8 +3,8 @@
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
 	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
-	import { PatternService } from '../../services/pattern-service';
-	import { PatternOrderRenderer } from '../../rendering/pattern-order-renderer';
+	import { PatternService } from '../../services/pattern/pattern-service';
+	import { PatternOrderRenderer } from '../../ui-rendering/pattern-order-renderer';
 	import IconCarbonUnlink from '~icons/carbon/unlink';
 	import IconCarbonCopy from '~icons/carbon/copy';
 	import IconCarbonSubtract from '~icons/carbon/subtract';
