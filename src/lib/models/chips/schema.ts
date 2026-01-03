@@ -34,3 +34,17 @@ export interface ChipSchema {
 	globalFields?: Record<string, ChipField>;
 	settings?: ChipSetting[];
 }
+
+export function applySchemaDefaults<T extends object>(target: T, schema: ChipSchema): void {
+	if (!schema.settings) return;
+
+	for (const setting of schema.settings) {
+		if (setting.defaultValue !== undefined) {
+			const key = setting.key;
+			const currentValue = (target as any)[key];
+			if (currentValue === undefined) {
+				(target as any)[key] = setting.defaultValue;
+			}
+		}
+	}
+}

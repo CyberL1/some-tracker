@@ -59,7 +59,7 @@
 
 	const songPatterns = $derived(songs.flatMap((song) => song.patterns));
 
-	const SPEED_EFFECT_TYPE = 5;
+	const SPEED_EFFECT_TYPE = 'S'.charCodeAt(0);
 
 	function handlePatternCreated(pattern: Pattern): void {
 		songs.forEach((song) => {
@@ -264,7 +264,7 @@
 				{:else if tabId === 'instruments'}
 					<InstrumentsView {songs} isExpanded={isRightPanelExpanded} />
 				{:else if tabId === 'details'}
-					<DetailsView {chipProcessors} bind:values={projectSettings} />
+					<DetailsView {chipProcessors} bind:values={projectSettings} {songs} />
 				{/if}
 			{/snippet}
 		</TabView>

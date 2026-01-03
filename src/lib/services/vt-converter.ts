@@ -82,8 +82,8 @@ class VT2Converter {
 	} as const;
 
 	private readonly effectTypeMap: Record<string, EffectType> = {
-		//fix later
-		B: EffectType.Speed
+		B: EffectType.Speed,
+		S: EffectType.Speed
 	} as const;
 
 	/**
@@ -197,23 +197,9 @@ class VT2Converter {
 				? PT3TuneTables[module1.noteTable]
 				: PT3TuneTables[2];
 
-		const song1 = this.createSongFromModule(
-			module1,
-			patterns1,
-			samples1,
-			tables1,
-			tuningTable
-		);
+		const song1 = this.createSongFromModule(module1, patterns1, samples1, tables1, tuningTable);
 
-		const song2 = this.createSongFromModule(
-			module2,
-			patterns2,
-			samples2,
-			tables2,
-			tuningTable
-		);
-
-		const chipType = this.detectChipType(module1);
+		const song2 = this.createSongFromModule(module2, patterns2, samples2, tables2, tuningTable);
 
 		return new Project(
 			module1.title,
@@ -221,9 +207,6 @@ class VT2Converter {
 			[song1, song2],
 			module1.loopPoint || 0,
 			module1.playOrder,
-			chipType,
-			module1.chipFrequency,
-			module1.interruptFrequency,
 			this.convertTables(tables1)
 		);
 	}
@@ -238,6 +221,11 @@ class VT2Converter {
 		const song = new Song();
 		song.tuningTable = tuningTable;
 		song.initialSpeed = module.speed;
+		const chipVariant = this.detectChipType(module);
+		song.chipType = chipVariant === 'AY' || chipVariant === 'YM' ? 'ay' : undefined;
+		song.chipVariant = chipVariant;
+		song.chipFrequency = module.chipFrequency;
+		song.interruptFrequency = module.interruptFrequency;
 
 		song.instruments = samples.map((sample) => {
 			let loopPoint = 0;
@@ -307,7 +295,11 @@ class VT2Converter {
 			return pattern;
 		});
 
-		const chipType = this.detectChipType(module);
+		const chipVariant = this.detectChipType(module);
+		song.chipType = chipVariant === 'AY' || chipVariant === 'YM' ? 'ay' : undefined;
+		song.chipVariant = chipVariant;
+		song.chipFrequency = module.chipFrequency;
+		song.interruptFrequency = module.interruptFrequency;
 
 		return new Project(
 			module.title,
@@ -315,9 +307,6 @@ class VT2Converter {
 			[song],
 			module.loopPoint || 0,
 			module.playOrder,
-			chipType,
-			module.chipFrequency,
-			module.interruptFrequency,
 			tables
 		);
 	}
@@ -624,7 +613,7 @@ class VT2Converter {
 		if (!noteStr || noteStr === '---') {
 			return { noteName: NoteName.None, octave: 0 };
 		}
-		if (noteStr === 'R--') {
+		if (noteStr === 'R--' || noteStr === 'OFF') {
 			return { noteName: NoteName.Off, octave: 0 };
 		}
 

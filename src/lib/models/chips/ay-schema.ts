@@ -49,7 +49,7 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 	},
 	settings: [
 		{
-			key: 'aymChipType',
+			key: 'chipVariant',
 			label: 'Chip Type',
 			type: 'toggle',
 			options: [
@@ -60,7 +60,7 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 			group: 'chip'
 		},
 		{
-			key: 'aymFrequency',
+			key: 'chipFrequency',
 			label: 'Chip Frequency',
 			type: 'select',
 			options: [
@@ -76,7 +76,7 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 			notifyAudioService: true
 		},
 		{
-			key: 'intFrequency',
+			key: 'interruptFrequency',
 			label: 'Interrupt Frequency',
 			type: 'select',
 			options: [

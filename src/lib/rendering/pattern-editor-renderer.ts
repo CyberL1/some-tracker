@@ -1,4 +1,3 @@
-import type { getColors } from '../utils/colors';
 import type { PatternEditorTextParser, FieldSegment } from './pattern-editor-text-parser';
 import type { Chip } from '../models/chips';
 import { BaseCanvasRenderer, type BaseRenderOptions } from './base-canvas-renderer';
@@ -105,13 +104,14 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 			? data.rowString.substring(currentSegment.start, currentSegment.end)
 			: '';
 
+		const field =
+			currentSegment &&
+			(this.schema.fields[currentSegment.fieldKey] ||
+				this.schema.globalFields?.[currentSegment.fieldKey]);
+
 		const isEmptyField = fieldText && fieldText.split('').every((c) => c === '.' || c === '-');
 
 		if ((char === '.' || char === '-') && isEmptyField) {
-			const field =
-				currentSegment &&
-				(this.schema.fields[currentSegment.fieldKey] ||
-					this.schema.globalFields?.[currentSegment.fieldKey]);
 			const isAtomic = field?.selectable === 'atomic';
 			if (isAtomic) {
 				if (fieldText === '---') {
@@ -129,6 +129,44 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 					: data.rowIndex % 4 === 0
 						? this.colors.patternAlternateEmpty
 						: this.colors.patternEmpty;
+			}
+		}
+
+		if (currentSegment && !isEmptyField) {
+			const isNoteField = field?.type === 'note';
+			const isEffectField = currentSegment.fieldKey === 'effect';
+
+			if (char === '.' && isEffectField) {
+				return data.isSelected
+					? this.colors.patternEmptySelected
+					: data.rowIndex % 4 === 0
+						? this.colors.patternAlternateEmpty
+						: this.colors.patternEmpty;
+			}
+
+			if (isNoteField) {
+				if (fieldText === 'OFF') {
+					return this.colors.patternNoteOff;
+				}
+
+				const validNotePattern = /^[A-G][#-]\d$/;
+				const isPartOfValidNote = validNotePattern.test(fieldText);
+
+				if (char === '.' && !isPartOfValidNote) {
+					return data.isSelected
+						? this.colors.patternEmptySelected
+						: data.rowIndex % 4 === 0
+							? this.colors.patternAlternateEmpty
+							: this.colors.patternEmpty;
+				}
+
+				if (char === '-' && !isPartOfValidNote) {
+					return data.isSelected
+						? this.colors.patternEmptySelected
+						: data.rowIndex % 4 === 0
+							? this.colors.patternAlternateEmpty
+							: this.colors.patternEmpty;
+				}
 			}
 		}
 

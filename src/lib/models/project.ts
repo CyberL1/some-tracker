@@ -7,10 +7,10 @@ class Project {
 		public songs: Song[] = [new Song()],
 		public loopPointId: number = 0,
 		public patternOrder: number[] = [0],
-		public aymChipType: 'AY' | 'YM' = 'AY',
-		public aymFrequency: number = 1773400,
-		public intFrequency: number = 50,
-		public tables: Table[] = Array.from({ length: 32 }, (_, i) => new Table(i, [], 0, `Table ${i + 1}`))
+		public tables: Table[] = Array.from(
+			{ length: 32 },
+			(_, i) => new Table(i, [], 0, `Table ${i + 1}`)
+		)
 	) {}
 }
 

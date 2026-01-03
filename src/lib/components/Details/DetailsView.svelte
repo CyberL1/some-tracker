@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ChipProcessor } from '../../core/chip-processor';
 	import type { ChipSetting } from '../../models/chips/schema';
+	import type { Song } from '../../models/song';
 	import { PROJECT_FIELDS } from '../../models/project-fields';
+	import { getChipByType } from '../../services/chip-registry';
 	import Card from '../Card/Card.svelte';
 	import CardElement from '../Card/CardElement.svelte';
 	import DynamicField from './DynamicField.svelte';
@@ -12,13 +14,37 @@
 
 	let {
 		chipProcessors,
-		values = $bindable()
+		values = $bindable(),
+		songs = []
 	}: {
 		chipProcessors: ChipProcessor[];
 		values: Record<string, unknown>;
+		songs?: Song[];
 	} = $props();
 
 	const services: { audioService: AudioService } = getContext('container');
+
+	const songsByChipType = $derived.by(() => {
+		const grouped = new Map<string, Song[]>();
+		for (const song of songs) {
+			if (!song.chipType) continue;
+			if (!grouped.has(song.chipType)) {
+				grouped.set(song.chipType, []);
+			}
+			grouped.get(song.chipType)!.push(song);
+		}
+		return Array.from(grouped.entries())
+			.map(([chipType, songList]) => {
+				const chip = getChipByType(chipType);
+				return {
+					chipType,
+					songs: songList,
+					chip,
+					count: songList.length
+				};
+			})
+			.filter((group) => group.chip !== null);
+	});
 
 	const chipsByType = $derived.by(() => {
 		const grouped = new Map<string, ChipProcessor[]>();
@@ -56,22 +82,37 @@
 		value: unknown,
 		setting: ChipSetting
 	) {
-		const processors = chipsByType.find((g) => g.type === chipType)?.processors || [];
-		for (const processor of processors) {
-			processor.updateParameter(key, value);
+		const songsOfType = songs.filter((s) => s.chipType === chipType);
+		for (const song of songsOfType) {
+			(song as unknown as Record<string, unknown>)[key] = value;
 		}
+
 		if (setting.notifyAudioService) {
+			const processors = chipsByType.find((g) => g.type === chipType)?.processors || [];
+			for (const processor of processors) {
+				processor.updateParameter(key, value);
+			}
 			services.audioService.chipSettings.set(key, value);
 		}
 	}
 
+	function getChipSettingValue(chipType: string, key: string): unknown {
+		const songsOfType = songs.filter((s) => s.chipType === chipType);
+		if (songsOfType.length === 0) return undefined;
+		return (songsOfType[0] as unknown as Record<string, unknown>)[key];
+	}
+
 	$effect(() => {
-		chipsByType.forEach((group) => {
+		songsByChipType.forEach((group) => {
+			if (!group.chip) return;
 			const settings = group.chip.schema.settings || [];
 			settings
-				.filter((s) => s.notifyAudioService && values[s.key] !== undefined)
+				.filter((s) => s.group === 'chip' && s.notifyAudioService)
 				.forEach((s) => {
-					services.audioService.chipSettings.set(s.key, values[s.key]);
+					const value = getChipSettingValue(group.chipType, s.key);
+					if (value !== undefined) {
+						services.audioService.chipSettings.set(s.key, value);
+					}
 				});
 		});
 	});
@@ -89,28 +130,36 @@
 		{/each}
 	</Card>
 
-	{#each chipsByType as group}
-		{@const chipSettings = group.chip.schema.settings?.filter((s) => s.group === 'chip') || []}
-		{#if chipSettings.length > 0}
-			<Card
-				title="{group.chip.name} Settings{group.count > 1 ? ` (${group.count})` : ''}"
-				icon={IconCarbonChip}
-				class="flex w-full flex-col gap-2 p-3">
-				<div class="flex gap-2">
-					{#each chipSettings as setting}
-						<div class={setting.type === 'toggle' ? '' : 'flex-1'}>
-							<CardElement label={setting.label}>
-								<DynamicField
-									{setting}
-									bind:value={values[setting.key]}
-									onChange={(key, value, s) => {
-										handleChipSettingChange(group.type, key, value, s);
-									}} />
-							</CardElement>
-						</div>
-					{/each}
-				</div>
-			</Card>
+	{#each songsByChipType as group}
+		{#if group.chip}
+			{@const chipSettings =
+				group.chip.schema.settings?.filter((s) => s.group === 'chip') || []}
+			{#if chipSettings.length > 0}
+				<Card
+					title="{group.chip.name} Settings{group.count > 1
+						? ` (${group.count} songs)`
+						: ''}"
+					icon={IconCarbonChip}
+					class="flex w-full flex-col gap-2 p-3">
+					<div class="flex gap-2">
+						{#each chipSettings as setting}
+							{@const currentValue =
+								getChipSettingValue(group.chipType, setting.key) ??
+								setting.defaultValue}
+							<div class={setting.type === 'toggle' ? '' : 'flex-1'}>
+								<CardElement label={setting.label}>
+									<DynamicField
+										{setting}
+										value={currentValue}
+										onChange={(key, value, s) => {
+											handleChipSettingChange(group.chipType, key, value, s);
+										}} />
+								</CardElement>
+							</div>
+						{/each}
+					</div>
+				</Card>
+			{/if}
 		{/if}
 	{/each}
 

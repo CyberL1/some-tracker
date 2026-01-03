@@ -4,12 +4,15 @@
 	import { menuItems } from './lib/config/app-menu';
 	import { handleFileImport } from './lib/services/file-import';
 	import { handleFileExport } from './lib/services/file-export';
+	import { exportToWAV } from './lib/services/wav-export';
 	import { Project } from './lib/models/project';
+	import ProgressModal from './lib/components/Modal/ProgressModal.svelte';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio-service';
 	import { ProjectService } from './lib/services/project-service';
 	import { AY_CHIP } from './lib/models/chips';
+	import { applySchemaDefaults } from './lib/models/chips/schema';
 	import SongView from './lib/components/Song/SongView.svelte';
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
@@ -26,6 +29,11 @@
 	container.audioService.addChipProcessor(AY_CHIP);
 
 	const newProject = new Project();
+	if (newProject.songs.length > 0) {
+		const song = newProject.songs[0];
+		song.chipType = AY_CHIP.type;
+		applySchemaDefaults(song, AY_CHIP.schema);
+	}
 
 	let songs = $state(newProject.songs);
 	let patternOrder = $state(newProject.patternOrder);
@@ -33,10 +41,7 @@
 
 	let projectSettings = $state({
 		title: newProject.name,
-		author: newProject.author,
-		aymChipType: newProject.aymChipType,
-		aymFrequency: newProject.aymFrequency,
-		intFrequency: newProject.intFrequency
+		author: newProject.author
 	});
 
 	$effect(() => {
@@ -45,6 +50,9 @@
 
 	let patternEditor: PatternEditor | null = $state(null);
 	let showSettings = $state(false);
+	let exportProgress = $state(0);
+	let exportMessage = $state('');
+	let showExportModal = $state(false);
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
@@ -95,10 +103,7 @@
 
 				projectSettings = {
 					title: newProject.name,
-					author: newProject.author,
-					aymChipType: newProject.aymChipType,
-					aymFrequency: newProject.aymFrequency,
-					intFrequency: newProject.intFrequency
+					author: newProject.author
 				};
 				songs = newProject.songs;
 				patternOrder = newProject.patternOrder;
@@ -131,12 +136,38 @@
 					songs,
 					0,
 					patternOrder,
-					projectSettings.aymChipType,
-					projectSettings.aymFrequency,
-					projectSettings.intFrequency,
 					tables
 				);
 				await handleFileExport(data.action, currentProject);
+				return;
+			}
+
+			if (data.action === 'export-wav') {
+				const currentProject = new Project(
+					projectSettings.title,
+					projectSettings.author,
+					songs,
+					0,
+					patternOrder,
+					tables
+				);
+				showExportModal = true;
+				exportProgress = 0;
+				exportMessage = 'Starting export...';
+				try {
+					await exportToWAV(currentProject, 0, (progress, message) => {
+						exportProgress = progress;
+						exportMessage = message;
+					});
+					setTimeout(() => {
+						showExportModal = false;
+					}, 500);
+				} catch (error) {
+					exportMessage = `Error: ${error instanceof Error ? error.message : 'Export failed'}`;
+					setTimeout(() => {
+						showExportModal = false;
+					}, 2000);
+				}
 				return;
 			}
 
@@ -153,10 +184,7 @@
 
 				projectSettings = {
 					title: importedProject.name,
-					author: importedProject.author,
-					aymChipType: importedProject.aymChipType,
-					aymFrequency: importedProject.aymFrequency,
-					intFrequency: importedProject.intFrequency
+					author: importedProject.author
 				};
 				songs = importedProject.songs;
 				patternOrder = importedProject.patternOrder;
@@ -188,4 +216,7 @@
 				chipProcessors={container.audioService.chipProcessors} />
 		{/if}
 	</div>
+	{#if showExportModal}
+		<ProgressModal bind:progress={exportProgress} bind:message={exportMessage} />
+	{/if}
 </main>

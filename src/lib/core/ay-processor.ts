@@ -59,7 +59,7 @@ export class AYProcessor
 
 	subscribeToSettings(chipSettings: ChipSettings): void {
 		this.settingsUnsubscribers.push(
-			chipSettings.subscribe('aymFrequency', (value) => {
+			chipSettings.subscribe('chipFrequency', (value) => {
 				if (typeof value === 'number') {
 					this.sendUpdateAyFrequency(value);
 				}
@@ -67,7 +67,7 @@ export class AYProcessor
 		);
 
 		this.settingsUnsubscribers.push(
-			chipSettings.subscribe('intFrequency', (value) => {
+			chipSettings.subscribe('interruptFrequency', (value) => {
 				if (typeof value === 'number') {
 					this.sendUpdateIntFrequency(value);
 				}
@@ -175,10 +175,10 @@ export class AYProcessor
 
 	updateParameter(parameter: string, value: unknown): void {
 		switch (parameter) {
-			case 'aymFrequency':
+			case 'chipFrequency':
 				this.sendUpdateAyFrequency(value as number);
 				break;
-			case 'intFrequency':
+			case 'interruptFrequency':
 				this.sendUpdateIntFrequency(value as number);
 				break;
 			default:

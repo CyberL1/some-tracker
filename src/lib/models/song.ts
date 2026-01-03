@@ -23,8 +23,7 @@ enum EffectType {
 	Portamento = 2,
 	Glissando = 3,
 	EnvelopeSlide = 4,
-	Speed = 5
-	// etc...
+	Speed = 'S'.charCodeAt(0)
 }
 
 type ChannelLabel = 'A' | 'B' | 'C';
@@ -166,12 +165,18 @@ class Song {
 	public tuningTable: number[];
 	public initialSpeed: number;
 	public instruments: Instrument[];
+	public chipType?: 'ay' | 'fm' | 'sid';
+	public chipVariant?: string;
+	public chipFrequency?: number;
+	public interruptFrequency: number;
 
 	constructor() {
 		this.initialSpeed = 3;
 		this.patterns = [new Pattern(0)];
-		this.tuningTable = PT3TuneTables[2]; // Default to most common table from VT2 nowadays
+		this.tuningTable = PT3TuneTables[2];
 		this.instruments = [];
+		this.chipVariant = 'AY';
+		this.interruptFrequency = 50;
 	}
 
 	addPattern(): Pattern {

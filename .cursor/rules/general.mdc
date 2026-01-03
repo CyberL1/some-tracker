@@ -42,3 +42,5 @@ all the good practices like a senior TypeScript developer would do. Follow KISS,
 For styles, prefer using Tailwind 4 unless its impossible to achieve something with it.
 
 Good OOP practices, DRY and testability are your prorities.
+
+Never, never ever hardcode specific chip features. You need to use generic stuff or schemas.

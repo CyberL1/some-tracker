@@ -221,7 +221,9 @@ export abstract class BaseFormatter implements PatternFormatter {
 		return formatted.length === field.length ? formatted : formatted.padEnd(field.length, ' ');
 	}
 
-	protected formatNoteValue(value: number | null | undefined | { name: number; octave: number }): string {
+	protected formatNoteValue(
+		value: number | null | undefined | { name: number; octave: number }
+	): string {
 		if (typeof value === 'object' && value !== null && 'name' in value && 'octave' in value) {
 			return this.formatNoteFromEnum(value.name, value.octave);
 		}
@@ -240,14 +242,29 @@ export abstract class BaseFormatter implements PatternFormatter {
 		effect: { effect: number; delay: number; parameter: number } | null | undefined
 	): string {
 		if (!effect) return '....';
-		const type = effect.effect === 0 ? '.' : effect.effect.toString(16).toUpperCase();
+		let type: string;
+		if (effect.effect === 0) {
+			type = '.';
+		} else if (effect.effect === 'S'.charCodeAt(0)) {
+			type = 'S';
+		} else {
+			type = effect.effect.toString(16).toUpperCase();
+		}
 		const delay = effect.delay === 0 ? '.' : effect.delay.toString(16).toUpperCase();
 		const param = formatHex(effect.parameter, 2);
 		return type + delay + param;
 	}
 
 	protected parseEffect(value: string): { effect: number; delay: number; parameter: number } {
-		const type = value[0] === '.' ? 0 : parseInt(value[0], 16) || 0;
+		let type: number;
+		const typeChar = value[0];
+		if (typeChar === '.') {
+			type = 0;
+		} else if (typeChar === 'S' || typeChar === 's') {
+			type = 'S'.charCodeAt(0);
+		} else {
+			type = parseInt(typeChar, 16) || 0;
+		}
 		const delay = value[1] === '.' ? 0 : parseInt(value[1], 16) || 0;
 		const param = parseInt(value.slice(2, 4).replace(/\./g, '0'), 16) || 0;
 		return { effect: type, delay, parameter: param };

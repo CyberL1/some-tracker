@@ -3,7 +3,7 @@ import { NoteName } from '../models/song';
 export function formatNoteFromEnum(noteName: NoteName, octave: number): string {
 	const notes = [
 		'---',
-		'R--',
+		'OFF',
 		'C-',
 		'C#',
 		'D-',
@@ -18,7 +18,7 @@ export function formatNoteFromEnum(noteName: NoteName, octave: number): string {
 		'B-'
 	];
 	if (noteName === NoteName.None) return '---';
-	if (noteName === NoteName.Off) return 'R--';
+	if (noteName === NoteName.Off) return 'OFF';
 	return notes[noteName] + octave;
 }
 
@@ -26,7 +26,7 @@ export function parseNoteFromString(noteStr: string): { noteName: NoteName; octa
 	if (noteStr === '---') {
 		return { noteName: NoteName.None, octave: 0 };
 	}
-	if (noteStr === 'R--') {
+	if (noteStr === 'OFF' || noteStr === 'R--') {
 		return { noteName: NoteName.Off, octave: 0 };
 	}
 

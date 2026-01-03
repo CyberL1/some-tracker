@@ -104,7 +104,7 @@ class TrackerPatternProcessor {
 	}
 
 	_processEffects(row) {
-		if (row.effects[0] && row.effects[0].effect === 5) {
+		if (row.effects[0] && row.effects[0].effect === 'S'.charCodeAt(0)) {
 			const newSpeed = row.effects[0].parameter;
 			if (newSpeed > 0) {
 				this.state.setSpeed(newSpeed);
