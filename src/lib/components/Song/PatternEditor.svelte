@@ -21,6 +21,7 @@
 		type VisibleRow,
 		type VisibleRowsCache
 	} from '../../services/pattern/pattern-visible-rows';
+	import { PatternEditingService } from '../../services/pattern/pattern-editing';
 	import { PatternEditorRenderer } from '../../ui-rendering/pattern-editor-renderer';
 	import { PatternEditorTextParser } from '../../ui-rendering/pattern-editor-text-parser';
 	import { Cache } from '../../utils/memoize';
@@ -397,6 +398,67 @@
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
+		if (event.ctrlKey || event.metaKey || event.altKey) {
+			return;
+		}
+
+		const patternId = patternOrder[currentPatternOrderIndex];
+		let pattern = patterns.find((p) => p.id === patternId);
+		if (!pattern) {
+			pattern = PatternService.createEmptyPattern(patternId);
+			patterns = [...patterns, pattern];
+		}
+
+		const genericPattern = converter.toGeneric(pattern);
+		const genericPatternRow = genericPattern.patternRows[selectedRow];
+		const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
+		const rowString = formatter.formatRow(
+			genericPatternRow,
+			genericChannels,
+			selectedRow,
+			schema
+		);
+		const cellPositions = getCellPositions(rowString, selectedRow);
+		const segments = textParser ? textParser.parseRowString(rowString, selectedRow) : undefined;
+
+		const editingResult = PatternEditingService.handleKeyInput(
+			{
+				pattern,
+				selectedRow,
+				selectedColumn,
+				cellPositions,
+				segments,
+				converter,
+				formatter,
+				schema
+			},
+			event.key
+		);
+
+		if (editingResult) {
+			event.preventDefault();
+			const patternIndex = patterns.findIndex((p) => p.id === pattern.id);
+			if (patternIndex >= 0) {
+				patterns = [
+					...patterns.slice(0, patternIndex),
+					editingResult.updatedPattern,
+					...patterns.slice(patternIndex + 1)
+				];
+			}
+
+			if (editingResult.shouldMoveNext) {
+				moveColumn(1);
+			}
+
+			rowStringCache.clear();
+			patternGenericCache.clear();
+			cellPositionsCache.clear();
+			rowSegmentsCache.clear();
+			lastVisibleRowsCache = null;
+			draw();
+			return;
+		}
+
 		switch (event.key) {
 			case ' ':
 				event.preventDefault();
@@ -441,8 +503,6 @@
 				break;
 			case 'End':
 				event.preventDefault();
-				const pattern = currentPattern || ensurePatternExists();
-				if (!pattern) break;
 				if (event.ctrlKey) {
 					selectedRow = pattern.length - 1;
 				} else {

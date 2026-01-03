@@ -32,7 +32,8 @@ export function parseNoteFromString(noteStr: string): { noteName: NoteName; octa
 
 	const noteMatch = noteStr.match(/^([A-G]#?)-(\d)$/);
 	if (noteMatch) {
-		const noteName = parseNoteName(noteMatch[1]);
+		const noteNameStr = noteMatch[1] + '-';
+		const noteName = parseNoteName(noteNameStr);
 		const octave = parseInt(noteMatch[2], 10);
 		return { noteName, octave };
 	}
