@@ -1,47 +1,75 @@
-# Svelte + TS + Vite
+# Some Tracker
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+A modern web-based chiptune tracker designed for creating music on retro sound chips. Currently supports the AY-3-8910 / YM2149F chip (used in ZX Spectrum and other 8-bit computers), with plans to support additional chips in the future.
 
-## Recommended IDE Setup
+## Prerequisites
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+- **Node.js** (v18 or higher)
+- **pnpm** (v10.11.0 or higher) - Package manager
+- **Emscripten SDK** - Required for building WebAssembly modules
 
-## Need an official Svelte framework?
+### Installing Emscripten
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+1. Download and install Emscripten from [emscripten.org](https://emscripten.org/docs/getting_started/downloads.html)
+2. Set the `EMSDK` environment variable to point to your Emscripten installation
+3. Ensure `emcc` is available in your PATH
 
-## Technical considerations
+## Getting Started
 
-**Why use this over SvelteKit?**
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd some-tracker
+   ```
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+3. **Build WebAssembly modules**
+   ```bash
+   pnpm build:wasm
+   ```
+   This compiles the Ayumi chip emulator to WebAssembly. You only need to run this once, or when the WASM code changes.
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+4. **Start the development server**
+   ```bash
+   pnpm dev
+   ```
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+5. **Open your browser**
+   Navigate to `http://localhost:5173` (or the port shown in the terminal)
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+## Available Scripts
 
-**Why include `.vscode/extensions.json`?**
+- `pnpm dev` - Build WASM and start development server with hot module replacement
+- `pnpm build` - Build WASM and create production build
+- `pnpm build:wasm` - Build only the WebAssembly modules
+- `pnpm preview` - Preview the production build locally
+- `pnpm check` - Run TypeScript and Svelte type checking
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+## Project Structure
 
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```
+src/
+├── lib/
+│   ├── chips/           # Chip implementations (AY, future chips)
+│   │   ├── ay/          # AY-3-8910 implementation
+│   │   └── base/        # Base interfaces and utilities
+│   ├── components/      # Svelte UI components
+│   │   ├── Menu/        # Menu bar and navigation
+│   │   ├── Song/        # Pattern editor and song view
+│   │   ├── Instruments/ # Instrument editor
+│   │   └── ...
+│   ├── models/          # Domain models (Project, Song, Pattern, etc.)
+│   ├── services/        # Business logic services
+│   │   ├── audio/       # Audio service and chip processors
+│   │   ├── file/        # Import/export functionality
+│   │   └── pattern/     # Pattern editing logic
+│   ├── stores/          # Reactive state management (Svelte 5 runes)
+│   ├── ui-rendering/    # Canvas-based rendering
+│   └── utils/           # Utility functions
+├── public/              # Static assets and compiled WASM
+└── App.svelte           # Root component
 ```
