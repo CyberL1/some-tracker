@@ -70,6 +70,13 @@ export class PatternFieldInput {
 		fieldInfo: FieldInfo,
 		key: string
 	): { updatedPattern: Pattern; shouldMoveNext: boolean } | null {
+		const upperKey = key.toUpperCase();
+		const isTableField = fieldInfo.fieldKey === 'table';
+		
+		if (isTableField && (upperKey === 'A' || upperKey === 'O')) {
+			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, -1);
+			return { updatedPattern, shouldMoveNext: false };
+		}
 		if (!/^[A-Z0-9]$/i.test(key)) {
 			return null;
 		}

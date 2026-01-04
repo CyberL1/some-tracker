@@ -207,10 +207,6 @@ class AYAudioDriver {
 		}
 	}
 
-	shouldDisableTable(row) {
-		return row.envelopeShape === 15 && row.table === 0;
-	}
-
 	_processEnvelope(state, channelIndex, row, patternRow) {
 		if (!state.channelEnvelopeEnabled) return;
 		if (state.channelMuted[channelIndex]) return;

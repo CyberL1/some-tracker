@@ -75,28 +75,41 @@ class TrackerPatternProcessor {
 			this.state.channelTables[channelIndex] = -1;
 			this.state.channelBaseNotes[channelIndex] = 0;
 			this.state.channelCurrentNotes[channelIndex] = 0;
+			this.state.tablePositions[channelIndex] = 0;
+			this.state.tableCounters[channelIndex] = 0;
 		} else if (row.note.name !== 0) {
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
 			this.state.channelBaseNotes[channelIndex] = noteValue;
 			this.state.channelCurrentNotes[channelIndex] = noteValue;
+
+			if (this.state.channelTables[channelIndex] >= 0) {
+				this.state.tablePositions[channelIndex] = 0;
+				this.state.tableCounters[channelIndex] = 0;
+			}
 		}
 	}
 
 	_processTable(channelIndex, row) {
-		if (
-			this.chipAudioDriver.shouldDisableTable &&
-			this.chipAudioDriver.shouldDisableTable(row)
-		) {
-			this.state.channelTables[channelIndex] = -1;
+		const TABLE_OFF = -1;
+
+		if (row.table === TABLE_OFF) {
+			this._disableTable(channelIndex);
+		} else if (row.table > 0) {
+			this._enableTable(channelIndex, row.table - 1);
+		}
+	}
+
+	_disableTable(channelIndex) {
+		this.state.channelTables[channelIndex] = -1;
+		this.state.tablePositions[channelIndex] = 0;
+		this.state.tableCounters[channelIndex] = 0;
+	}
+
+	_enableTable(channelIndex, tableIndex) {
+		if (this.state.tables[tableIndex]) {
+			this.state.channelTables[channelIndex] = tableIndex;
 			this.state.tablePositions[channelIndex] = 0;
 			this.state.tableCounters[channelIndex] = 0;
-		} else if (row.table > 0) {
-			const tableIndex = row.table - 1;
-			if (this.state.tables[tableIndex]) {
-				this.state.channelTables[channelIndex] = tableIndex;
-				this.state.tablePositions[channelIndex] = 0;
-				this.state.tableCounters[channelIndex] = 0;
-			}
 		}
 	}
 

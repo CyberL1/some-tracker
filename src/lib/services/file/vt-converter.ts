@@ -602,7 +602,10 @@ class VT2Converter {
 				row.note = new Note(noteName, octave);
 				row.instrument = vt2ChannelData.instrument ?? 0;
 				row.volume = vt2ChannelData.volume ?? 0;
-				row.table = vt2ChannelData.table ?? 0;
+				row.table = this.convertTableValue(
+					vt2ChannelData.table ?? 0,
+					vt2ChannelData.envelopeShape ?? 0
+				);
 				row.envelopeShape = vt2ChannelData.envelopeShape ?? 0;
 				row.effects = this.parseEffects(vt2ChannelData.effects || '');
 			}
@@ -681,6 +684,16 @@ class VT2Converter {
 		if (char >= 'A' && char <= 'F') return char.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
 		if (char >= 'a' && char <= 'f') return char.charCodeAt(0) - 'a'.charCodeAt(0) + 10;
 		return 0;
+	}
+
+	private convertTableValue(table: number, envelopeShape: number): number {
+		const TABLE_OFF_VALUE = -1;
+		const NO_ENVELOPE = 0;
+
+		if (envelopeShape !== NO_ENVELOPE && table === 0) {
+			return TABLE_OFF_VALUE;
+		}
+		return table;
 	}
 
 	private parseBase36Digit(char: string): number {

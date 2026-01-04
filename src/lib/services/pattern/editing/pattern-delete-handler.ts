@@ -28,11 +28,9 @@ export class PatternDeleteHandler {
 			defaultValue = { effect: 0, delay: 0, parameter: 0 };
 		} else {
 			defaultValue =
-				field.type === 'hex' || field.type === 'dec'
+				field.type === 'hex' || field.type === 'dec' || field.type === 'symbol'
 					? 0
-					: field.type === 'symbol'
-						? '00'
-						: '';
+					: '';
 		}
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(

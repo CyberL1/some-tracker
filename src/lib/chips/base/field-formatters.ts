@@ -5,21 +5,25 @@ export function formatHex(value: number | string | null | undefined, digits: num
 	return num.toString(16).toUpperCase().padStart(digits, '0');
 }
 
-export function formatSymbol(value: number | string | null | undefined, length: number): string {
-	if (value === 0 || value === null || value === undefined) return '.'.repeat(length);
+const TABLE_OFF_VALUE = -1;
+const TABLE_OFF_DISPLAY = '00';
 
-	let num: number;
+function normalizeSymbolValue(value: number | string | null | undefined): number | null {
+	if (value === null || value === undefined) return null;
 	if (typeof value === 'string') {
+		if (value.toUpperCase() === 'OFF' || value === '00') return TABLE_OFF_VALUE;
 		const parsed = parseInt(value, 36);
-		if (isNaN(parsed)) {
-			return '.'.repeat(length);
-		}
-		num = parsed;
-	} else {
-		num = value;
+		return isNaN(parsed) ? null : parsed;
 	}
+	return value;
+}
 
-	if (num === 0) return '.'.repeat(length);
+export function formatSymbol(value: number | string | null | undefined, length: number): string {
+	const num = normalizeSymbolValue(value);
+	
+	if (num === null || num === 0) return '.'.repeat(length);
+	if (num === TABLE_OFF_VALUE) return TABLE_OFF_DISPLAY.padStart(length, '0');
+	
 	if (num < 10) {
 		return num.toString().padStart(length, '0');
 	}
@@ -34,14 +38,20 @@ export function parseHex(value: string, length: number): number {
 
 export function parseSymbol(value: string, length: number): number {
 	if (value === '.'.repeat(length)) return 0;
-	const cleaned = value.replace(/\./g, '0');
+	
+	const cleaned = value.replace(/\./g, '').toUpperCase();
+	if (cleaned === 'OFF' || cleaned === '00') return TABLE_OFF_VALUE;
+	
 	if (/^[0-9]+$/.test(cleaned)) {
-		return parseInt(cleaned, 10) || 0;
+		const parsed = parseInt(cleaned, 10);
+		return parsed === 0 ? 0 : parsed;
 	}
+	
 	const firstChar = cleaned[0];
 	if (firstChar >= '0' && firstChar <= '9') {
 		return parseInt(firstChar, 10) || 0;
 	}
+	
 	return firstChar.charCodeAt(0) - 65 + 10;
 }
 
