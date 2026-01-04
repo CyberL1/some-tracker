@@ -25,6 +25,7 @@
 	import { PatternEditorRenderer } from '../../ui-rendering/pattern-editor-renderer';
 	import { PatternEditorTextParser } from '../../ui-rendering/pattern-editor-text-parser';
 	import { Cache } from '../../utils/memoize';
+	import { channelMuteStore } from '../../stores/channel-mute.svelte';
 
 	let {
 		patterns = $bindable(),
@@ -86,8 +87,8 @@
 		string,
 		ReturnType<PatternEditorTextParser['parseRowString']>
 	>(500);
-	let textParser: PatternEditorTextParser | null = null;
-	let renderer: PatternEditorRenderer | null = null;
+	let textParser: PatternEditorTextParser | null = $state(null);
+	let renderer: PatternEditorRenderer | null = $state(null);
 	let lastVisibleRowsCache: VisibleRowsCache | null = null;
 
 	let currentPattern = $derived.by(() => {
@@ -270,6 +271,37 @@
 		}
 	}
 
+	function getChipIndex(): number {
+		return services.audioService.chipProcessors.findIndex((p) => p === chipProcessor);
+	}
+
+	function getChannelMutedState(pattern: Pattern): boolean[] {
+		const chipIndex = getChipIndex();
+		return pattern.channels.map(
+			(_, index) => chipIndex >= 0 && channelMuteStore.isChannelMuted(chipIndex, index)
+		);
+	}
+
+	function getPatternRowData(pattern: Pattern, rowIndex: number): string {
+		let genericPattern = patternGenericCache.get(pattern.id);
+		if (!genericPattern) {
+			genericPattern = converter.toGeneric(pattern);
+			patternGenericCache.set(pattern.id, genericPattern);
+		}
+
+		const genericPatternRow = genericPattern.patternRows[rowIndex];
+		const genericChannels = genericPattern.channels.map((ch) => ch.rows[rowIndex]);
+
+		const rowCacheKey = `${pattern.id}:${rowIndex}`;
+		let rowString = rowStringCache.get(rowCacheKey);
+		if (!rowString) {
+			rowString = formatter.formatRow(genericPatternRow, genericChannels, rowIndex, schema);
+			rowStringCache.set(rowCacheKey, rowString);
+		}
+
+		return rowString;
+	}
+
 	function draw() {
 		if (!ctx || !renderer || !textParser) return;
 
@@ -292,30 +324,12 @@
 
 			const patternToRender = patterns.find((p) => p.id === row.patternIndex);
 			if (patternToRender && row.rowIndex >= 0 && row.rowIndex < patternToRender.length) {
-				let genericPattern = patternGenericCache.get(patternToRender.id);
-				if (!genericPattern) {
-					genericPattern = converter.toGeneric(patternToRender);
-					patternGenericCache.set(patternToRender.id, genericPattern);
-				}
-
-				const genericPatternRow = genericPattern.patternRows[row.rowIndex];
-				const genericChannels = genericPattern.channels.map((ch) => ch.rows[row.rowIndex]);
-
-				const rowCacheKey = `${patternToRender.id}:${row.rowIndex}`;
-				let rowString = rowStringCache.get(rowCacheKey);
-				if (!rowString) {
-					rowString = formatter.formatRow(
-						genericPatternRow,
-						genericChannels,
-						row.rowIndex,
-						schema
-					);
-					rowStringCache.set(rowCacheKey, rowString);
-				}
+				const rowString = getPatternRowData(patternToRender, row.rowIndex);
 
 				if (!textParser || !renderer) continue;
 				const segments = textParser.parseRowString(rowString, row.rowIndex);
 				const cellPositions = getCellPositions(rowString, row.rowIndex);
+				const channelMuted = getChannelMutedState(patternToRender);
 
 				renderer.drawRow({
 					rowString,
@@ -324,12 +338,37 @@
 					rowIndex: row.rowIndex,
 					selectedColumn,
 					segments,
-					cellPositions
+					cellPositions,
+					channelMuted
 				});
 			}
 		}
 
 		ctx.globalAlpha = 1.0;
+
+		if (currentPattern) {
+			const patternToRender = patterns.find((p) => p.id === currentPattern.id);
+			if (patternToRender) {
+				const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
+				if (
+					firstVisibleRow &&
+					firstVisibleRow.rowIndex >= 0 &&
+					firstVisibleRow.rowIndex < patternToRender.length
+				) {
+					const rowString = getPatternRowData(patternToRender, firstVisibleRow.rowIndex);
+
+					const channelLabels =
+						schema.channelLabels || patternToRender.channels.map((ch) => ch.label);
+					const channelMuted = getChannelMutedState(patternToRender);
+
+					renderer.drawChannelLabels({
+						rowString,
+						channelLabels,
+						channelMuted
+					});
+				}
+			}
+		}
 	}
 
 	function moveRow(delta: number) {
@@ -409,15 +448,7 @@
 			patterns = [...patterns, pattern];
 		}
 
-		const genericPattern = converter.toGeneric(pattern);
-		const genericPatternRow = genericPattern.patternRows[selectedRow];
-		const genericChannels = genericPattern.channels.map((ch) => ch.rows[selectedRow]);
-		const rowString = formatter.formatRow(
-			genericPatternRow,
-			genericChannels,
-			selectedRow,
-			schema
-		);
+		const rowString = getPatternRowData(pattern, selectedRow);
 		const cellPositions = getCellPositions(rowString, selectedRow);
 		const segments = textParser ? textParser.parseRowString(rowString, selectedRow) : undefined;
 
@@ -537,10 +568,75 @@
 		moveRow(Math.sign(event.deltaY));
 	}
 
+	let isHoveringLabel = $state(false);
+
+	function handleMouseMove(event: MouseEvent): void {
+		if (!canvas) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const y = event.clientY - rect.top;
+
+		const wasHovering = isHoveringLabel;
+		isHoveringLabel = y <= lineHeight;
+
+		if (wasHovering !== isHoveringLabel) {
+			canvas.style.cursor = isHoveringLabel ? 'pointer' : 'default';
+		}
+	}
+
+	function handleMouseLeave(): void {
+		if (canvas) {
+			canvas.style.cursor = 'default';
+			isHoveringLabel = false;
+		}
+	}
+
 	function handleMouseEnter(): void {
 		if (canvas) {
 			canvas.focus();
 			onfocus?.();
+		}
+	}
+
+	function handleCanvasClick(event: MouseEvent): void {
+		if (!canvas || !currentPattern || !renderer || !textParser) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const x = event.clientX - rect.left;
+		const y = event.clientY - rect.top;
+
+		if (y > lineHeight) return;
+
+		const patternToRender = patterns.find((p) => p.id === currentPattern.id);
+		if (!patternToRender) return;
+
+		const visibleRows = getVisibleRows(currentPattern);
+		const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
+		if (
+			!firstVisibleRow ||
+			firstVisibleRow.rowIndex < 0 ||
+			firstVisibleRow.rowIndex >= patternToRender.length
+		)
+			return;
+
+		const rowString = getPatternRowData(patternToRender, firstVisibleRow.rowIndex);
+		const channelPositions = renderer.calculateChannelPositions(rowString);
+
+		for (let i = 0; i < channelPositions.length; i++) {
+			const channelStart = channelPositions[i];
+			const channelEnd =
+				i < channelPositions.length - 1 ? channelPositions[i + 1] : canvasWidth;
+
+			if (x >= channelStart && x < channelEnd) {
+				const chipIndex = getChipIndex();
+				if (chipIndex >= 0) {
+					channelMuteStore.toggleChannel(chipIndex, i);
+					const isMuted = channelMuteStore.isChannelMuted(chipIndex, i);
+					chipProcessor.updateParameter(`channelMute_${i}`, isMuted);
+					draw();
+				}
+				break;
+			}
 		}
 	}
 
@@ -561,10 +657,7 @@
 		}
 
 		if (ctx && currentPattern) {
-			const genericPattern = converter.toGeneric(currentPattern);
-			const genericPatternRow = genericPattern.patternRows[0];
-			const genericChannels = genericPattern.channels.map((ch) => ch.rows[0]);
-			const rowString = formatter.formatRow(genericPatternRow, genericChannels, 0, schema);
+			const rowString = getPatternRowData(currentPattern, 0);
 			const width = ctx.measureText(rowString).width;
 			canvasWidth = width + PATTERN_EDITOR_CONSTANTS.CANVAS_PADDING;
 		} else {
@@ -714,13 +807,16 @@
 </script>
 
 <div bind:this={containerDiv} class="flex h-full flex-col gap-2">
-	<div class="flex" style="max-height: {canvasHeight}px">
+	<div class="relative flex" style="max-height: {canvasHeight}px">
 		<canvas
 			bind:this={canvas}
 			tabindex="0"
 			onkeydown={handleKeyDown}
 			onwheel={handleWheel}
 			onmouseenter={handleMouseEnter}
+			onmousemove={handleMouseMove}
+			onmouseleave={handleMouseLeave}
+			onclick={handleCanvasClick}
 			class="focus:border-opacity-50 border-pattern-empty focus:border-pattern-text block border transition-colors duration-150 focus:outline-none">
 		</canvas>
 	</div>

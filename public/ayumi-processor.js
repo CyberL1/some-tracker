@@ -66,6 +66,9 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			case 'update_int_frequency':
 				this.handleUpdateIntFrequency(data);
 				break;
+			case 'set_channel_mute':
+				this.handleSetChannelMute(data);
+				break;
 		}
 	}
 
@@ -138,6 +141,19 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.state.setIntFrequency(data.intFrequency, sampleRate);
 	}
 
+	handleSetChannelMute({ channelIndex, muted }) {
+		if (channelIndex >= 0 && channelIndex < 3) {
+			this.state.channelMuted[channelIndex] = muted;
+			if (this.state.wasmModule && this.state.ayumiPtr) {
+				if (muted) {
+					this.state.wasmModule.ayumi_set_volume(this.state.ayumiPtr, channelIndex, 0);
+					this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, channelIndex, 1, 1, 0);
+					this.state.channelEnvelopeEnabled[channelIndex] = false;
+				}
+			}
+		}
+	}
+
 	handlePlay({ startPatternOrderIndex, initialSpeed }) {
 		if (!this.state.wasmModule || !this.initialized) {
 			console.warn('Play aborted: wasmModule not initialized');
@@ -159,6 +175,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				this.port
 			);
 		}
+
+		this.enforceMuteState();
 
 		if (startPatternOrderIndex !== undefined) {
 			this.state.currentPatternOrderIndex = startPatternOrderIndex;
@@ -189,12 +207,25 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				this.port
 			);
 		}
+
+		this.enforceMuteState();
+
 		if (patternOrderIndex !== undefined) {
 			this.state.currentPatternOrderIndex = patternOrderIndex;
 		}
 		this.state.currentRow = row;
 		if (speed !== undefined && speed !== null && speed > 0) {
 			this.state.setSpeed(speed);
+		}
+	}
+
+	enforceMuteState() {
+		for (let ch = 0; ch < 3; ch++) {
+			if (this.state.channelMuted[ch]) {
+				this.state.wasmModule.ayumi_set_volume(this.state.ayumiPtr, ch, 0);
+				this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, ch, 1, 1, 0);
+				this.state.channelEnvelopeEnabled[ch] = false;
+			}
 		}
 	}
 
@@ -249,8 +280,12 @@ class AyumiProcessor extends AudioWorkletProcessor {
 						});
 					}
 
+					this.enforceMuteState();
+
 					this.patternProcessor.processTables();
 					this.audioDriver.processInstruments(this.state);
+
+					this.enforceMuteState();
 
 					const needsPatternChange = this.state.advancePosition();
 					if (needsPatternChange) {

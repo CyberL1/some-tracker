@@ -41,7 +41,8 @@ type WorkletCommand =
 	| { type: 'init_tables'; tables: Table[] }
 	| { type: 'init_instruments'; instruments: Instrument[] }
 	| { type: 'update_ay_frequency'; aymFrequency: number }
-	| { type: 'update_int_frequency'; intFrequency: number };
+	| { type: 'update_int_frequency'; intFrequency: number }
+	| { type: 'set_channel_mute'; channelIndex: number; muted: boolean };
 
 export class AYProcessor
 	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport
@@ -175,6 +176,14 @@ export class AYProcessor
 	}
 
 	updateParameter(parameter: string, value: unknown): void {
+		if (parameter.startsWith('channelMute_')) {
+			const channelIndex = parseInt(parameter.replace('channelMute_', ''), 10);
+			if (!isNaN(channelIndex) && typeof value === 'boolean') {
+				this.sendCommand({ type: 'set_channel_mute', channelIndex, muted: value });
+			}
+			return;
+		}
+
 		switch (parameter) {
 			case 'chipFrequency':
 				this.sendUpdateAyFrequency(value as number);

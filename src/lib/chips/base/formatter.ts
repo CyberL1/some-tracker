@@ -92,7 +92,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 					const field = fields[key];
 					if (field) {
 						const value = data[key];
-						if (key === 'effect' && typeof value === 'object' && value !== null) {
+						if ((key === 'effect' || key === 'envelopeEffect') && typeof value === 'object' && value !== null) {
 							result += this.formatEffect(
 								value as { effect: number; delay: number; parameter: number }
 							);
@@ -155,7 +155,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 			fieldKeys.forEach((key, i) => {
 				const field = fields[key];
 				if (field) {
-					if (key === 'effect') {
+					if (key === 'effect' || key === 'envelopeEffect') {
 						result[key] = this.parseEffect(match[i + 1]) as unknown as
 							| string
 							| number
@@ -241,7 +241,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 	protected formatEffect(
 		effect: { effect: number; delay: number; parameter: number } | null | undefined
 	): string {
-		if (!effect) return '....';
+		if (!effect) return '...';
 		let type: string;
 		if (effect.effect === 0) {
 			type = '.';
@@ -250,9 +250,8 @@ export abstract class BaseFormatter implements PatternFormatter {
 		} else {
 			type = effect.effect.toString(16).toUpperCase();
 		}
-		const delay = effect.delay === 0 ? '.' : effect.delay.toString(16).toUpperCase();
 		const param = formatHex(effect.parameter, 2);
-		return type + delay + param;
+		return type + param;
 	}
 
 	protected parseEffect(value: string): { effect: number; delay: number; parameter: number } {
@@ -265,9 +264,8 @@ export abstract class BaseFormatter implements PatternFormatter {
 		} else {
 			type = parseInt(typeChar, 16) || 0;
 		}
-		const delay = value[1] === '.' ? 0 : parseInt(value[1], 16) || 0;
-		const param = parseInt(value.slice(2, 4).replace(/\./g, '0'), 16) || 0;
-		return { effect: type, delay, parameter: param };
+		const param = parseInt((value.slice(1, 3) || '00').replace(/\./g, '0'), 16) || 0;
+		return { effect: type, delay: 0, parameter: param };
 	}
 
 	getColorForField(fieldKey: string, schema: ChipSchema): string {

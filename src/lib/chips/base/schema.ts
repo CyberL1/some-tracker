@@ -32,6 +32,7 @@ export interface ChipSchema {
 	fields: Record<string, ChipField>;
 	globalTemplate?: string;
 	globalFields?: Record<string, ChipField>;
+	channelLabels?: string[];
 	settings?: ChipSetting[];
 }
 
@@ -48,4 +49,3 @@ export function applySchemaDefaults<T extends object>(target: T, schema: ChipSch
 		}
 	}
 }
-

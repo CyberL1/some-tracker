@@ -2,6 +2,7 @@ import type { ChipProcessor, SettingsSubscriber } from '../../chips/base/process
 import type { Chip } from '../../chips/types';
 import type { Table } from '../../models/project';
 import { ChipSettings } from './chip-settings';
+import { channelMuteStore } from '../../stores/channel-mute.svelte';
 
 export class AudioService {
 	private _audioContext: AudioContext | null = new AudioContext();
@@ -60,6 +61,8 @@ export class AudioService {
 
 		this._isPlaying = true;
 
+		this.applyMuteStateToAllChips();
+
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.play();
 		});
@@ -73,6 +76,8 @@ export class AudioService {
 		if (this._isPlaying) return;
 
 		this._isPlaying = true;
+
+		this.applyMuteStateToAllChips();
 
 		this.chipProcessors.forEach((chipProcessor, index) => {
 			const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
@@ -170,5 +175,18 @@ export class AudioService {
 			typeof (processor as unknown as SettingsSubscriber).unsubscribeFromSettings ===
 				'function'
 		);
+	}
+
+	private applyMuteStateToAllChips(): void {
+		const allMuteStates = channelMuteStore.getAllMuteStates();
+		
+		this.chipProcessors.forEach((chipProcessor, chipIndex) => {
+			const chipMutes = allMuteStates.get(chipIndex);
+			if (chipMutes) {
+				chipMutes.forEach((isMuted, channelIndex) => {
+					chipProcessor.updateParameter(`channelMute_${channelIndex}`, isMuted);
+				});
+			}
+		});
 	}
 }

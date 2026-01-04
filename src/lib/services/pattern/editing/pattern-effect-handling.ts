@@ -4,7 +4,7 @@ export class PatternEffectHandling {
 	static formatEffectAsString(
 		effect: { effect: number; delay: number; parameter: number } | null | undefined
 	): string {
-		if (!effect) return '....';
+		if (!effect) return '...';
 		let type: string;
 		if (effect.effect === 0) {
 			type = '.';
@@ -13,9 +13,8 @@ export class PatternEffectHandling {
 		} else {
 			type = effect.effect.toString(16).toUpperCase();
 		}
-		const delay = effect.delay === 0 ? '.' : effect.delay.toString(16).toUpperCase();
 		const param = formatHex(effect.parameter, 2);
-		return type + delay + param;
+		return type + param;
 	}
 
 	static parseEffectFromString(value: string): {
@@ -32,8 +31,7 @@ export class PatternEffectHandling {
 		} else {
 			type = parseInt(typeChar, 16) || 0;
 		}
-		const delay = (value[1] || '.') === '.' ? 0 : parseInt(value[1] || '0', 16) || 0;
-		const param = parseInt((value.slice(2, 4) || '00').replace(/\./g, '0'), 16) || 0;
-		return { effect: type, delay, parameter: param };
+		const param = parseInt((value.slice(1, 3) || '00').replace(/\./g, '0'), 16) || 0;
+		return { effect: type, delay: 0, parameter: param };
 	}
 }

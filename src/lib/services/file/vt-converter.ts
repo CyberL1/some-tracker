@@ -648,11 +648,11 @@ class VT2Converter {
 	private parseEffects(effectsStr: string): (Effect | null)[] {
 		const trimmed = effectsStr.trim();
 
-		if (!trimmed || trimmed.length !== 4) {
+		if (!trimmed || (trimmed.length !== 3 && trimmed.length !== 4)) {
 			return [null];
 		}
 
-		const [effectTypeChar, delayChar, param1Char, param2Char] = trimmed;
+		const effectTypeChar = trimmed[0];
 
 		if (effectTypeChar === '.') {
 			return [null];
@@ -663,12 +663,16 @@ class VT2Converter {
 			return [null];
 		}
 
-		const delay = delayChar !== '.' ? this.parseHexDigit(delayChar) : 0;
-		const param1 = param1Char !== '.' ? this.parseHexDigit(param1Char) : 0;
-		const param2 = param2Char !== '.' ? this.parseHexDigit(param2Char) : 0;
-		const parameter = (param1 << 4) | param2;
-
-		return [new Effect(effectType, delay, parameter)];
+		if (trimmed.length === 3) {
+			const param = parseInt(trimmed.slice(1, 3).replace(/\./g, '0'), 16) || 0;
+			return [new Effect(effectType, 0, param)];
+		} else {
+			const [_, delayChar, param1Char, param2Char] = trimmed;
+			const param1 = param1Char !== '.' ? this.parseHexDigit(param1Char) : 0;
+			const param2 = param2Char !== '.' ? this.parseHexDigit(param2Char) : 0;
+			const parameter = (param1 << 4) | param2;
+			return [new Effect(effectType, 0, parameter)];
+		}
 	}
 
 	private parseHexDigit(char: string): number {
