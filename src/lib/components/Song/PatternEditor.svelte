@@ -441,6 +441,11 @@
 			return;
 		}
 
+		const selection = window.getSelection();
+		if (selection && selection.toString().length > 0) {
+			selection.removeAllRanges();
+		}
+
 		const patternId = patternOrder[currentPatternOrderIndex];
 		let pattern = patterns.find((p) => p.id === patternId);
 		if (!pattern) {
@@ -594,6 +599,10 @@
 	function handleMouseEnter(): void {
 		if (canvas) {
 			canvas.focus();
+			const selection = window.getSelection();
+			if (selection) {
+				selection.removeAllRanges();
+			}
 			onfocus?.();
 		}
 	}

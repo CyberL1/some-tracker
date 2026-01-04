@@ -10,6 +10,7 @@ class AyumiState extends TrackerState {
 		this.wasmBuffer = null;
 
 		this.instruments = [];
+		this.instrumentIdToIndex = new Map();
 		this.channelInstruments = Array(3).fill(0);
 		this.instrumentPositions = Array(3).fill(0);
 		this.channelInstrumentVolumes = Array(3).fill(0);
@@ -33,6 +34,12 @@ class AyumiState extends TrackerState {
 
 	setInstruments(instruments) {
 		this.instruments = instruments;
+		this.instrumentIdToIndex = new Map();
+		instruments.forEach((instrument, index) => {
+			if (instrument && instrument.id !== undefined) {
+				this.instrumentIdToIndex.set(instrument.id, index);
+			}
+		});
 	}
 
 	reset() {

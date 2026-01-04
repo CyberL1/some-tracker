@@ -1,4 +1,9 @@
-import { formatHex, parseHex, formatSymbol, parseSymbol } from '../../../chips/base/field-formatters';
+import {
+	formatHex,
+	parseHex,
+	formatSymbol,
+	parseSymbol
+} from '../../../chips/base/field-formatters';
 import type { EditingContext, FieldInfo } from './editing-context';
 import type { Pattern } from '../../../models/song';
 import { PatternValueUpdates } from './pattern-value-updates';
@@ -72,7 +77,7 @@ export class PatternFieldInput {
 	): { updatedPattern: Pattern; shouldMoveNext: boolean } | null {
 		const upperKey = key.toUpperCase();
 		const isTableField = fieldInfo.fieldKey === 'table';
-		
+
 		if (isTableField && (upperKey === 'A' || upperKey === 'O')) {
 			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, -1);
 			return { updatedPattern, shouldMoveNext: false };
@@ -86,7 +91,7 @@ export class PatternFieldInput {
 
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
 		const currentStr = formatSymbol(currentValue, field.length).replace(/\./g, '0');
-		const newStr = this.replaceCharAtOffset(currentStr, fieldInfo.charOffset, key.toUpperCase());
+		const newStr = this.replaceCharAtOffset(currentStr, fieldInfo.charOffset, upperKey);
 		const newValue = parseSymbol(newStr, field.length);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
@@ -140,4 +145,3 @@ export class PatternFieldInput {
 		return str.substring(0, offset) + char + str.substring(offset + 1);
 	}
 }
-

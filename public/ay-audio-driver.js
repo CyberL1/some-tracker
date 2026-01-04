@@ -194,8 +194,8 @@ class AYAudioDriver {
 		if (state.channelMuted[channelIndex]) return;
 
 		if (row.instrument > 0) {
-			const instrumentIndex = row.instrument - 1;
-			if (state.instruments[instrumentIndex]) {
+			const instrumentIndex = state.instrumentIdToIndex.get(row.instrument);
+			if (instrumentIndex !== undefined && state.instruments[instrumentIndex]) {
 				state.channelInstruments[channelIndex] = instrumentIndex;
 				state.instrumentPositions[channelIndex] = 0;
 				this.resetInstrumentAccumulators(state, channelIndex);

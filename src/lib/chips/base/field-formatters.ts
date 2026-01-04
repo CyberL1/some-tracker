@@ -20,15 +20,15 @@ function normalizeSymbolValue(value: number | string | null | undefined): number
 
 export function formatSymbol(value: number | string | null | undefined, length: number): string {
 	const num = normalizeSymbolValue(value);
-	
+
 	if (num === null || num === 0) return '.'.repeat(length);
 	if (num === TABLE_OFF_VALUE) return TABLE_OFF_DISPLAY.padStart(length, '0');
-	
-	if (num < 10) {
-		return num.toString().padStart(length, '0');
+
+	const base36 = num.toString(36).toUpperCase();
+	if (base36.length <= length) {
+		return base36.padStart(length, '0');
 	}
-	const letter = String.fromCharCode(65 + (num - 10));
-	return letter.padStart(length, '0');
+	return base36.slice(-length);
 }
 
 export function parseHex(value: string, length: number): number {
@@ -38,20 +38,10 @@ export function parseHex(value: string, length: number): number {
 
 export function parseSymbol(value: string, length: number): number {
 	if (value === '.'.repeat(length)) return 0;
-	
+
 	const cleaned = value.replace(/\./g, '').toUpperCase();
 	if (cleaned === 'OFF' || cleaned === '00') return TABLE_OFF_VALUE;
-	
-	if (/^[0-9]+$/.test(cleaned)) {
-		const parsed = parseInt(cleaned, 10);
-		return parsed === 0 ? 0 : parsed;
-	}
-	
-	const firstChar = cleaned[0];
-	if (firstChar >= '0' && firstChar <= '9') {
-		return parseInt(firstChar, 10) || 0;
-	}
-	
-	return firstChar.charCodeAt(0) - 65 + 10;
-}
 
+	const parsed = parseInt(cleaned, 36);
+	return isNaN(parsed) ? 0 : parsed;
+}
