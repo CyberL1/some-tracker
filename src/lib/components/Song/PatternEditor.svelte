@@ -372,6 +372,8 @@
 	}
 
 	function moveRow(delta: number) {
+		if (playbackStore.isPlaying) return;
+
 		const pattern = currentPattern || ensurePatternExists();
 		if (!pattern) return;
 
@@ -506,12 +508,16 @@
 				}
 				break;
 			case 'ArrowUp':
-				event.preventDefault();
-				moveRow(-1);
+				if (!playbackStore.isPlaying) {
+					event.preventDefault();
+					moveRow(-1);
+				}
 				break;
 			case 'ArrowDown':
-				event.preventDefault();
-				moveRow(1);
+				if (!playbackStore.isPlaying) {
+					event.preventDefault();
+					moveRow(1);
+				}
 				break;
 			case 'ArrowLeft':
 				event.preventDefault();
@@ -522,17 +528,23 @@
 				moveColumn(1);
 				break;
 			case 'PageUp':
-				event.preventDefault();
-				moveRow(-16);
+				if (!playbackStore.isPlaying) {
+					event.preventDefault();
+					moveRow(-16);
+				}
 				break;
 			case 'PageDown':
-				event.preventDefault();
-				moveRow(16);
+				if (!playbackStore.isPlaying) {
+					event.preventDefault();
+					moveRow(16);
+				}
 				break;
 			case 'Home':
 				event.preventDefault();
 				if (event.ctrlKey) {
-					selectedRow = 0;
+					if (!playbackStore.isPlaying) {
+						selectedRow = 0;
+					}
 				} else {
 					selectedColumn = 0;
 				}
@@ -540,7 +552,9 @@
 			case 'End':
 				event.preventDefault();
 				if (event.ctrlKey) {
-					selectedRow = pattern.length - 1;
+					if (!playbackStore.isPlaying) {
+						selectedRow = pattern.length - 1;
+					}
 				} else {
 					const navigationState = PatternNavigationService.moveToRowEnd(
 						{
@@ -614,39 +628,89 @@
 		const x = event.clientX - rect.left;
 		const y = event.clientY - rect.top;
 
-		if (y > lineHeight) return;
-
 		const patternToRender = patterns.find((p) => p.id === currentPattern.id);
 		if (!patternToRender) return;
 
-		const visibleRows = getVisibleRows(currentPattern);
-		const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
-		if (
-			!firstVisibleRow ||
-			firstVisibleRow.rowIndex < 0 ||
-			firstVisibleRow.rowIndex >= patternToRender.length
-		)
-			return;
+		if (y <= lineHeight) {
+			const visibleRows = getVisibleRows(currentPattern);
+			const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
+			if (
+				!firstVisibleRow ||
+				firstVisibleRow.rowIndex < 0 ||
+				firstVisibleRow.rowIndex >= patternToRender.length
+			)
+				return;
 
-		const rowString = getPatternRowData(patternToRender, firstVisibleRow.rowIndex);
-		const channelPositions = renderer.calculateChannelPositions(rowString);
+			const rowString = getPatternRowData(patternToRender, firstVisibleRow.rowIndex);
+			const channelPositions = renderer.calculateChannelPositions(rowString);
 
-		for (let i = 0; i < channelPositions.length; i++) {
-			const channelStart = channelPositions[i];
-			const channelEnd =
-				i < channelPositions.length - 1 ? channelPositions[i + 1] : canvasWidth;
+			for (let i = 0; i < channelPositions.length; i++) {
+				const channelStart = channelPositions[i];
+				const channelEnd =
+					i < channelPositions.length - 1 ? channelPositions[i + 1] : canvasWidth;
 
-			if (x >= channelStart && x < channelEnd) {
-				const chipIndex = getChipIndex();
-				if (chipIndex >= 0) {
-					channelMuteStore.toggleChannel(chipIndex, i);
-					const isMuted = channelMuteStore.isChannelMuted(chipIndex, i);
-					chipProcessor.updateParameter(`channelMute_${i}`, isMuted);
-					draw();
+				if (x >= channelStart && x < channelEnd) {
+					const chipIndex = getChipIndex();
+					if (chipIndex >= 0) {
+						channelMuteStore.toggleChannel(chipIndex, i);
+						const isMuted = channelMuteStore.isChannelMuted(chipIndex, i);
+						chipProcessor.updateParameter(`channelMute_${i}`, isMuted);
+						draw();
+					}
+					break;
 				}
-				break;
+			}
+			return;
+		}
+
+		const visibleRows = getVisibleRows(currentPattern);
+
+		if (y <= lineHeight) return;
+
+		let closestRow: (typeof visibleRows)[0] | null = null;
+		let minRowDistance = Infinity;
+
+		for (const row of visibleRows) {
+			if (row.isEmpty || row.rowIndex < 0) continue;
+
+			const rowY = row.displayIndex * lineHeight;
+			const rowCenterY = rowY + lineHeight / 2;
+			const distance = Math.abs(y - rowCenterY);
+
+			if (distance < minRowDistance) {
+				minRowDistance = distance;
+				closestRow = row;
 			}
 		}
+
+		if (!closestRow) return;
+
+		const clickedRow = closestRow;
+
+		const rowString = getPatternRowData(patternToRender, clickedRow.rowIndex);
+		const cellPositions = getCellPositions(rowString, clickedRow.rowIndex);
+
+		let closestColumn = 0;
+		let minDistance = Infinity;
+
+		for (let i = 0; i < cellPositions.length; i++) {
+			const cell = cellPositions[i];
+			if (cell.x === undefined) continue;
+
+			const cellCenter = cell.x + (cell.width || 0) / 2;
+			const distance = Math.abs(x - cellCenter);
+			if (distance < minDistance) {
+				minDistance = distance;
+				closestColumn = i;
+			}
+		}
+
+		if (!playbackStore.isPlaying) {
+			selectedRow = clickedRow.rowIndex;
+		}
+		selectedColumn = closestColumn;
+		canvas.focus();
+		draw();
 	}
 
 	function updateSize() {
