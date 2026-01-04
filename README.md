@@ -1,6 +1,8 @@
 # Bitphase
 
-![Logo](public/logo.png)
+<div align="center">
+  <img src="public/logo.png" alt="Logo" width="400" />
+</div>
 
 A modern web-based chiptune tracker designed for creating music on retro sound chips. Currently supports the AY-3-8910 / YM2149F chip (used in ZX Spectrum and other 8-bit computers), with plans to support additional chips in the future.
 
@@ -19,23 +21,28 @@ A modern web-based chiptune tracker designed for creating music on retro sound c
 ## Getting Started
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd bitphase
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Build WebAssembly modules**
+
    ```bash
    pnpm build:wasm
    ```
+
    This compiles the Ayumi chip emulator to WebAssembly. You only need to run this once, or when the WASM code changes.
 
 4. **Start the development server**
+
    ```bash
    pnpm dev
    ```
