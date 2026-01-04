@@ -5,7 +5,7 @@ import Icons from 'unplugin-icons/vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-	base: '/some-tracker/',
+	base: '/bitphase/',
 	plugins: [
 		svelte(),
 		tailwindcss(),

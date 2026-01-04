@@ -1,4 +1,4 @@
-# Some Tracker
+# Bitphase
 
 A modern web-based chiptune tracker designed for creating music on retro sound chips. Currently supports the AY-3-8910 / YM2149F chip (used in ZX Spectrum and other 8-bit computers), with plans to support additional chips in the future.
 
@@ -19,7 +19,7 @@ A modern web-based chiptune tracker designed for creating music on retro sound c
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd some-tracker
+   cd bitphase
    ```
 
 2. **Install dependencies**
