@@ -48,8 +48,9 @@ class TrackerPatternProcessor {
 			const tableOffset = table.rows[this.state.tablePositions[channelIndex]];
 			let finalNote = baseNote + tableOffset;
 
+			const maxNote = this.state.currentTuningTable.length - 1;
 			if (finalNote < 0) finalNote = 0;
-			if (finalNote > 95) finalNote = 95;
+			if (finalNote > maxNote) finalNote = maxNote;
 
 			this.state.channelCurrentNotes[channelIndex] = finalNote;
 
@@ -82,7 +83,10 @@ class TrackerPatternProcessor {
 	}
 
 	_processTable(channelIndex, row) {
-		if (row.envelopeShape === 15 && row.table === 0) {
+		if (
+			this.chipAudioDriver.shouldDisableTable &&
+			this.chipAudioDriver.shouldDisableTable(row)
+		) {
 			this.state.channelTables[channelIndex] = -1;
 			this.state.tablePositions[channelIndex] = 0;
 			this.state.tableCounters[channelIndex] = 0;
@@ -93,7 +97,6 @@ class TrackerPatternProcessor {
 				this.state.tablePositions[channelIndex] = 0;
 				this.state.tableCounters[channelIndex] = 0;
 			}
-		} else if (row.table === 0 && row.note.name !== 0) {
 		}
 	}
 

@@ -207,6 +207,10 @@ class AYAudioDriver {
 		}
 	}
 
+	shouldDisableTable(row) {
+		return row.envelopeShape === 15 && row.table === 0;
+	}
+
 	_processEnvelope(state, channelIndex, row, patternRow) {
 		if (!state.channelEnvelopeEnabled) return;
 		if (state.channelMuted[channelIndex]) return;
@@ -226,7 +230,7 @@ class AYAudioDriver {
 	processInstruments(state) {
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			const isMuted = state.channelMuted[channelIndex];
-			
+
 			if (isMuted) {
 				this.setVolume(channelIndex, 0);
 				this.setMixer(channelIndex, 1, 1, 0);
@@ -311,7 +315,7 @@ class AYAudioDriver {
 			const patternVolume = state.channelPatternVolumes[channelIndex];
 			const instrumentVolume = state.channelInstrumentVolumes[channelIndex];
 			const amplitudeSliding = state.channelAmplitudeSliding[channelIndex];
-			
+
 			let finalVolume = this.calculateVolume(
 				patternVolume,
 				instrumentVolume,
@@ -320,7 +324,7 @@ class AYAudioDriver {
 				state.channelEnvelopeEnabled[channelIndex],
 				false
 			);
-			
+
 			this.setMixerTone(channelIndex, instrumentRow.tone);
 			this.setMixerNoise(channelIndex, instrumentRow.noise);
 
@@ -329,7 +333,7 @@ class AYAudioDriver {
 			} else {
 				this.setMixerEnvelope(channelIndex, false);
 			}
-			
+
 			this.setVolume(channelIndex, finalVolume);
 
 			state.instrumentPositions[channelIndex]++;
@@ -341,7 +345,7 @@ class AYAudioDriver {
 				}
 			}
 		}
-		
+
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			if (state.channelMuted[channelIndex]) {
 				this.setVolume(channelIndex, 0);
