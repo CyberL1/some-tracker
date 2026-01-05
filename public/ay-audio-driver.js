@@ -147,10 +147,11 @@ class AYAudioDriver {
 		state.channelEnvelopeAccumulator[channelIndex] = 0;
 		state.channelAmplitudeSliding[channelIndex] = 0;
 		if (state.channelToneSliding) {
-			state.channelToneSliding[channelIndex] = 0;
-		}
-		if (state.channelSlideStep) {
-			state.channelSlideStep[channelIndex] = 0;
+			const hasActiveSlide =
+				state.channelSlideStep && state.channelSlideStep[channelIndex] !== 0;
+			if (!hasActiveSlide) {
+				state.channelToneSliding[channelIndex] = 0;
+			}
 		}
 	}
 
@@ -287,7 +288,9 @@ class AYAudioDriver {
 				state.channelToneAccumulator[channelIndex] = sampleTone;
 			}
 
-			const toneSliding = state.channelToneSliding ? state.channelToneSliding[channelIndex] || 0 : 0;
+			const toneSliding = state.channelToneSliding
+				? state.channelToneSliding[channelIndex] || 0
+				: 0;
 			const finalTone = (noteTone + sampleTone + toneSliding) & 0xfff;
 			this.setTone(channelIndex, finalTone);
 

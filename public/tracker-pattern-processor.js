@@ -71,6 +71,13 @@ class TrackerPatternProcessor {
 	}
 
 	_processNote(channelIndex, row) {
+		const hasSlideCommand =
+			row.effects[0] && (row.effects[0].effect === 1 || row.effects[0].effect === 2);
+
+		if (!this.state.channelSlideAlreadyApplied) {
+			this.state.channelSlideAlreadyApplied = [];
+		}
+
 		if (row.note.name === 1) {
 			this.state.channelTables[channelIndex] = -1;
 			this.state.channelBaseNotes[channelIndex] = 0;
@@ -79,6 +86,7 @@ class TrackerPatternProcessor {
 			this.state.tableCounters[channelIndex] = 0;
 			this.state.channelToneSliding[channelIndex] = 0;
 			this.state.channelSlideStep[channelIndex] = 0;
+			this.state.channelSlideAlreadyApplied[channelIndex] = false;
 		} else if (row.note.name !== 0) {
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
 			this.state.channelBaseNotes[channelIndex] = noteValue;
@@ -90,7 +98,10 @@ class TrackerPatternProcessor {
 			}
 
 			this.state.channelToneSliding[channelIndex] = 0;
-			this.state.channelSlideStep[channelIndex] = 0;
+			if (!hasSlideCommand) {
+				this.state.channelSlideStep[channelIndex] = 0;
+				this.state.channelSlideAlreadyApplied[channelIndex] = false;
+			}
 		}
 	}
 
@@ -140,16 +151,39 @@ class TrackerPatternProcessor {
 			}
 		} else if (effect.effect === SLIDE_UP) {
 			this.state.channelSlideStep[channelIndex] = effect.parameter;
+			if (row.note.name !== 0 && row.note.name !== 1) {
+				this.state.channelToneSliding[channelIndex] = effect.parameter;
+				this.state.channelSlideAlreadyApplied[channelIndex] = true;
+			} else {
+				this.state.channelSlideAlreadyApplied[channelIndex] = false;
+			}
 		} else if (effect.effect === SLIDE_DOWN) {
 			this.state.channelSlideStep[channelIndex] = -effect.parameter;
+			if (row.note.name !== 0 && row.note.name !== 1) {
+				this.state.channelToneSliding[channelIndex] = -effect.parameter;
+				this.state.channelSlideAlreadyApplied[channelIndex] = true;
+			} else {
+				this.state.channelSlideAlreadyApplied[channelIndex] = false;
+			}
 		}
 	}
 
 	processSlides() {
-		for (let channelIndex = 0; channelIndex < this.state.channelSlideStep.length; channelIndex++) {
+		if (!this.state.channelSlideAlreadyApplied) {
+			this.state.channelSlideAlreadyApplied = [];
+		}
+		for (
+			let channelIndex = 0;
+			channelIndex < this.state.channelSlideStep.length;
+			channelIndex++
+		) {
 			const slideStep = this.state.channelSlideStep[channelIndex];
 			if (slideStep !== 0) {
-				this.state.channelToneSliding[channelIndex] += slideStep;
+				if (!this.state.channelSlideAlreadyApplied[channelIndex]) {
+					this.state.channelToneSliding[channelIndex] += slideStep;
+				} else {
+					this.state.channelSlideAlreadyApplied[channelIndex] = false;
+				}
 			}
 		}
 	}
