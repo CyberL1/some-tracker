@@ -19,7 +19,7 @@ export const menuItems: MenuItem[] = [
 					}
 				]
 			},
-			{ label: 'Open', type: 'normal' },
+			{ label: 'Open', type: 'normal', action: 'open' },
 			{
 				label: 'Import',
 				type: 'expandable',
