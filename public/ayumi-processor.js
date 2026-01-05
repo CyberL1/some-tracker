@@ -283,6 +283,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					this.enforceMuteState();
 
 					this.patternProcessor.processTables();
+					this.patternProcessor.processSlides();
 					this.audioDriver.processInstruments(this.state);
 
 					this.enforceMuteState();

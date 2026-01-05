@@ -18,7 +18,7 @@ class TrackerPatternProcessor {
 			this._processNote(channelIndex, row);
 			this._processTable(channelIndex, row);
 			this._processVolume(channelIndex, row);
-			this._processEffects(row);
+			this._processEffects(channelIndex, row);
 		}
 
 		this.chipAudioDriver.processPatternRow(this.state, pattern, rowIndex, patternRow);
@@ -77,6 +77,8 @@ class TrackerPatternProcessor {
 			this.state.channelCurrentNotes[channelIndex] = 0;
 			this.state.tablePositions[channelIndex] = 0;
 			this.state.tableCounters[channelIndex] = 0;
+			this.state.channelToneSliding[channelIndex] = 0;
+			this.state.channelSlideStep[channelIndex] = 0;
 		} else if (row.note.name !== 0) {
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
 			this.state.channelBaseNotes[channelIndex] = noteValue;
@@ -86,6 +88,9 @@ class TrackerPatternProcessor {
 				this.state.tablePositions[channelIndex] = 0;
 				this.state.tableCounters[channelIndex] = 0;
 			}
+
+			this.state.channelToneSliding[channelIndex] = 0;
+			this.state.channelSlideStep[channelIndex] = 0;
 		}
 	}
 
@@ -119,12 +124,32 @@ class TrackerPatternProcessor {
 		}
 	}
 
-	_processEffects(row) {
-		if (row.effects[0] && row.effects[0].effect === 'S'.charCodeAt(0)) {
-			const newSpeed = row.effects[0].parameter;
+	_processEffects(channelIndex, row) {
+		if (!row.effects[0]) return;
+
+		const effect = row.effects[0];
+		const SLIDE_UP = 1;
+		const SLIDE_DOWN = 2;
+		const SPEED = 'S'.charCodeAt(0);
+
+		if (effect.effect === SPEED) {
+			const newSpeed = effect.parameter;
 			if (newSpeed > 0) {
 				this.state.setSpeed(newSpeed);
 				this.port.postMessage({ type: 'speed_update', speed: newSpeed });
+			}
+		} else if (effect.effect === SLIDE_UP) {
+			this.state.channelSlideStep[channelIndex] = effect.parameter;
+		} else if (effect.effect === SLIDE_DOWN) {
+			this.state.channelSlideStep[channelIndex] = -effect.parameter;
+		}
+	}
+
+	processSlides() {
+		for (let channelIndex = 0; channelIndex < this.state.channelSlideStep.length; channelIndex++) {
+			const slideStep = this.state.channelSlideStep[channelIndex];
+			if (slideStep !== 0) {
+				this.state.channelToneSliding[channelIndex] += slideStep;
 			}
 		}
 	}

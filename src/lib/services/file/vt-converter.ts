@@ -82,6 +82,8 @@ class VT2Converter {
 	} as const;
 
 	private readonly effectTypeMap: Record<string, EffectType> = {
+		'1': EffectType.SlideUp,
+		'2': EffectType.SlideDown,
 		B: EffectType.Speed,
 		S: EffectType.Speed
 	} as const;

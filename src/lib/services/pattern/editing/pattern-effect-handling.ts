@@ -10,6 +10,8 @@ export class PatternEffectHandling {
 			type = '.';
 		} else if (effect.effect === 'S'.charCodeAt(0)) {
 			type = 'S';
+		} else if (effect.effect >= 1 && effect.effect <= 15) {
+			type = effect.effect.toString(16).toUpperCase();
 		} else {
 			type = effect.effect.toString(16).toUpperCase();
 		}

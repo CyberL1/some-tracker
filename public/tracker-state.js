@@ -25,6 +25,8 @@ class TrackerState {
 		this.tableCounters = Array(channelCount).fill(0);
 		this.channelBaseNotes = Array(channelCount).fill(0);
 		this.channelCurrentNotes = Array(channelCount).fill(0);
+		this.channelToneSliding = Array(channelCount).fill(0);
+		this.channelSlideStep = Array(channelCount).fill(0);
 	}
 
 	reset() {
@@ -37,6 +39,8 @@ class TrackerState {
 		this.tableCounters.fill(0);
 		this.channelBaseNotes.fill(0);
 		this.channelCurrentNotes.fill(0);
+		this.channelToneSliding.fill(0);
+		this.channelSlideStep.fill(0);
 	}
 
 	setTuningTable(table) {

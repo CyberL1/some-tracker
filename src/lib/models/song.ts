@@ -19,10 +19,11 @@ enum NoteName {
 
 enum EffectType {
 	Arpeggio = 0,
-	Vibrato = 1,
-	Portamento = 2,
-	Glissando = 3,
-	EnvelopeSlide = 4,
+	SlideUp = 1,
+	SlideDown = 2,
+	Portamento = 3,
+	Vibrato = 4,
+	EnvelopeSlide = 5,
 	Speed = 'S'.charCodeAt(0)
 }
 

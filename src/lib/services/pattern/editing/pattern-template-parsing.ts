@@ -78,23 +78,36 @@ export class PatternTemplateParser {
 		let pos = this.skipRowNumber(rowString, 0);
 		pos = this.parseGlobalTemplate(rowString, pos, schema);
 
-		const channelStart = pos;
-		let channelTemplateLength = 0;
-		this.parseTemplate(schema.template, schema.fields, (key, field, isSpace) => {
-			if (isSpace) {
-				channelTemplateLength++;
-			} else {
-				channelTemplateLength += field.length;
-			}
-		});
+		let channelIndex = 0;
+		const template = schema.template;
 
-		if (channelTemplateLength === 0) {
-			return 0;
+		while (pos < rowString.length && pos < charIndex) {
+			pos = this.skipSpaces(rowString, pos);
+			if (pos >= rowString.length || pos >= charIndex) break;
+
+			const channelStart = pos;
+			this.parseTemplate(template, schema.fields, (key, field, isSpace) => {
+				if (isSpace) {
+					if (pos < rowString.length && rowString[pos] === ' ') {
+						pos++;
+					}
+				} else {
+					if (pos < charIndex) {
+						pos += field.length;
+					}
+				}
+			});
+
+			if (pos === channelStart) break;
+
+			if (pos < charIndex) {
+				channelIndex++;
+			} else {
+				break;
+			}
 		}
 
-		const relativePos = charIndex - channelStart;
-		const channelIndex = Math.floor(relativePos / channelTemplateLength);
-		return Math.max(0, channelIndex);
+		return channelIndex;
 	}
 
 	static findFieldStartPositionInRowString(
