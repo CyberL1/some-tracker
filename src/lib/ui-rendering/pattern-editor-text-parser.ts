@@ -2,6 +2,7 @@ import type { Chip } from '../chips/types';
 import type { PatternFormatter } from '../chips/base/formatter-interface';
 import type { getColors } from '../utils/colors';
 import { Cache } from '../utils/memoize';
+import { PatternTemplateParser } from '../services/pattern/editing/pattern-template-parsing';
 
 export interface FieldSegment {
 	start: number;
@@ -61,7 +62,8 @@ export class PatternEditorTextParser {
 			pos++;
 		}
 		if (rowNumStart < pos) {
-			const colorKey = rowIndex % 4 === 0 ? 'patternRowNumAlternate' : 'patternRowNum';
+			const isAlternate = rowIndex % 4 === 0;
+			const colorKey = isAlternate ? 'patternRowNumAlternate' : 'patternRowNum';
 			segments.push({
 				start: rowNumStart,
 				end: pos,
@@ -72,39 +74,27 @@ export class PatternEditorTextParser {
 		skipSpaces();
 
 		if (this.schema.globalTemplate && this.schema.globalFields) {
-			const globalStart = pos;
-			const globalTemplate = this.schema.globalTemplate;
-			let templatePos = 0;
-			while (templatePos < globalTemplate.length) {
-				if (globalTemplate[templatePos] === '{') {
-					const end = globalTemplate.indexOf('}', templatePos);
-					if (end !== -1) {
-						const key = globalTemplate.substring(templatePos + 1, end);
-						const field = this.schema.globalFields[key];
-						if (field) {
-							const colorKey = this.formatter.getColorForField(key, this.schema);
-							const color =
-								this.colors[colorKey as keyof typeof this.colors] ||
-								this.colors.patternText;
-							segments.push({
-								start: pos,
-								end: pos + field.length,
-								fieldKey: key,
-								color
-							});
-							pos += field.length;
-						}
-						templatePos = end + 1;
+			PatternTemplateParser.parseTemplate(
+				this.schema.globalTemplate,
+				this.schema.globalFields,
+				(key, field, isSpace) => {
+					if (isSpace) {
+						pos++;
 					} else {
-						templatePos++;
+						const colorKey = this.formatter.getColorForField(key, this.schema);
+						const color =
+							this.colors[colorKey as keyof typeof this.colors] ||
+							this.colors.patternText;
+						segments.push({
+							start: pos,
+							end: pos + field.length,
+							fieldKey: key,
+							color
+						});
+						pos += field.length;
 					}
-				} else if (globalTemplate[templatePos] === ' ') {
-					pos++;
-					templatePos++;
-				} else {
-					templatePos++;
 				}
-			}
+			);
 			skipSpaces();
 		}
 
@@ -114,41 +104,33 @@ export class PatternEditorTextParser {
 			if (pos >= rowString.length) break;
 
 			const channelStart = pos;
-			let templatePos = 0;
 			let foundField = false;
-			while (templatePos < template.length) {
-				if (template[templatePos] === '{') {
-					const end = template.indexOf('}', templatePos);
-					if (end !== -1) {
-						const key = template.substring(templatePos + 1, end);
-						const field = this.schema.fields[key];
-						if (field) {
-							const colorKey = this.formatter.getColorForField(key, this.schema);
-							const color =
-								this.colors[colorKey as keyof typeof this.colors] ||
-								this.colors.patternText;
-							segments.push({
-								start: pos,
-								end: pos + field.length,
-								fieldKey: key,
-								color
-							});
-							pos += field.length;
-							foundField = true;
+
+			PatternTemplateParser.parseTemplate(
+				template,
+				this.schema.fields,
+				(key, field, isSpace) => {
+					if (isSpace) {
+						if (pos < rowString.length && rowString[pos] === ' ') {
+							pos++;
 						}
-						templatePos = end + 1;
 					} else {
-						break;
+						const colorKey = this.formatter.getColorForField(key, this.schema);
+						const color =
+							this.colors[colorKey as keyof typeof this.colors] ||
+							this.colors.patternText;
+						segments.push({
+							start: pos,
+							end: pos + field.length,
+							fieldKey: key,
+							color
+						});
+						pos += field.length;
+						foundField = true;
 					}
-				} else if (template[templatePos] === ' ') {
-					if (pos < rowString.length && rowString[pos] === ' ') {
-						pos++;
-					}
-					templatePos++;
-				} else {
-					templatePos++;
 				}
-			}
+			);
+
 			if (!foundField) break;
 		}
 		this.rowSegmentsCache.set(cacheKey, segments);

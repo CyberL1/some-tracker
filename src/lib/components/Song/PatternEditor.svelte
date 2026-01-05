@@ -26,6 +26,8 @@
 	import { PatternEditorTextParser } from '../../ui-rendering/pattern-editor-text-parser';
 	import { Cache } from '../../utils/memoize';
 	import { channelMuteStore } from '../../stores/channel-mute.svelte';
+	import { PatternFieldDetection } from '../../services/pattern/editing/pattern-field-detection';
+	import { PatternValueUpdates } from '../../services/pattern/editing/pattern-value-updates';
 
 	let {
 		patterns = $bindable(),
@@ -77,6 +79,14 @@
 
 	let selectedColumn = $state(0);
 
+	let selectionStartRow = $state<number | null>(null);
+	let selectionStartColumn = $state<number | null>(null);
+	let selectionEndRow = $state<number | null>(null);
+	let selectionEndColumn = $state<number | null>(null);
+	let isSelecting = $state(false);
+	let mouseDownCell: { row: number; column: number } | null = null;
+	let hadSelectionBeforeClick = $state(false);
+
 	const rowStringCache = new Cache<string, string>(500);
 	const patternGenericCache = new Cache<number, ReturnType<typeof converter.toGeneric>>(100);
 	const cellPositionsCache = new Cache<
@@ -93,28 +103,59 @@
 
 	let currentPattern = $derived.by(() => {
 		const patternId = patternOrder[currentPatternOrderIndex];
-		let pattern = patterns.find((p) => p.id === patternId);
-
-		if (!pattern) {
-			pattern = PatternService.createEmptyPattern(patternId);
-			patterns = [...patterns, pattern];
-		}
-
-		return pattern;
+		return findOrCreatePattern(patternId);
 	});
 
-	$effect(() => {
-		patterns.length;
-		patternOrder.length;
+	function findOrCreatePattern(patternId: number): Pattern {
+		const { pattern, newPatterns } = PatternService.findOrCreatePattern(patterns, patternId);
+		if (newPatterns !== patterns) {
+			patterns = newPatterns;
+		}
+		return pattern;
+	}
+
+	function clearAllCaches(): void {
 		rowStringCache.clear();
 		patternGenericCache.clear();
 		cellPositionsCache.clear();
 		rowSegmentsCache.clear();
 		lastVisibleRowsCache = null;
+	}
+
+	$effect(() => {
+		patterns.length;
+		patternOrder.length;
+		clearAllCaches();
 	});
 
 	function ensurePatternExists(): Pattern | null {
 		return currentPattern;
+	}
+
+	function getSelectionBounds(): {
+		minRow: number;
+		maxRow: number;
+		minCol: number;
+		maxCol: number;
+	} | null {
+		if (
+			selectionStartRow === null ||
+			selectionStartColumn === null ||
+			selectionEndRow === null ||
+			selectionEndColumn === null
+		) {
+			return null;
+		}
+		return {
+			minRow: Math.min(selectionStartRow, selectionEndRow),
+			maxRow: Math.max(selectionStartRow, selectionEndRow),
+			minCol: Math.min(selectionStartColumn, selectionEndColumn),
+			maxCol: Math.max(selectionStartColumn, selectionEndColumn)
+		};
+	}
+
+	function updatePatternInArray(updatedPattern: Pattern): void {
+		patterns = PatternService.updatePatternInArray(patterns, updatedPattern);
 	}
 
 	export function resetToBeginning() {
@@ -322,14 +363,26 @@
 				ctx.globalAlpha = 1.0;
 			}
 
-			const patternToRender = patterns.find((p) => p.id === row.patternIndex);
-			if (patternToRender && row.rowIndex >= 0 && row.rowIndex < patternToRender.length) {
+			const patternToRender = findOrCreatePattern(row.patternIndex);
+			if (row.rowIndex >= 0 && row.rowIndex < patternToRender.length) {
 				const rowString = getPatternRowData(patternToRender, row.rowIndex);
 
 				if (!textParser || !renderer) continue;
 				const segments = textParser.parseRowString(rowString, row.rowIndex);
 				const cellPositions = getCellPositions(rowString, row.rowIndex);
 				const channelMuted = getChannelMutedState(patternToRender);
+
+				const bounds = getSelectionBounds();
+				const isInSelection =
+					bounds && row.rowIndex >= bounds.minRow && row.rowIndex <= bounds.maxRow;
+
+				let selectionStartCol: number | null = null;
+				let selectionEndCol: number | null = null;
+
+				if (isInSelection && bounds) {
+					selectionStartCol = bounds.minCol;
+					selectionEndCol = bounds.maxCol;
+				}
 
 				renderer.drawRow({
 					rowString,
@@ -339,7 +392,9 @@
 					selectedColumn,
 					segments,
 					cellPositions,
-					channelMuted
+					channelMuted,
+					selectionStartCol,
+					selectionEndCol
 				});
 			}
 		}
@@ -347,26 +402,24 @@
 		ctx.globalAlpha = 1.0;
 
 		if (currentPattern) {
-			const patternToRender = patterns.find((p) => p.id === currentPattern.id);
-			if (patternToRender) {
-				const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
-				if (
-					firstVisibleRow &&
-					firstVisibleRow.rowIndex >= 0 &&
-					firstVisibleRow.rowIndex < patternToRender.length
-				) {
-					const rowString = getPatternRowData(patternToRender, firstVisibleRow.rowIndex);
+			const patternToRender = findOrCreatePattern(currentPattern.id);
+			const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
+			if (
+				firstVisibleRow &&
+				firstVisibleRow.rowIndex >= 0 &&
+				firstVisibleRow.rowIndex < patternToRender.length
+			) {
+				const rowString = getPatternRowData(patternToRender, firstVisibleRow.rowIndex);
 
-					const channelLabels =
-						schema.channelLabels || patternToRender.channels.map((ch) => ch.label);
-					const channelMuted = getChannelMutedState(patternToRender);
+				const channelLabels =
+					schema.channelLabels || patternToRender.channels.map((ch) => ch.label);
+				const channelMuted = getChannelMutedState(patternToRender);
 
-					renderer.drawChannelLabels({
-						rowString,
-						channelLabels,
-						channelMuted
-					});
-				}
+				renderer.drawChannelLabels({
+					rowString,
+					channelLabels,
+					channelMuted
+				});
 			}
 		}
 	}
@@ -449,15 +502,17 @@
 		}
 
 		const patternId = patternOrder[currentPatternOrderIndex];
-		let pattern = patterns.find((p) => p.id === patternId);
-		if (!pattern) {
-			pattern = PatternService.createEmptyPattern(patternId);
-			patterns = [...patterns, pattern];
-		}
+		const pattern = findOrCreatePattern(patternId);
 
 		const rowString = getPatternRowData(pattern, selectedRow);
 		const cellPositions = getCellPositions(rowString, selectedRow);
 		const segments = textParser ? textParser.parseRowString(rowString, selectedRow) : undefined;
+
+		if ((event.key === 'Delete' || event.key === 'Backspace') && hasSelection()) {
+			event.preventDefault();
+			deleteSelection();
+			return;
+		}
 
 		const editingResult = PatternEditingService.handleKeyInput(
 			{
@@ -475,24 +530,13 @@
 
 		if (editingResult) {
 			event.preventDefault();
-			const patternIndex = patterns.findIndex((p) => p.id === pattern.id);
-			if (patternIndex >= 0) {
-				patterns = [
-					...patterns.slice(0, patternIndex),
-					editingResult.updatedPattern,
-					...patterns.slice(patternIndex + 1)
-				];
-			}
+			updatePatternInArray(editingResult.updatedPattern);
 
 			if (editingResult.shouldMoveNext) {
 				moveColumn(1);
 			}
 
-			rowStringCache.clear();
-			patternGenericCache.clear();
-			cellPositionsCache.clear();
-			rowSegmentsCache.clear();
-			lastVisibleRowsCache = null;
+			clearAllCaches();
 			draw();
 			return;
 		}
@@ -621,15 +665,62 @@
 		}
 	}
 
-	function handleCanvasClick(event: MouseEvent): void {
+	function findCellAtPosition(x: number, y: number): { row: number; column: number } | null {
+		if (!canvas || !currentPattern || !renderer || !textParser) return null;
+
+		const patternToRender = findOrCreatePattern(currentPattern.id);
+
+		if (y <= lineHeight) return null;
+
+		const visibleRows = getVisibleRows(currentPattern);
+
+		let closestRow: (typeof visibleRows)[0] | null = null;
+		let minRowDistance = Infinity;
+
+		for (const row of visibleRows) {
+			if (row.isEmpty || row.rowIndex < 0) continue;
+
+			const rowY = row.displayIndex * lineHeight;
+			const rowCenterY = rowY + lineHeight / 2;
+			const distance = Math.abs(y - rowCenterY);
+
+			if (distance < minRowDistance) {
+				minRowDistance = distance;
+				closestRow = row;
+			}
+		}
+
+		if (!closestRow) return null;
+
+		const rowString = getPatternRowData(patternToRender, closestRow.rowIndex);
+		const cellPositions = getCellPositions(rowString, closestRow.rowIndex);
+
+		let closestColumn = 0;
+		let minDistance = Infinity;
+
+		for (let i = 0; i < cellPositions.length; i++) {
+			const cell = cellPositions[i];
+			if (cell.x === undefined) continue;
+
+			const cellCenter = cell.x + (cell.width || 0) / 2;
+			const distance = Math.abs(x - cellCenter);
+			if (distance < minDistance) {
+				minDistance = distance;
+				closestColumn = i;
+			}
+		}
+
+		return { row: closestRow.rowIndex, column: closestColumn };
+	}
+
+	function handleCanvasMouseDown(event: MouseEvent): void {
 		if (!canvas || !currentPattern || !renderer || !textParser) return;
 
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
 		const y = event.clientY - rect.top;
 
-		const patternToRender = patterns.find((p) => p.id === currentPattern.id);
-		if (!patternToRender) return;
+		const patternToRender = findOrCreatePattern(currentPattern.id);
 
 		if (y <= lineHeight) {
 			const visibleRows = getVisibleRows(currentPattern);
@@ -663,53 +754,188 @@
 			return;
 		}
 
-		const visibleRows = getVisibleRows(currentPattern);
-
-		if (y <= lineHeight) return;
-
-		let closestRow: (typeof visibleRows)[0] | null = null;
-		let minRowDistance = Infinity;
-
-		for (const row of visibleRows) {
-			if (row.isEmpty || row.rowIndex < 0) continue;
-
-			const rowY = row.displayIndex * lineHeight;
-			const rowCenterY = rowY + lineHeight / 2;
-			const distance = Math.abs(y - rowCenterY);
-
-			if (distance < minRowDistance) {
-				minRowDistance = distance;
-				closestRow = row;
-			}
+		const cell = findCellAtPosition(x, y);
+		if (!cell) {
+			selectionStartRow = null;
+			selectionStartColumn = null;
+			selectionEndRow = null;
+			selectionEndColumn = null;
+			mouseDownCell = null;
+			draw();
+			return;
 		}
 
-		if (!closestRow) return;
-
-		const clickedRow = closestRow;
-
-		const rowString = getPatternRowData(patternToRender, clickedRow.rowIndex);
-		const cellPositions = getCellPositions(rowString, clickedRow.rowIndex);
-
-		let closestColumn = 0;
-		let minDistance = Infinity;
-
-		for (let i = 0; i < cellPositions.length; i++) {
-			const cell = cellPositions[i];
-			if (cell.x === undefined) continue;
-
-			const cellCenter = cell.x + (cell.width || 0) / 2;
-			const distance = Math.abs(x - cellCenter);
-			if (distance < minDistance) {
-				minDistance = distance;
-				closestColumn = i;
-			}
+		if (playbackStore.isPlaying) {
+			selectedColumn = cell.column;
+			canvas.focus();
+			draw();
+			return;
 		}
 
-		if (!playbackStore.isPlaying) {
-			selectedRow = clickedRow.rowIndex;
+		mouseDownCell = { row: cell.row, column: cell.column };
+		hadSelectionBeforeClick = hasSelection();
+
+		if (event.shiftKey && selectionStartRow !== null) {
+			selectionEndRow = cell.row;
+			selectionEndColumn = cell.column;
+			selectedRow = cell.row;
+			selectedColumn = cell.column;
+		} else {
+			selectionStartRow = cell.row;
+			selectionStartColumn = cell.column;
+			selectionEndRow = cell.row;
+			selectionEndColumn = cell.column;
+			isSelecting = true;
 		}
-		selectedColumn = closestColumn;
+
 		canvas.focus();
+		draw();
+	}
+
+	function handleCanvasMouseMove(event: MouseEvent): void {
+		if (!canvas || !currentPattern || !renderer || !textParser) return;
+		if (!isSelecting || !mouseDownCell || playbackStore.isPlaying) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const x = event.clientX - rect.left;
+		const y = event.clientY - rect.top;
+
+		const cell = findCellAtPosition(x, y);
+		if (!cell) return;
+
+		selectionEndRow = cell.row;
+		selectionEndColumn = cell.column;
+		draw();
+	}
+
+	function handleCanvasMouseUp(): void {
+		if (isSelecting && mouseDownCell) {
+			if (
+				selectionStartRow === selectionEndRow &&
+				selectionStartColumn === selectionEndColumn
+			) {
+				selectionStartRow = null;
+				selectionStartColumn = null;
+				selectionEndRow = null;
+				selectionEndColumn = null;
+				if (!hadSelectionBeforeClick && !playbackStore.isPlaying) {
+					selectedRow = mouseDownCell.row;
+				}
+				if (!hadSelectionBeforeClick) {
+					selectedColumn = mouseDownCell.column;
+				}
+			}
+		}
+		isSelecting = false;
+		mouseDownCell = null;
+		hadSelectionBeforeClick = false;
+		draw();
+	}
+
+	function hasSelection(): boolean {
+		return (
+			selectionStartRow !== null &&
+			selectionStartColumn !== null &&
+			selectionEndRow !== null &&
+			selectionEndColumn !== null &&
+			(selectionStartRow !== selectionEndRow || selectionStartColumn !== selectionEndColumn)
+		);
+	}
+
+	function getDefaultValueForField(fieldType: string, fieldKey: string): string | number {
+		if (fieldType === 'note') {
+			return '---';
+		}
+		if (fieldKey === 'effect' || fieldKey === 'envelopeEffect') {
+			return { effect: 0, delay: 0, parameter: 0 } as unknown as string | number;
+		}
+		if (fieldType === 'hex' || fieldType === 'dec' || fieldType === 'symbol') {
+			return 0;
+		}
+		return '';
+	}
+
+	function deleteSelection(): void {
+		if (!hasSelection()) return;
+
+		const patternId = patternOrder[currentPatternOrderIndex];
+		let pattern = findOrCreatePattern(patternId);
+
+		const bounds = getSelectionBounds();
+		if (!bounds) return;
+
+		const { minRow, maxRow, minCol, maxCol } = bounds;
+
+		const cellsToDelete: Array<{ row: number; col: number }> = [];
+
+		for (let row = minRow; row <= maxRow && row < pattern.length; row++) {
+			const rowString = getPatternRowData(pattern, row);
+			const cellPositions = getCellPositions(rowString, row);
+			for (let col = minCol; col <= maxCol && col < cellPositions.length; col++) {
+				cellsToDelete.push({ row, col });
+			}
+		}
+
+		for (const { row, col } of cellsToDelete) {
+			const rowString = getPatternRowData(pattern, row);
+			const cellPositions = getCellPositions(rowString, row);
+			const segments = textParser ? textParser.parseRowString(rowString, row) : undefined;
+
+			const cell = cellPositions[col];
+			if (!cell.fieldKey) continue;
+
+			const fieldInfo = PatternFieldDetection.detectFieldAtCursor({
+				pattern,
+				selectedRow: row,
+				selectedColumn: col,
+				cellPositions,
+				segments,
+				converter,
+				formatter,
+				schema
+			});
+			if (!fieldInfo) continue;
+
+			const field = PatternValueUpdates.getFieldDefinition(
+				{
+					pattern,
+					selectedRow: row,
+					selectedColumn: col,
+					cellPositions,
+					segments,
+					converter,
+					formatter,
+					schema
+				},
+				cell.fieldKey
+			);
+			if (!field) continue;
+
+			const defaultValue = getDefaultValueForField(field.type, cell.fieldKey);
+			pattern = PatternValueUpdates.updateFieldValue(
+				{
+					pattern,
+					selectedRow: row,
+					selectedColumn: col,
+					cellPositions,
+					segments,
+					converter,
+					formatter,
+					schema
+				},
+				fieldInfo,
+				defaultValue
+			);
+		}
+
+		updatePatternInArray(pattern);
+
+		selectionStartRow = null;
+		selectionStartColumn = null;
+		selectionEndRow = null;
+		selectionEndColumn = null;
+
+		clearAllCaches();
 		draw();
 	}
 
@@ -858,16 +1084,11 @@
 		const handlePatternRequest = (requestedOrderIndex: number) => {
 			if (requestedOrderIndex >= 0 && requestedOrderIndex < currentPatternOrder.length) {
 				const patternId = currentPatternOrder[requestedOrderIndex];
-				const requestedPattern = currentPatterns.find((p) => p.id === patternId);
+				const requestedPattern =
+					currentPatterns.find((p) => p.id === patternId) ||
+					PatternService.createEmptyPattern(patternId);
 
-				if (requestedPattern) {
-					chipProcessor.sendRequestedPattern(requestedPattern, requestedOrderIndex);
-				} else {
-					console.warn(
-						`PatternEditor [${chipProcessor.chip.name}]: Pattern with ID ${patternId} not found at order index ${requestedOrderIndex}. Available pattern IDs:`,
-						currentPatterns.map((p) => p.id)
-					);
-				}
+				chipProcessor.sendRequestedPattern(requestedPattern, requestedOrderIndex);
 			}
 		};
 
@@ -887,9 +1108,10 @@
 			onkeydown={handleKeyDown}
 			onwheel={handleWheel}
 			onmouseenter={handleMouseEnter}
-			onmousemove={handleMouseMove}
 			onmouseleave={handleMouseLeave}
-			onclick={handleCanvasClick}
+			onmousedown={handleCanvasMouseDown}
+			onmousemove={handleCanvasMouseMove}
+			onmouseup={handleCanvasMouseUp}
 			class="focus:border-opacity-50 border-pattern-empty focus:border-pattern-text block border transition-colors duration-150 focus:outline-none">
 		</canvas>
 	</div>

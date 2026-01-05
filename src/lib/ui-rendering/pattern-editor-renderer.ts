@@ -17,6 +17,8 @@ export interface RowRenderData {
 	segments: FieldSegment[];
 	cellPositions: ReturnType<PatternEditorTextParser['getCellPositions']>;
 	channelMuted: boolean[];
+	selectionStartCol?: number | null;
+	selectionEndCol?: number | null;
 }
 
 export interface ChannelLabelData {
@@ -61,6 +63,14 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 		let x = 10;
 		let i = 0;
 
+		const advanceChar = () => {
+			if (i < rowString.length) {
+				const char = rowString[i];
+				x += this.measureText(char);
+				i++;
+			}
+		};
+
 		const skipSpaces = () => {
 			while (i < rowString.length && rowString[i] === ' ') {
 				x += this.measureText(' ');
@@ -71,44 +81,26 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 		skipSpaces();
 
 		while (i < rowString.length && rowString[i] !== ' ') {
-			x += this.measureText(rowString[i]);
-			i++;
+			advanceChar();
 		}
 		skipSpaces();
 
 		if (this.schema.globalTemplate && this.schema.globalFields) {
-			const globalTemplate = this.schema.globalTemplate;
-			let templatePos = 0;
-			while (templatePos < globalTemplate.length && i < rowString.length) {
-				if (globalTemplate[templatePos] === '{') {
-					const end = globalTemplate.indexOf('}', templatePos);
-					if (end !== -1) {
-						const key = globalTemplate.substring(templatePos + 1, end);
-						const field = this.schema.globalFields[key];
-						if (field) {
-							for (let j = 0; j < field.length && i < rowString.length; j++) {
-								if (rowString[i] !== ' ') {
-									x += this.measureText(rowString[i]);
-								} else {
-									x += this.measureText(' ');
-								}
-								i++;
-							}
+			PatternTemplateParser.parseTemplate(
+				this.schema.globalTemplate,
+				this.schema.globalFields,
+				(key, field, isSpace) => {
+					if (isSpace) {
+						if (i < rowString.length && rowString[i] === ' ') {
+							advanceChar();
 						}
-						templatePos = end + 1;
 					} else {
-						templatePos++;
+						for (let j = 0; j < field.length && i < rowString.length; j++) {
+							advanceChar();
+						}
 					}
-				} else if (globalTemplate[templatePos] === ' ') {
-					if (i < rowString.length && rowString[i] === ' ') {
-						x += this.measureText(' ');
-						i++;
-					}
-					templatePos++;
-				} else {
-					templatePos++;
 				}
-			}
+			);
 			skipSpaces();
 		}
 
@@ -118,40 +110,24 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 			if (i >= rowString.length) break;
 
 			const channelStart = x;
-			let templatePos = 0;
 			let foundField = false;
 
-			while (templatePos < template.length && i < rowString.length) {
-				if (template[templatePos] === '{') {
-					const end = template.indexOf('}', templatePos);
-					if (end !== -1) {
-						const key = template.substring(templatePos + 1, end);
-						const field = this.schema.fields[key];
-						if (field) {
-							for (let j = 0; j < field.length && i < rowString.length; j++) {
-								if (rowString[i] !== ' ') {
-									x += this.measureText(rowString[i]);
-								} else {
-									x += this.measureText(' ');
-								}
-								i++;
-							}
-							foundField = true;
+			PatternTemplateParser.parseTemplate(
+				template,
+				this.schema.fields,
+				(key, field, isSpace) => {
+					if (isSpace) {
+						if (i < rowString.length && rowString[i] === ' ') {
+							advanceChar();
 						}
-						templatePos = end + 1;
 					} else {
-						break;
+						for (let j = 0; j < field.length && i < rowString.length; j++) {
+							advanceChar();
+						}
+						foundField = true;
 					}
-				} else if (template[templatePos] === ' ') {
-					if (i < rowString.length && rowString[i] === ' ') {
-						x += this.measureText(' ');
-						i++;
-					}
-					templatePos++;
-				} else {
-					templatePos++;
 				}
-			}
+			);
 
 			if (foundField) {
 				positions.push(channelStart);
@@ -163,8 +139,12 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 		return positions;
 	}
 
+	private isAlternateRow(rowIndex: number): boolean {
+		return rowIndex % 4 === 0;
+	}
+
 	private drawRowBackground(data: RowRenderData): void {
-		if (data.rowIndex % 4 === 0) {
+		if (this.isAlternateRow(data.rowIndex)) {
 			this.fillRect(
 				0,
 				data.y,
@@ -174,7 +154,31 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 			);
 		}
 
-		if (data.isSelected) {
+		if (
+			data.selectionStartCol !== null &&
+			data.selectionStartCol !== undefined &&
+			data.selectionEndCol !== null &&
+			data.selectionEndCol !== undefined
+		) {
+			const startCol = Math.min(data.selectionStartCol, data.selectionEndCol);
+			const endCol = Math.max(data.selectionStartCol, data.selectionEndCol);
+
+			if (startCol < data.cellPositions.length && endCol < data.cellPositions.length) {
+				const firstCell = data.cellPositions[startCol];
+				const lastCell = data.cellPositions[endCol];
+				const selectionX = Math.floor(firstCell.x);
+				const selectionWidth = Math.ceil(lastCell.x + lastCell.width) - selectionX;
+
+				this.fillRectWithAlpha(
+					selectionX,
+					data.y,
+					selectionWidth,
+					this.lineHeight,
+					this.colors.patternCellSelected,
+					0.25
+				);
+			}
+		} else if (data.isSelected) {
 			this.fillRect(
 				0,
 				data.y,
@@ -184,7 +188,11 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 			);
 		}
 
-		if (data.isSelected && data.selectedColumn < data.cellPositions.length) {
+		if (
+			data.isSelected &&
+			data.selectedColumn < data.cellPositions.length &&
+			(data.selectionStartCol === null || data.selectionStartCol === undefined)
+		) {
 			const cellPos = data.cellPositions[data.selectedColumn];
 			this.fillRect(
 				cellPos.x - 1,
@@ -286,6 +294,15 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 		return channelIndex;
 	}
 
+	private getEmptyFieldColor(data: RowRenderData): string {
+		if (data.isSelected) {
+			return this.colors.patternEmptySelected;
+		}
+		return this.isAlternateRow(data.rowIndex)
+			? this.colors.patternAlternateEmpty
+			: this.colors.patternEmpty;
+	}
+
 	private determineCharColor(
 		char: string,
 		data: RowRenderData,
@@ -312,20 +329,12 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 			const isAtomic = field?.selectable === 'atomic';
 			if (isAtomic) {
 				if (fieldText === '---') {
-					return data.isSelected
-						? this.colors.patternEmptySelected
-						: data.rowIndex % 4 === 0
-							? this.colors.patternAlternateEmpty
-							: this.colors.patternEmpty;
+					return this.getEmptyFieldColor(data);
 				} else {
 					return color;
 				}
 			} else {
-				return data.isSelected
-					? this.colors.patternEmptySelected
-					: data.rowIndex % 4 === 0
-						? this.colors.patternAlternateEmpty
-						: this.colors.patternEmpty;
+				return this.getEmptyFieldColor(data);
 			}
 		}
 
@@ -336,11 +345,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 				currentSegment.fieldKey === 'envelopeEffect';
 
 			if (char === '.' && isEffectField) {
-				return data.isSelected
-					? this.colors.patternEmptySelected
-					: data.rowIndex % 4 === 0
-						? this.colors.patternAlternateEmpty
-						: this.colors.patternEmpty;
+				return this.getEmptyFieldColor(data);
 			}
 
 			if (isNoteField) {
@@ -351,20 +356,8 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 				const validNotePattern = /^[A-G][#-]\d$/;
 				const isPartOfValidNote = validNotePattern.test(fieldText);
 
-				if (char === '.' && !isPartOfValidNote) {
-					return data.isSelected
-						? this.colors.patternEmptySelected
-						: data.rowIndex % 4 === 0
-							? this.colors.patternAlternateEmpty
-							: this.colors.patternEmpty;
-				}
-
-				if (char === '-' && !isPartOfValidNote) {
-					return data.isSelected
-						? this.colors.patternEmptySelected
-						: data.rowIndex % 4 === 0
-							? this.colors.patternAlternateEmpty
-							: this.colors.patternEmpty;
+				if ((char === '.' || char === '-') && !isPartOfValidNote) {
+					return this.getEmptyFieldColor(data);
 				}
 			}
 

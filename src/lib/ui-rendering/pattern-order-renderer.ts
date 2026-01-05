@@ -63,11 +63,11 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 				this.cellHeight,
 				this.colors.patternNoise
 			);
-			this.strokeRect(
-				this.padding + 0.5,
-				cellY + 0.5,
-				this.cellWidth - 1,
-				this.cellHeight - 1,
+			this.strokeRectPixelPerfect(
+				this.padding,
+				cellY,
+				this.cellWidth,
+				this.cellHeight,
 				this.colors.patternInstrument
 			);
 		} else if (cell.isHovered) {
@@ -78,22 +78,22 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 				this.cellHeight,
 				this.colors.patternHeader
 			);
-			this.strokeRect(
-				this.padding + 0.5,
-				cellY + 0.5,
-				this.cellWidth - 1,
-				this.cellHeight - 1,
+			this.strokeRectPixelPerfect(
+				this.padding,
+				cellY,
+				this.cellWidth,
+				this.cellHeight,
 				this.colors.patternInstrument
 			);
 		} else {
 			const bgColor =
 				cell.index % 2 === 0 ? this.colors.patternBg : this.colors.patternAlternate;
 			this.fillRect(this.padding, cellY, this.cellWidth, this.cellHeight, bgColor);
-			this.strokeRect(
-				this.padding + 0.5,
-				cellY + 0.5,
-				this.cellWidth - 1,
-				this.cellHeight - 1,
+			this.strokeRectPixelPerfect(
+				this.padding,
+				cellY,
+				this.cellWidth,
+				this.cellHeight,
 				this.colors.patternEmpty
 			);
 		}

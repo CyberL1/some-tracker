@@ -235,4 +235,34 @@ export class PatternService {
 			newPatternOrder
 		};
 	}
+
+	/**
+	 * Find a pattern by ID in an array, or create it if it doesn't exist
+	 */
+	static findOrCreatePattern(
+		patterns: Pattern[],
+		patternId: number
+	): { pattern: Pattern; newPatterns: Pattern[] } {
+		let pattern = patterns.find((p) => p.id === patternId);
+		if (!pattern) {
+			pattern = this.createEmptyPattern(patternId);
+			return { pattern, newPatterns: [...patterns, pattern] };
+		}
+		return { pattern, newPatterns: patterns };
+	}
+
+	/**
+	 * Update a pattern in an array by replacing it with the updated version
+	 */
+	static updatePatternInArray(patterns: Pattern[], updatedPattern: Pattern): Pattern[] {
+		const patternIndex = patterns.findIndex((p) => p.id === updatedPattern.id);
+		if (patternIndex >= 0) {
+			return [
+				...patterns.slice(0, patternIndex),
+				updatedPattern,
+				...patterns.slice(patternIndex + 1)
+			];
+		}
+		return patterns;
+	}
 }

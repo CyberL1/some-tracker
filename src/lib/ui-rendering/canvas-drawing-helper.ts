@@ -92,4 +92,29 @@ export class CanvasDrawingHelper {
 		}
 		this.ctx.stroke();
 	}
+
+	protected fillRectWithAlpha(
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+		color: string,
+		alpha: number
+	): void {
+		this.save();
+		this.ctx.globalAlpha = alpha;
+		this.fillRect(x, y, width, height, color);
+		this.restore();
+	}
+
+	protected strokeRectPixelPerfect(
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+		color?: string,
+		lineWidth: number = 1
+	): void {
+		this.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1, color, lineWidth);
+	}
 }
