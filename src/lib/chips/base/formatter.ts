@@ -92,7 +92,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 					const field = fields[key];
 					if (field) {
 						const value = data[key];
-						if ((key === 'effect' || key === 'envelopeEffect') && typeof value === 'object' && value !== null) {
+						if (key === 'effect' && typeof value === 'object' && value !== null) {
 							result += this.formatEffect(
 								value as { effect: number; delay: number; parameter: number }
 							);

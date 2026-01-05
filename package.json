@@ -8,12 +8,15 @@
     "dev": "pnpm build:wasm && vite",
     "build": "pnpm build:wasm && vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "devDependencies": {
     "@iconify/json": "^2.2.380",
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
     "@tsconfig/svelte": "^5.0.5",
+    "jsdom": "^27.4.0",
     "prettier": "^3.6.2",
     "prettier-plugin-svelte": "^3.4.0",
     "prettier-plugin-tailwindcss": "^0.6.14",
@@ -21,7 +24,8 @@
     "svelte-check": "^4.3.1",
     "typescript": "~5.8.3",
     "unplugin-icons": "^22.2.0",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^4.0.16"
   },
   "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977",
   "dependencies": {
