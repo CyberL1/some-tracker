@@ -73,6 +73,7 @@ class TrackerPatternProcessor {
 	_processNote(channelIndex, row) {
 		const hasSlideCommand =
 			row.effects[0] && (row.effects[0].effect === 1 || row.effects[0].effect === 2);
+		const hasPortamentoCommand = row.effects[0] && row.effects[0].effect === 'P'.charCodeAt(0);
 
 		if (!this.state.channelSlideAlreadyApplied) {
 			this.state.channelSlideAlreadyApplied = [];
@@ -87,8 +88,15 @@ class TrackerPatternProcessor {
 			this.state.channelToneSliding[channelIndex] = 0;
 			this.state.channelSlideStep[channelIndex] = 0;
 			this.state.channelSlideAlreadyApplied[channelIndex] = false;
+			this.state.channelPortamentoActive[channelIndex] = false;
 		} else if (row.note.name !== 0) {
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
+
+			if (!hasPortamentoCommand) {
+				this.state.channelPreviousNotes[channelIndex] =
+					this.state.channelBaseNotes[channelIndex];
+			}
+
 			this.state.channelBaseNotes[channelIndex] = noteValue;
 			this.state.channelCurrentNotes[channelIndex] = noteValue;
 
@@ -97,8 +105,10 @@ class TrackerPatternProcessor {
 				this.state.tableCounters[channelIndex] = 0;
 			}
 
-			this.state.channelToneSliding[channelIndex] = 0;
-			if (!hasSlideCommand) {
+			if (!hasPortamentoCommand) {
+				this.state.channelToneSliding[channelIndex] = 0;
+			}
+			if (!hasSlideCommand && !hasPortamentoCommand) {
 				this.state.channelSlideStep[channelIndex] = 0;
 				this.state.channelSlideAlreadyApplied[channelIndex] = false;
 			}
@@ -141,6 +151,7 @@ class TrackerPatternProcessor {
 		const effect = row.effects[0];
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
+		const PORTAMENTO = 'P'.charCodeAt(0);
 		const SPEED = 'S'.charCodeAt(0);
 
 		if (effect.effect === SPEED) {
@@ -165,6 +176,38 @@ class TrackerPatternProcessor {
 			} else {
 				this.state.channelSlideAlreadyApplied[channelIndex] = false;
 			}
+		} else if (effect.effect === PORTAMENTO) {
+			if (row.note.name !== 0 && row.note.name !== 1) {
+				const currentNote = row.note.name - 2 + (row.note.octave - 1) * 12;
+				const previousNote = this.state.channelPreviousNotes[channelIndex];
+
+				if (
+					previousNote >= 0 &&
+					previousNote < this.state.currentTuningTable.length &&
+					currentNote >= 0 &&
+					currentNote < this.state.currentTuningTable.length
+				) {
+					const previousTone = this.state.currentTuningTable[previousNote];
+					const currentTone = this.state.currentTuningTable[currentNote];
+					const delta = currentTone - previousTone;
+
+					this.state.channelPortamentoTarget[channelIndex] = currentNote;
+					this.state.channelPortamentoDelta[channelIndex] = delta;
+					this.state.channelPortamentoActive[channelIndex] = true;
+
+					this.state.channelBaseNotes[channelIndex] = previousNote;
+					this.state.channelCurrentNotes[channelIndex] = previousNote;
+
+					this.state.channelSlideStep[channelIndex] = effect.parameter;
+					if (delta < 0) {
+						this.state.channelSlideStep[channelIndex] = -effect.parameter;
+					}
+
+					if (this.state.channelToneSliding) {
+						this.state.channelToneSliding[channelIndex] = 0;
+					}
+				}
+			}
 		}
 	}
 
@@ -179,10 +222,29 @@ class TrackerPatternProcessor {
 		) {
 			const slideStep = this.state.channelSlideStep[channelIndex];
 			if (slideStep !== 0) {
-				if (!this.state.channelSlideAlreadyApplied[channelIndex]) {
+				if (this.state.channelPortamentoActive[channelIndex]) {
 					this.state.channelToneSliding[channelIndex] += slideStep;
+
+					const delta = this.state.channelPortamentoDelta[channelIndex];
+					const currentSliding = this.state.channelToneSliding[channelIndex];
+
+					if (
+						(slideStep < 0 && currentSliding <= delta) ||
+						(slideStep >= 0 && currentSliding >= delta)
+					) {
+						const targetNote = this.state.channelPortamentoTarget[channelIndex];
+						this.state.channelBaseNotes[channelIndex] = targetNote;
+						this.state.channelCurrentNotes[channelIndex] = targetNote;
+						this.state.channelToneSliding[channelIndex] = 0;
+						this.state.channelSlideStep[channelIndex] = 0;
+						this.state.channelPortamentoActive[channelIndex] = false;
+					}
 				} else {
-					this.state.channelSlideAlreadyApplied[channelIndex] = false;
+					if (!this.state.channelSlideAlreadyApplied[channelIndex]) {
+						this.state.channelToneSliding[channelIndex] += slideStep;
+					} else {
+						this.state.channelSlideAlreadyApplied[channelIndex] = false;
+					}
 				}
 			}
 		}

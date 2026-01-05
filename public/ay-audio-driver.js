@@ -149,7 +149,9 @@ class AYAudioDriver {
 		if (state.channelToneSliding) {
 			const hasActiveSlide =
 				state.channelSlideStep && state.channelSlideStep[channelIndex] !== 0;
-			if (!hasActiveSlide) {
+			const hasActivePortamento =
+				state.channelPortamentoActive && state.channelPortamentoActive[channelIndex];
+			if (!hasActiveSlide && !hasActivePortamento) {
 				state.channelToneSliding[channelIndex] = 0;
 			}
 		}

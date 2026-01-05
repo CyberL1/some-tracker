@@ -4,6 +4,7 @@ import type { GenericRow, GenericPatternRow } from '../../models/song/generic';
 import { formatHex, formatSymbol, parseHex, parseSymbol } from './field-formatters';
 import { NoteName } from '../../models/song';
 import { formatNoteFromEnum } from '../../utils/note-utils';
+import { PatternEffectHandling } from '../../services/pattern/editing/pattern-effect-handling';
 
 export abstract class BaseFormatter implements PatternFormatter {
 	formatRow(
@@ -93,7 +94,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 					if (field) {
 						const value = data[key];
 						if (key === 'effect' && typeof value === 'object' && value !== null) {
-							result += this.formatEffect(
+							result += PatternEffectHandling.formatEffectAsString(
 								value as { effect: number; delay: number; parameter: number }
 							);
 						} else {
@@ -156,11 +157,9 @@ export abstract class BaseFormatter implements PatternFormatter {
 				const field = fields[key];
 				if (field) {
 					if (key === 'effect' || key === 'envelopeEffect') {
-						result[key] = this.parseEffect(match[i + 1]) as unknown as
-							| string
-							| number
-							| null
-							| undefined;
+						result[key] = PatternEffectHandling.parseEffectFromString(
+							match[i + 1]
+						) as unknown as string | number | null | undefined;
 					} else {
 						result[key] = this.parseField(match[i + 1], field);
 					}
@@ -238,36 +237,6 @@ export abstract class BaseFormatter implements PatternFormatter {
 		return rowIndex.toString(16).toUpperCase().padStart(2, '0');
 	}
 
-	protected formatEffect(
-		effect: { effect: number; delay: number; parameter: number } | null | undefined
-	): string {
-		if (!effect) return '...';
-		let type: string;
-		if (effect.effect === 0) {
-			type = '.';
-		} else if (effect.effect === 'S'.charCodeAt(0)) {
-			type = 'S';
-		} else {
-			type = effect.effect.toString(16).toUpperCase();
-		}
-		const param = formatHex(effect.parameter, 2);
-		return type + param;
-	}
-
-	protected parseEffect(value: string): { effect: number; delay: number; parameter: number } {
-		let type: number;
-		const typeChar = value[0];
-		if (typeChar === '.') {
-			type = 0;
-		} else if (typeChar === 'S' || typeChar === 's') {
-			type = 'S'.charCodeAt(0);
-		} else {
-			type = parseInt(typeChar, 16) || 0;
-		}
-		const param = parseInt((value.slice(1, 3) || '00').replace(/\./g, '0'), 16) || 0;
-		return { effect: type, delay: 0, parameter: param };
-	}
-
 	getColorForField(fieldKey: string, schema: ChipSchema): string {
 		const field = schema.fields[fieldKey] || schema.globalFields?.[fieldKey];
 		if (field?.color) {
@@ -276,4 +245,3 @@ export abstract class BaseFormatter implements PatternFormatter {
 		return 'patternText';
 	}
 }
-

@@ -21,7 +21,7 @@ enum EffectType {
 	Arpeggio = 0,
 	SlideUp = 1,
 	SlideDown = 2,
-	Portamento = 3,
+	Portamento = 'P'.charCodeAt(0),
 	Vibrato = 4,
 	EnvelopeSlide = 5,
 	Speed = 'S'.charCodeAt(0)

@@ -20,7 +20,7 @@ export class PatternFieldInput {
 			fieldInfo.fieldKey === 'effect' || fieldInfo.fieldKey === 'envelopeEffect';
 
 		if (isEffectField) {
-			if (!/^[0-9A-FS\.]$/i.test(key)) {
+			if (!/^[0-9A-FPS\.]$/i.test(key)) {
 				return null;
 			}
 		} else {
