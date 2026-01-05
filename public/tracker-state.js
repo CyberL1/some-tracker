@@ -31,6 +31,8 @@ class TrackerState {
 		this.channelPortamentoTarget = Array(channelCount).fill(-1);
 		this.channelPortamentoDelta = Array(channelCount).fill(0);
 		this.channelPortamentoActive = Array(channelCount).fill(false);
+		this.channelPortamentoDelay = Array(channelCount).fill(0);
+		this.channelPortamentoCount = Array(channelCount).fill(0);
 	}
 
 	reset() {
@@ -49,6 +51,8 @@ class TrackerState {
 		this.channelPortamentoTarget.fill(-1);
 		this.channelPortamentoDelta.fill(0);
 		this.channelPortamentoActive.fill(false);
+		this.channelPortamentoDelay.fill(0);
+		this.channelPortamentoCount.fill(0);
 	}
 
 	setTuningTable(table) {
