@@ -183,9 +183,12 @@ class AYAudioDriver {
 		if (state.channelMuted[channelIndex]) return;
 
 		if (row.note.name === 1) {
+			state.channelSoundEnabled[channelIndex] = false;
 			this.setTone(channelIndex, 0);
 			this.resetInstrumentAccumulators(state, channelIndex);
+			state.instrumentPositions[channelIndex] = 0;
 		} else if (row.note.name !== 0) {
+			state.channelSoundEnabled[channelIndex] = true;
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
 			if (noteValue >= 0 && noteValue < state.currentTuningTable.length) {
 				const regValue = state.currentTuningTable[noteValue];
@@ -235,11 +238,16 @@ class AYAudioDriver {
 	processInstruments(state) {
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			const isMuted = state.channelMuted[channelIndex];
+			const isSoundEnabled = state.channelSoundEnabled[channelIndex];
 
-			if (isMuted) {
+			if (isMuted || !isSoundEnabled) {
 				this.setVolume(channelIndex, 0);
-				this.setMixer(channelIndex, 1, 1, 0);
-				state.channelEnvelopeEnabled[channelIndex] = false;
+				this.setMixerTone(channelIndex, false);
+				this.setMixerNoise(channelIndex, false);
+				this.setMixerEnvelope(channelIndex, false);
+				if (isMuted) {
+					state.channelEnvelopeEnabled[channelIndex] = false;
+				}
 				continue;
 			}
 

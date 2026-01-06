@@ -80,6 +80,7 @@ class TrackerPatternProcessor {
 		}
 
 		if (row.note.name === 1) {
+			this.state.channelSoundEnabled[channelIndex] = false;
 			this.state.channelTables[channelIndex] = -1;
 			this.state.channelBaseNotes[channelIndex] = 0;
 			this.state.channelCurrentNotes[channelIndex] = 0;
@@ -90,6 +91,7 @@ class TrackerPatternProcessor {
 			this.state.channelSlideAlreadyApplied[channelIndex] = false;
 			this.state.channelPortamentoActive[channelIndex] = false;
 		} else if (row.note.name !== 0) {
+			this.state.channelSoundEnabled[channelIndex] = true;
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
 
 			this.state.channelPreviousNotes[channelIndex] =

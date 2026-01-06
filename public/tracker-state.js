@@ -17,7 +17,7 @@ class TrackerState {
 		this.currentTick = 0;
 		this.currentSpeed = DEFAULT_SPEED;
 
-		this.channelPatternVolumes = Array(channelCount).fill(0);
+		this.channelPatternVolumes = Array(channelCount).fill(15);
 
 		this.tables = [];
 		this.channelTables = Array(channelCount).fill(-1);
@@ -39,7 +39,7 @@ class TrackerState {
 		this.sampleCounter = 0;
 		this.currentRow = 0;
 		this.currentTick = 0;
-		this.channelPatternVolumes.fill(0);
+		this.channelPatternVolumes.fill(15);
 		this.channelTables.fill(-1);
 		this.tablePositions.fill(0);
 		this.tableCounters.fill(0);
