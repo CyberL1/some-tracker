@@ -46,7 +46,9 @@
 	in:fly={{ y: -10, duration: 150 }}
 	out:fade={{ duration: 80 }}
 	tabindex="-1"
-	class="menu-panel {isFirst ? '' : 'mx-[-8px]'} w-48 rounded-sm border border-neutral-600 bg-neutral-800 shadow-lg"
+	class="menu-panel {isFirst
+		? ''
+		: 'mx-[-8px]'} w-48 rounded-sm border border-neutral-600 bg-neutral-800 shadow-lg"
 	onclick={handlePanelClick}
 	role="menu">
 	{#if items && items.length > 0}

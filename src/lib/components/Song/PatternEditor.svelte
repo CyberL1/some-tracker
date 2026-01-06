@@ -35,6 +35,10 @@
 		type PatternEditContext,
 		type CursorPosition
 	} from '../../models/actions';
+	import {
+		ClipboardService,
+		type ClipboardContext
+	} from '../../services/pattern/clipboard-service';
 
 	let {
 		patterns = $bindable(),
@@ -551,6 +555,10 @@
 		selectedColumn = navigationState.selectedColumn;
 	}
 
+	export function handleKeyDownFromMenu(event: KeyboardEvent) {
+		handleKeyDown(event);
+	}
+
 	function handleKeyDown(event: KeyboardEvent) {
 		if (
 			(event.ctrlKey || event.metaKey) &&
@@ -570,6 +578,24 @@
 		) {
 			event.preventDefault();
 			undoRedoStore.redo();
+			return;
+		}
+
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
+			event.preventDefault();
+			copySelection();
+			return;
+		}
+
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'x') {
+			event.preventDefault();
+			cutSelection();
+			return;
+		}
+
+		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+			event.preventDefault();
+			pasteSelection();
 			return;
 		}
 
@@ -937,6 +963,58 @@
 		return '';
 	}
 
+	function createClipboardContext(): ClipboardContext {
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const pattern = findOrCreatePattern(patternId);
+
+		return {
+			pattern,
+			selectedRow,
+			selectedColumn,
+			hasSelection: hasSelection(),
+			getSelectionBounds,
+			getCellPositions,
+			getPatternRowData,
+			createEditingContext: (pat: Pattern, row: number, col: number) => {
+				const rowString = getPatternRowData(pat, row);
+				const cellPositions = getCellPositions(rowString, row);
+				const segments = textParser ? textParser.parseRowString(rowString, row) : undefined;
+
+				return {
+					pattern: pat,
+					selectedRow: row,
+					selectedColumn: col,
+					cellPositions,
+					segments,
+					converter,
+					formatter,
+					schema
+				};
+			}
+		};
+	}
+
+	function copySelection(): void {
+		ClipboardService.copySelection(createClipboardContext());
+	}
+
+	function cutSelection(): void {
+		copySelection();
+		deleteSelection();
+	}
+
+	function pasteSelection(): void {
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const originalPattern = findOrCreatePattern(patternId);
+
+		ClipboardService.pasteSelection(createClipboardContext(), (updatedPattern) => {
+			recordBulkPatternEdit(originalPattern, updatedPattern);
+			updatePatternInArray(updatedPattern);
+			clearAllCaches();
+			draw();
+		});
+	}
+
 	function deleteSelection(): void {
 		if (!hasSelection()) return;
 
@@ -1174,9 +1252,6 @@
 
 	$effect(() => {
 		if (!chipProcessor) return;
-
-		const currentPatterns = patterns;
-		const currentPatternOrder = patternOrder;
 
 		const handlePatternUpdate = (
 			currentRow: number,

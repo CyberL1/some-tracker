@@ -67,6 +67,36 @@
 				return;
 			}
 
+			if (data.action === 'copy') {
+				const event = new KeyboardEvent('keydown', {
+					key: 'c',
+					ctrlKey: true,
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
+			if (data.action === 'cut') {
+				const event = new KeyboardEvent('keydown', {
+					key: 'x',
+					ctrlKey: true,
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
+			if (data.action === 'paste') {
+				const event = new KeyboardEvent('keydown', {
+					key: 'v',
+					ctrlKey: true,
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
 			if (data.action === 'playFromBeginning') {
 				if (playbackStore.isPlaying) {
 					playbackStore.isPlaying = false;

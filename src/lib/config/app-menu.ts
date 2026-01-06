@@ -1,5 +1,6 @@
 import type { MenuItem } from '../components/Menu/types';
 import { undoRedoStore } from '../stores/undo-redo.svelte';
+import { clipboardStore } from '../stores/clipboard.svelte';
 
 export const menuItems: MenuItem[] = [
 	{
@@ -53,6 +54,25 @@ export const menuItems: MenuItem[] = [
 				action: 'redo',
 				shortcut: 'Ctrl+Y',
 				disabled: () => !undoRedoStore.canRedo
+			},
+			{
+				label: 'Copy',
+				type: 'normal',
+				action: 'copy',
+				shortcut: 'Ctrl+C'
+			},
+			{
+				label: 'Cut',
+				type: 'normal',
+				action: 'cut',
+				shortcut: 'Ctrl+X'
+			},
+			{
+				label: 'Paste',
+				type: 'normal',
+				action: 'paste',
+				shortcut: 'Ctrl+V',
+				disabled: () => !clipboardStore.hasData
 			}
 		]
 	},
