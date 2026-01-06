@@ -112,6 +112,8 @@
 	let renderer: PatternEditorRenderer | null = $state(null);
 	let lastVisibleRowsCache: VisibleRowsCache | null = null;
 
+	const MANUAL_PATTERN_CHANGE_TIMEOUT_MS = 1000;
+
 	let currentPattern = $derived.by(() => {
 		const patternId = patternOrder[currentPatternOrderIndex];
 		return findOrCreatePattern(patternId);
@@ -1270,7 +1272,7 @@
 					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
 				} else if (
 					currentPatternOrderIndexUpdate === currentPatternOrderIndex &&
-					now - lastManualPatternChangeTime > 1000
+					now - lastManualPatternChangeTime > MANUAL_PATTERN_CHANGE_TIMEOUT_MS
 				) {
 					userManuallyChangedPattern = false;
 					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
