@@ -161,11 +161,14 @@
 	export function resetToBeginning() {
 		selectedRow = 0;
 		currentPatternOrderIndex = 0;
+		userManuallyChangedPattern = false;
 	}
 
 	export function setPatternOrderIndex(index: number) {
 		if (index >= 0 && index < patternOrder.length) {
 			currentPatternOrderIndex = index;
+			userManuallyChangedPattern = true;
+			lastManualPatternChangeTime = performance.now();
 		}
 	}
 
@@ -449,7 +452,11 @@
 		);
 
 		selectedRow = navigationState.selectedRow;
-		currentPatternOrderIndex = navigationState.currentPatternOrderIndex;
+		if (currentPatternOrderIndex !== navigationState.currentPatternOrderIndex) {
+			currentPatternOrderIndex = navigationState.currentPatternOrderIndex;
+			userManuallyChangedPattern = true;
+			lastManualPatternChangeTime = performance.now();
+		}
 
 		const updatedPattern = currentPattern || ensurePatternExists();
 		if (updatedPattern) {
@@ -1058,6 +1065,35 @@
 
 	let lastPlaybackUpdate = 0;
 	const PLAYBACK_THROTTLE_MS = 33;
+	let userManuallyChangedPattern = $state(false);
+	let lastManualPatternChangeTime = 0;
+	let lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
+
+	$effect(() => {
+		if (currentPatternOrderIndex !== lastPatternOrderIndexFromPlayback) {
+			userManuallyChangedPattern = true;
+			lastManualPatternChangeTime = performance.now();
+
+			if (services.audioService.playing) {
+				const wasPlaying = services.audioService.playing;
+				if (wasPlaying) {
+					services.audioService.stop();
+				}
+				if (initAllChips) {
+					initAllChips();
+				} else if (chipProcessor) {
+					const patternId = patternOrder[currentPatternOrderIndex];
+					const pattern = patterns.find((p) => p.id === patternId);
+					if (pattern) {
+						chipProcessor.sendInitPattern(pattern, currentPatternOrderIndex);
+					}
+				}
+				setTimeout(() => {
+					services.audioService.playFromRow(0, currentPatternOrderIndex, getSpeedForChip);
+				}, 0);
+			}
+		}
+	});
 
 	$effect(() => {
 		if (!chipProcessor) return;
@@ -1077,7 +1113,16 @@
 
 			selectedRow = currentRow;
 			if (currentPatternOrderIndexUpdate !== undefined) {
-				currentPatternOrderIndex = currentPatternOrderIndexUpdate;
+				if (!userManuallyChangedPattern) {
+					currentPatternOrderIndex = currentPatternOrderIndexUpdate;
+					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
+				} else if (
+					currentPatternOrderIndexUpdate === currentPatternOrderIndex &&
+					now - lastManualPatternChangeTime > 1000
+				) {
+					userManuallyChangedPattern = false;
+					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
+				}
 			}
 		};
 

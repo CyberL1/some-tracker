@@ -121,6 +121,12 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	}
 
 	handleInitPattern(data) {
+		if (
+			data.patternOrderIndex !== undefined &&
+			this.state.currentPatternOrderIndex !== data.patternOrderIndex
+		) {
+			this.state.currentPattern = null;
+		}
 		this.state.setPattern(data.pattern, data.patternOrderIndex);
 	}
 
@@ -147,7 +153,13 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			if (this.state.wasmModule && this.state.ayumiPtr) {
 				if (muted) {
 					this.state.wasmModule.ayumi_set_volume(this.state.ayumiPtr, channelIndex, 0);
-					this.state.wasmModule.ayumi_set_mixer(this.state.ayumiPtr, channelIndex, 1, 1, 0);
+					this.state.wasmModule.ayumi_set_mixer(
+						this.state.ayumiPtr,
+						channelIndex,
+						1,
+						1,
+						0
+					);
 					this.state.channelEnvelopeEnabled[channelIndex] = false;
 				}
 			}
@@ -211,7 +223,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.enforceMuteState();
 
 		if (patternOrderIndex !== undefined) {
+			if (this.state.currentPatternOrderIndex !== patternOrderIndex) {
+				this.state.currentPattern = null;
+			}
 			this.state.currentPatternOrderIndex = patternOrderIndex;
+			this.port.postMessage({
+				type: 'request_pattern',
+				patternOrderIndex: patternOrderIndex
+			});
 		}
 		this.state.currentRow = row;
 		if (speed !== undefined && speed !== null && speed > 0) {
@@ -237,6 +256,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			wasmModule.ayumi_set_volume(ayumiPtr, i, 0);
 		}
 		this.state.reset();
+		this.state.currentPattern = null;
 	}
 
 	process(_inputs, outputs, _parameters) {
