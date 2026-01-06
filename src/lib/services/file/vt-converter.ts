@@ -10,6 +10,7 @@ import {
 	InstrumentRow
 } from '../../models/song';
 import { PT3TuneTables } from '../../models/pt3/tuning-tables';
+import { AYEffectType } from '../../chips/ay/types';
 
 interface VT2Module {
 	title: string;
@@ -81,10 +82,12 @@ class VT2Converter {
 		B: NoteName.B
 	} as const;
 
-	private readonly effectTypeMap: Record<string, EffectType> = {
+	private readonly effectTypeMap: Record<string, EffectType | AYEffectType> = {
 		'1': EffectType.SlideUp,
 		'2': EffectType.SlideDown,
 		'3': EffectType.Portamento,
+		'9': AYEffectType.EnvelopeSlideUp,
+		A: AYEffectType.EnvelopeSlideDown,
 		B: EffectType.Speed
 	} as const;
 
@@ -120,19 +123,19 @@ class VT2Converter {
 			return new Instrument(
 				sample.id,
 				sample.data.map((line) => {
-					return new InstrumentRow(
-						line.tone,
-						line.noise,
-						line.envelope,
-						line.toneAdd,
-						line.noiseAdd,
-						line.volume,
-						line.loop,
-						line.amplitudeSliding || false,
-						line.amplitudeSlideUp || false,
-						line.toneAccumulation || false,
-						line.noiseAccumulation || false
-					);
+					return new InstrumentRow({
+						tone: line.tone,
+						noise: line.noise,
+						envelope: line.envelope,
+						toneAdd: line.toneAdd,
+						noiseAdd: line.noiseAdd,
+						volume: line.volume,
+						loop: line.loop,
+						amplitudeSliding: line.amplitudeSliding || false,
+						amplitudeSlideUp: line.amplitudeSlideUp || false,
+						toneAccumulation: line.toneAccumulation || false,
+						noiseAccumulation: line.noiseAccumulation || false
+					});
 				}),
 				loopPoint
 			);
@@ -241,19 +244,19 @@ class VT2Converter {
 			return new Instrument(
 				sample.id,
 				sample.data.map((line) => {
-					return new InstrumentRow(
-						line.tone,
-						line.noise,
-						line.envelope,
-						line.toneAdd,
-						line.noiseAdd,
-						line.volume,
-						line.loop,
-						line.amplitudeSliding || false,
-						line.amplitudeSlideUp || false,
-						line.toneAccumulation || false,
-						line.noiseAccumulation || false
-					);
+					return new InstrumentRow({
+						tone: line.tone,
+						noise: line.noise,
+						envelope: line.envelope,
+						toneAdd: line.toneAdd,
+						noiseAdd: line.noiseAdd,
+						volume: line.volume,
+						loop: line.loop,
+						amplitudeSliding: line.amplitudeSliding || false,
+						amplitudeSlideUp: line.amplitudeSlideUp || false,
+						toneAccumulation: line.toneAccumulation || false,
+						noiseAccumulation: line.noiseAccumulation || false
+					});
 				}),
 				loopPoint
 			);

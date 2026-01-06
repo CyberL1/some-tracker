@@ -21,6 +21,12 @@ class AyumiState extends TrackerState {
 		this.channelEnvelopeEnabled = Array(3).fill(false);
 		this.channelMuted = Array(3).fill(false);
 		this.channelSoundEnabled = Array(3).fill(true);
+
+		this.envelopeSlideDelay = 0;
+		this.envelopeSlideDelayCounter = 0;
+		this.envelopeSlideDelta = 0;
+		this.envelopeSlideCurrent = 0;
+		this.envelopeBaseValue = 0;
 	}
 
 	setWasmModule(module, ptr, wasmBuffer) {
@@ -54,6 +60,12 @@ class AyumiState extends TrackerState {
 		this.channelAmplitudeSliding.fill(0);
 		this.channelEnvelopeEnabled.fill(false);
 		this.channelSoundEnabled.fill(true);
+
+		this.envelopeSlideDelay = 0;
+		this.envelopeSlideDelayCounter = 0;
+		this.envelopeSlideDelta = 0;
+		this.envelopeSlideCurrent = 0;
+		this.envelopeBaseValue = 0;
 	}
 }
 

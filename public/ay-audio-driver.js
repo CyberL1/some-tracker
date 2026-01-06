@@ -225,7 +225,13 @@ class AYAudioDriver {
 
 		if (row.envelopeShape !== 0 && row.envelopeShape !== 15) {
 			if (patternRow.envelopeValue > 0) {
-				this.setEnvelope(row.envelopeShape, patternRow.envelopeValue);
+				state.envelopeBaseValue = patternRow.envelopeValue;
+				state.envelopeSlideCurrent = 0;
+				state.envelopeSlideDelta = 0;
+				state.envelopeSlideDelay = 0;
+				state.envelopeSlideDelayCounter = 0;
+				const finalEnvelopeValue = patternRow.envelopeValue;
+				this.setEnvelope(row.envelopeShape, finalEnvelopeValue);
 				state.channelEnvelopeEnabled[channelIndex] = true;
 				this.setMixerEnvelope(channelIndex, true);
 			}
@@ -233,9 +239,38 @@ class AYAudioDriver {
 			state.channelEnvelopeEnabled[channelIndex] = false;
 			this.setMixerEnvelope(channelIndex, false);
 		}
+
+		this._processEnvelopeEffects(state, channelIndex, row);
+	}
+
+	_processEnvelopeEffects(state, channelIndex, row) {
+		if (!row.effects[0]) return;
+
+		const effect = row.effects[0];
+		const ENVELOPE_SLIDE_UP = 9;
+		const ENVELOPE_SLIDE_DOWN = 10;
+
+		console.log(
+			`Effect: ${effect.effect}, delay: ${effect.delay}, parameter: ${effect.parameter}`
+		);
+
+		if (effect.effect === ENVELOPE_SLIDE_UP) {
+			console.log(`Envelope slide UP: delta=${effect.parameter}`);
+			state.envelopeSlideDelay = 1;
+			state.envelopeSlideDelayCounter = 1;
+			state.envelopeSlideDelta = effect.parameter;
+		} else if (effect.effect === ENVELOPE_SLIDE_DOWN) {
+			console.log(`Envelope slide DOWN: delta=${effect.parameter}`);
+			state.envelopeSlideDelay = 1;
+			state.envelopeSlideDelayCounter = 1;
+			state.envelopeSlideDelta = -effect.parameter;
+		}
 	}
 
 	processInstruments(state) {
+		this.processEnvelopeSlide(state);
+		this.updateEnvelopeWithSlide(state);
+
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			const isMuted = state.channelMuted[channelIndex];
 			const isSoundEnabled = state.channelSoundEnabled[channelIndex];
@@ -368,6 +403,24 @@ class AYAudioDriver {
 				this.setMixer(channelIndex, 1, 1, 0);
 				state.channelEnvelopeEnabled[channelIndex] = false;
 			}
+		}
+	}
+
+	processEnvelopeSlide(state) {
+		if (state.envelopeSlideDelayCounter > 0) {
+			state.envelopeSlideDelayCounter--;
+			if (state.envelopeSlideDelayCounter === 0) {
+				state.envelopeSlideDelayCounter = state.envelopeSlideDelay;
+				state.envelopeSlideCurrent += state.envelopeSlideDelta;
+			}
+		}
+	}
+
+	updateEnvelopeWithSlide(state) {
+		if (state.envelopeBaseValue > 0) {
+			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent;
+			const clampedValue = Math.max(0, Math.min(0xffff, finalEnvelopeValue));
+			this.wasmModule.ayumi_set_envelope(this.ayumiPtr, clampedValue);
 		}
 	}
 }

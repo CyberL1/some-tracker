@@ -23,7 +23,6 @@ enum EffectType {
 	SlideDown = 2,
 	Portamento = 'P'.charCodeAt(0),
 	Vibrato = 4,
-	EnvelopeSlide = 5,
 	Speed = 'S'.charCodeAt(0)
 }
 
@@ -52,51 +51,19 @@ class Instrument {
 }
 
 class InstrumentRow {
-	tone: boolean = false;
-	noise: boolean = false;
-	envelope: boolean = false;
-	toneAdd: number = 0;
-	noiseAdd: number = 0;
-	volume: number = 0;
-	loop: boolean = false;
-	amplitudeSliding: boolean = false;
-	amplitudeSlideUp: boolean = false;
-	toneAccumulation: boolean = false;
-	noiseAccumulation: boolean = false;
+	[key: string]: unknown;
 
-	constructor(
-		tone: boolean,
-		noise: boolean,
-		envelope: boolean,
-		toneAdd: number,
-		noiseAdd: number,
-		volume: number,
-		loop: boolean,
-		amplitudeSliding: boolean = false,
-		amplitudeSlideUp: boolean = false,
-		toneAccumulation: boolean = false,
-		noiseAccumulation: boolean = false
-	) {
-		this.tone = tone;
-		this.noise = noise;
-		this.envelope = envelope;
-		this.toneAdd = toneAdd;
-		this.noiseAdd = noiseAdd;
-		this.volume = volume;
-		this.loop = loop;
-		this.amplitudeSliding = amplitudeSliding;
-		this.amplitudeSlideUp = amplitudeSlideUp;
-		this.toneAccumulation = toneAccumulation;
-		this.noiseAccumulation = noiseAccumulation;
+	constructor(data: Record<string, unknown> = {}) {
+		Object.assign(this, data);
 	}
 }
 
 class Effect {
-	effect: EffectType;
+	effect: number;
 	delay: number;
 	parameter: number;
 
-	constructor(effect: EffectType, delay: number = 0, parameter: number = 0) {
+	constructor(effect: number, delay: number = 0, parameter: number = 0) {
 		this.effect = effect;
 		this.delay = delay;
 		this.parameter = parameter;
@@ -105,31 +72,25 @@ class Effect {
 
 class Row {
 	note: Note;
-	instrument: number;
-	volume: number;
-	table: number;
-	envelopeShape: number;
 	effects: (Effect | null)[];
+	[key: string]: unknown;
 
-	constructor() {
-		this.note = new Note();
-		this.instrument = 0;
-		this.volume = 0;
-		this.table = 0;
-		this.envelopeShape = 0;
-		this.effects = [null];
+	constructor(data: Partial<Row> = {}) {
+		this.note = data.note || new Note();
+		this.effects = data.effects || [null];
+		Object.keys(data).forEach((key) => {
+			if (key !== 'note' && key !== 'effects') {
+				this[key] = data[key as keyof Row];
+			}
+		});
 	}
 }
 
 class PatternRow {
-	envelopeValue: number;
-	envelopeEffect: Effect | null;
-	noiseValue: number;
+	[key: string]: unknown;
 
-	constructor() {
-		this.envelopeValue = 0;
-		this.envelopeEffect = null;
-		this.noiseValue = 0;
+	constructor(data: Record<string, unknown> = {}) {
+		Object.assign(this, data);
 	}
 }
 
