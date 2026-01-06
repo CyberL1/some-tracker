@@ -250,17 +250,11 @@ class AYAudioDriver {
 		const ENVELOPE_SLIDE_UP = 9;
 		const ENVELOPE_SLIDE_DOWN = 10;
 
-		console.log(
-			`Effect: ${effect.effect}, delay: ${effect.delay}, parameter: ${effect.parameter}`
-		);
-
 		if (effect.effect === ENVELOPE_SLIDE_UP) {
-			console.log(`Envelope slide UP: delta=${effect.parameter}`);
 			state.envelopeSlideDelay = 1;
 			state.envelopeSlideDelayCounter = 1;
 			state.envelopeSlideDelta = effect.parameter;
 		} else if (effect.effect === ENVELOPE_SLIDE_DOWN) {
-			console.log(`Envelope slide DOWN: delta=${effect.parameter}`);
 			state.envelopeSlideDelay = 1;
 			state.envelopeSlideDelayCounter = 1;
 			state.envelopeSlideDelta = -effect.parameter;
