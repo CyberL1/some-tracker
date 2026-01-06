@@ -170,6 +170,7 @@ export class AYChipRenderer implements ChipRenderer {
 				}
 
 				patternProcessor.processTables();
+				patternProcessor.processSlides();
 				audioDriver.processInstruments(state);
 
 				const isLastPattern =
