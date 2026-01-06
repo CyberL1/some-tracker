@@ -11,7 +11,7 @@
 	{#if item.type === 'range'}
 		<input
 			type="range"
-			onchange={(value) => settingsStore.set(item.setting, value.currentTarget.value)}
+			onchange={(value) => settingsStore.set(item.setting, Number(value.currentTarget.value))}
 			defaultValue={settings[item.setting]} />
 	{/if}
 	<br />

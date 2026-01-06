@@ -50,6 +50,8 @@
 	<div
 		class="w-80 rounded-sm border border-neutral-600 bg-neutral-900 shadow-xl transition-transform duration-200"
 		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => e.stopPropagation()}
+		role="presentation"
 		style="animation: slideUp 0.2s ease-out;">
 		<div class="flex items-center gap-2 border-b border-neutral-600 bg-neutral-900 px-2 py-1">
 			<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">

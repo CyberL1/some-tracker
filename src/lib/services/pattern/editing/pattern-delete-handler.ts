@@ -95,6 +95,10 @@ export class PatternDeleteHandler {
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
 		const currentStr = EffectField.formatValue(currentValue);
 
+		if (currentStr === null) {
+			return null;
+		}
+
 		if (fieldInfo.charOffset < 0 || fieldInfo.charOffset >= currentStr.length) {
 			return null;
 		}
