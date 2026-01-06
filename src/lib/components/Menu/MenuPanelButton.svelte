@@ -9,6 +9,8 @@
 		type = 'normal',
 		action,
 		items,
+		shortcut,
+		disabled,
 		onAction,
 		onMenuOpen,
 		onMenuClose
@@ -18,10 +20,14 @@
 		type: 'normal' | 'expandable';
 		action?: string;
 		items: MenuItem[];
+		shortcut?: string;
+		disabled?: boolean | (() => boolean);
 		onAction: (data: { action: string }) => void;
 		onMenuOpen: (data: { label: string }) => void;
 		onMenuClose: (data: { label?: string; all?: boolean }) => void;
 	} = $props();
+
+	const isDisabled = $derived(typeof disabled === 'function' ? disabled() : disabled || false);
 
 	const menuPanelContext = getContext<{
 		setActiveSubmenu: (label: string) => void;
@@ -41,7 +47,7 @@
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
 
-		if (type !== 'normal') {
+		if (type !== 'normal' || isDisabled) {
 			return;
 		}
 
@@ -86,7 +92,7 @@
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 
-			if (type === 'normal') {
+			if (type === 'normal' && !isDisabled) {
 				onAction?.({ action: action || label });
 				onMenuClose?.({ all: true });
 			} else if (type === 'expandable') {
@@ -129,7 +135,10 @@
 </script>
 
 <div
-	class="menu-panel-button relative flex cursor-pointer items-center justify-between px-2 py-1.5 text-xs hover:bg-neutral-700"
+	class="menu-panel-button relative flex cursor-pointer items-center justify-between gap-4 px-2 py-1.5 text-xs hover:bg-neutral-700"
+	class:cursor-not-allowed={isDisabled}
+	class:opacity-50={isDisabled}
+	class:hover:bg-transparent={isDisabled}
 	onclick={handleClick}
 	onkeydown={handleKeyDown}
 	onmouseenter={handleMouseEnter}
@@ -144,9 +153,14 @@
 		<span>{label}</span>
 	</div>
 
-	{#if type === 'expandable'}
-		<span class="text-xs">▶</span>
-	{/if}
+	<div class="flex items-center gap-2">
+		{#if shortcut}
+			<span class="text-xs text-neutral-400">{shortcut}</span>
+		{/if}
+		{#if type === 'expandable'}
+			<span class="text-xs">▶</span>
+		{/if}
+	</div>
 
 	{#if showSubmenuPanel && type === 'expandable' && items && items.length > 0}
 		<div class="absolute top-0 left-full ml-0.5">

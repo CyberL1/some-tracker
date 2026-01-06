@@ -17,6 +17,7 @@
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
 	import Settings from './lib/components/Settings/Settings.svelte';
+	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
 
 	settingsStore.init();
 
@@ -56,6 +57,16 @@
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
+			if (data.action === 'undo') {
+				undoRedoStore.undo();
+				return;
+			}
+
+			if (data.action === 'redo') {
+				undoRedoStore.redo();
+				return;
+			}
+
 			if (data.action === 'playFromBeginning') {
 				if (playbackStore.isPlaying) {
 					playbackStore.isPlaying = false;

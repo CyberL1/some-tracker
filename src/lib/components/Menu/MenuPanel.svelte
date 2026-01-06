@@ -57,6 +57,8 @@
 				type={item.type || 'normal'}
 				action={item.action}
 				items={item.items || []}
+				shortcut={item.shortcut}
+				disabled={item.disabled}
 				onAction={handleAction}
 				onMenuOpen={handleMenuOpen}
 				onMenuClose={handleMenuClose} />

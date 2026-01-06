@@ -1,4 +1,5 @@
 import type { MenuItem } from '../components/Menu/types';
+import { undoRedoStore } from '../stores/undo-redo.svelte';
 
 export const menuItems: MenuItem[] = [
 	{
@@ -39,8 +40,20 @@ export const menuItems: MenuItem[] = [
 	{
 		label: 'Edit',
 		items: [
-			{ label: 'Undo', type: 'normal' },
-			{ label: 'Redo', type: 'normal' }
+			{
+				label: 'Undo',
+				type: 'normal',
+				action: 'undo',
+				shortcut: 'Ctrl+Z',
+				disabled: () => !undoRedoStore.canUndo
+			},
+			{
+				label: 'Redo',
+				type: 'normal',
+				action: 'redo',
+				shortcut: 'Ctrl+Y',
+				disabled: () => !undoRedoStore.canRedo
+			}
 		]
 	},
 	{

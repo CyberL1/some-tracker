@@ -4,4 +4,6 @@ export type MenuItem = {
 	icon?: string;
 	action?: string;
 	items?: MenuItem[];
+	shortcut?: string;
+	disabled?: boolean | (() => boolean);
 };

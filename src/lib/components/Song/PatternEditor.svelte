@@ -28,6 +28,13 @@
 	import { channelMuteStore } from '../../stores/channel-mute.svelte';
 	import { PatternFieldDetection } from '../../services/pattern/editing/pattern-field-detection';
 	import { PatternValueUpdates } from '../../services/pattern/editing/pattern-value-updates';
+	import { undoRedoStore } from '../../stores/undo-redo.svelte';
+	import {
+		PatternFieldEditAction,
+		BulkPatternEditAction,
+		type PatternEditContext,
+		type CursorPosition
+	} from '../../models/actions';
 
 	let {
 		patterns = $bindable(),
@@ -156,6 +163,52 @@
 
 	function updatePatternInArray(updatedPattern: Pattern): void {
 		patterns = PatternService.updatePatternInArray(patterns, updatedPattern);
+	}
+
+	function createEditContext(): PatternEditContext {
+		return {
+			patterns,
+			updatePatterns: (newPatterns: Pattern[]) => {
+				patterns = newPatterns;
+				clearAllCaches();
+				draw();
+			},
+			setCursor: (position: CursorPosition) => {
+				selectedRow = position.row;
+				selectedColumn = position.column;
+				currentPatternOrderIndex = position.patternOrderIndex;
+				clearAllCaches();
+				draw();
+			}
+		};
+	}
+
+	function getCursorPosition(): CursorPosition {
+		return {
+			row: selectedRow,
+			column: selectedColumn,
+			patternOrderIndex: currentPatternOrderIndex
+		};
+	}
+
+	function recordPatternEdit(oldPattern: Pattern, newPattern: Pattern): void {
+		const action = new PatternFieldEditAction(
+			createEditContext(),
+			oldPattern,
+			newPattern,
+			getCursorPosition()
+		);
+		undoRedoStore.pushAction(action);
+	}
+
+	function recordBulkPatternEdit(oldPattern: Pattern, newPattern: Pattern): void {
+		const action = new BulkPatternEditAction(
+			createEditContext(),
+			oldPattern,
+			newPattern,
+			getCursorPosition()
+		);
+		undoRedoStore.pushAction(action);
 	}
 
 	export function resetToBeginning() {
@@ -499,6 +552,27 @@
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
+		if (
+			(event.ctrlKey || event.metaKey) &&
+			!event.shiftKey &&
+			event.key.toLowerCase() === 'z'
+		) {
+			event.preventDefault();
+			undoRedoStore.undo();
+			return;
+		}
+
+		if (
+			((event.ctrlKey || event.metaKey) &&
+				event.shiftKey &&
+				event.key.toLowerCase() === 'z') ||
+			((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y')
+		) {
+			event.preventDefault();
+			undoRedoStore.redo();
+			return;
+		}
+
 		if (event.ctrlKey || event.metaKey || event.altKey) {
 			return;
 		}
@@ -537,6 +611,7 @@
 
 		if (editingResult) {
 			event.preventDefault();
+			recordPatternEdit(pattern, editingResult.updatedPattern);
 			updatePatternInArray(editingResult.updatedPattern);
 
 			if (editingResult.shouldMoveNext) {
@@ -866,7 +941,8 @@
 		if (!hasSelection()) return;
 
 		const patternId = patternOrder[currentPatternOrderIndex];
-		let pattern = findOrCreatePattern(patternId);
+		const originalPattern = findOrCreatePattern(patternId);
+		let pattern = originalPattern;
 
 		const bounds = getSelectionBounds();
 		if (!bounds) return;
@@ -935,6 +1011,7 @@
 			);
 		}
 
+		recordBulkPatternEdit(originalPattern, pattern);
 		updatePatternInArray(pattern);
 
 		selectionStartRow = null;
