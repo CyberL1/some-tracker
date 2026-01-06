@@ -1,7 +1,7 @@
 # Bitphase
 
 <div align="center">
-  <img src="public/logo.png" alt="Logo" width="300" />
+  <img src="public/logo.svg" alt="Logo" width="300" />
 </div>
 
 A modern web-based chiptune tracker designed for creating music on retro sound chips. Currently supports the AY-3-8910 / YM2149F chip (used in ZX Spectrum and other 8-bit computers), with plans to support additional chips in the future.
