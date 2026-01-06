@@ -2,6 +2,9 @@ import type { MenuItem } from '../components/Menu/types';
 import { undoRedoStore } from '../stores/undo-redo.svelte';
 import { clipboardStore } from '../stores/clipboard.svelte';
 
+const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
+const modKey = isMac ? 'Cmd' : 'Ctrl';
+
 export const menuItems: MenuItem[] = [
 	{
 		label: 'File',
@@ -45,33 +48,33 @@ export const menuItems: MenuItem[] = [
 				label: 'Undo',
 				type: 'normal',
 				action: 'undo',
-				shortcut: 'Ctrl+Z',
+				shortcut: `${modKey}+Z`,
 				disabled: () => !undoRedoStore.canUndo
 			},
 			{
 				label: 'Redo',
 				type: 'normal',
 				action: 'redo',
-				shortcut: 'Ctrl+Y',
+				shortcut: `${modKey}+${isMac ? 'Shift+Z' : 'Y'}`,
 				disabled: () => !undoRedoStore.canRedo
 			},
 			{
 				label: 'Copy',
 				type: 'normal',
 				action: 'copy',
-				shortcut: 'Ctrl+C'
+				shortcut: `${modKey}+C`
 			},
 			{
 				label: 'Cut',
 				type: 'normal',
 				action: 'cut',
-				shortcut: 'Ctrl+X'
+				shortcut: `${modKey}+X`
 			},
 			{
 				label: 'Paste',
 				type: 'normal',
 				action: 'paste',
-				shortcut: 'Ctrl+V',
+				shortcut: `${modKey}+V`,
 				disabled: () => !clipboardStore.hasData
 			}
 		]

@@ -30,10 +30,9 @@ export function parseNoteFromString(noteStr: string): { noteName: NoteName; octa
 		return { noteName: NoteName.Off, octave: 0 };
 	}
 
-	const noteMatch = noteStr.match(/^([A-G]#?)-(\d)$/);
+	const noteMatch = noteStr.match(/^([A-G][#-]?)(\d)$/);
 	if (noteMatch) {
-		const noteNameStr = noteMatch[1] + '-';
-		const noteName = parseNoteName(noteNameStr);
+		const noteName = parseNoteName(noteMatch[1]);
 		const octave = parseInt(noteMatch[2], 10);
 		return { noteName, octave };
 	}
@@ -58,4 +57,3 @@ function parseNoteName(noteStr: string): NoteName {
 	};
 	return notes[noteStr] || NoteName.None;
 }
-
