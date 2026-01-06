@@ -4,7 +4,7 @@ import type { GenericRow, GenericPatternRow } from '../../models/song/generic';
 import { formatHex, formatSymbol, parseHex, parseSymbol } from './field-formatters';
 import { NoteName } from '../../models/song';
 import { formatNoteFromEnum } from '../../utils/note-utils';
-import { PatternEffectHandling } from '../../services/pattern/editing/pattern-effect-handling';
+import { EffectField } from '../../services/pattern/editing/effect-field';
 
 export abstract class BaseFormatter implements PatternFormatter {
 	formatRow(
@@ -93,14 +93,12 @@ export abstract class BaseFormatter implements PatternFormatter {
 					const field = fields[key];
 					if (field) {
 						const value = data[key];
-						if (
-							(key === 'effect' || key === 'envelopeEffect') &&
-							typeof value === 'object' &&
-							value !== null
-						) {
-							result += PatternEffectHandling.formatEffectAsString(
-								value as { effect: number; delay: number; parameter: number }
-							);
+						if (EffectField.isEffectField(key)) {
+							const effectFormatted = EffectField.formatValue(value);
+							result +=
+								effectFormatted !== null
+									? effectFormatted
+									: this.formatField(value, field);
 						} else {
 							result += this.formatField(value, field);
 						}
@@ -160,10 +158,12 @@ export abstract class BaseFormatter implements PatternFormatter {
 			fieldKeys.forEach((key, i) => {
 				const field = fields[key];
 				if (field) {
-					if (key === 'effect' || key === 'envelopeEffect') {
-						result[key] = PatternEffectHandling.parseEffectFromString(
-							match[i + 1]
-						) as unknown as string | number | null | undefined;
+					if (EffectField.isEffectField(key)) {
+						result[key] = EffectField.parseValue(match[i + 1]) as unknown as
+							| string
+							| number
+							| null
+							| undefined;
 					} else {
 						result[key] = this.parseField(match[i + 1], field);
 					}
