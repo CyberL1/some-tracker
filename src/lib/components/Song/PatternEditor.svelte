@@ -1255,6 +1255,9 @@
 	$effect(() => {
 		if (!chipProcessor) return;
 
+		const currentPatterns = patterns;
+		const currentPatternOrder = patternOrder;
+
 		const handlePatternUpdate = (
 			currentRow: number,
 			currentPatternOrderIndexUpdate?: number
@@ -1281,10 +1284,10 @@
 		};
 
 		const handlePatternRequest = (requestedOrderIndex: number) => {
-			if (requestedOrderIndex >= 0 && requestedOrderIndex < patternOrder.length) {
-				const patternId = patternOrder[requestedOrderIndex];
+			if (requestedOrderIndex >= 0 && requestedOrderIndex < currentPatternOrder.length) {
+				const patternId = currentPatternOrder[requestedOrderIndex];
 				const requestedPattern =
-					patterns.find((p) => p.id === patternId) ||
+					currentPatterns.find((p) => p.id === patternId) ||
 					PatternService.createEmptyPattern(patternId);
 
 				chipProcessor.sendRequestedPattern(requestedPattern, requestedOrderIndex);
