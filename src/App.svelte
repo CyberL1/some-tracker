@@ -17,7 +17,7 @@
 	import SongView from './lib/components/Song/SongView.svelte';
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
-	import Settings from './lib/components/Settings/Settings.svelte';
+	import SettingsModal from './lib/components/Settings/SettingsModal.svelte';
 	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
 
 	settingsStore.init();
@@ -51,7 +51,6 @@
 	});
 
 	let patternEditor: PatternEditor | null = $state(null);
-	let showSettings = $state(false);
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
@@ -164,7 +163,7 @@
 			}
 
 			if (data.action === 'settings') {
-				showSettings = !showSettings;
+				await open(SettingsModal, {});
 				return;
 			}
 
@@ -228,17 +227,13 @@
 	class="flex h-screen flex-col gap-1 overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
 	<MenuBar {menuItems} onAction={handleMenuAction} />
 	<div class="flex-1 overflow-hidden">
-		{#if showSettings}
-			<Settings />
-		{:else}
-			<SongView
-				bind:songs
-				bind:patternOrder
-				bind:patternEditor
-				bind:tables
-				bind:projectSettings
-				chipProcessors={container.audioService.chipProcessors} />
-		{/if}
+		<SongView
+			bind:songs
+			bind:patternOrder
+			bind:patternEditor
+			bind:tables
+			bind:projectSettings
+			chipProcessors={container.audioService.chipProcessors} />
 	</div>
 	<ModalContainer />
 </main>
