@@ -128,14 +128,14 @@
 				<div class="flex flex-col border-l border-neutral-600">
 					<button
 						type="button"
-						class="flex h-3 w-4 items-center justify-center border-b border-neutral-600 transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-neutral-600 transition-colors hover:bg-neutral-700"
 						onclick={incrementOctave}
 						title="Increment octave">
 						<IconCarbonChevronUp class="h-2.5 w-2.5 text-neutral-400" />
 					</button>
 					<button
 						type="button"
-						class="flex h-3 w-4 items-center justify-center transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-neutral-700"
 						onclick={decrementOctave}
 						title="Decrement octave">
 						<IconCarbonChevronDown class="h-2.5 w-2.5 text-neutral-400" />
@@ -163,14 +163,14 @@
 				<div class="flex flex-col border-l border-neutral-600">
 					<button
 						type="button"
-						class="flex h-3 w-4 items-center justify-center border-b border-neutral-600 transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-neutral-600 transition-colors hover:bg-neutral-700"
 						onclick={incrementStep}
 						title="Increment step">
 						<IconCarbonChevronUp class="h-2.5 w-2.5 text-neutral-400" />
 					</button>
 					<button
 						type="button"
-						class="flex h-3 w-4 items-center justify-center transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-neutral-700"
 						onclick={decrementStep}
 						title="Decrement step">
 						<IconCarbonChevronDown class="h-2.5 w-2.5 text-neutral-400" />
