@@ -1260,22 +1260,44 @@
 			lastManualPatternChangeTime = performance.now();
 
 			if (services.audioService.playing) {
-				const wasPlaying = services.audioService.playing;
-				if (wasPlaying) {
-					services.audioService.stop();
-				}
 				if (initAllChips) {
 					initAllChips();
-				} else if (chipProcessor) {
+					requestAnimationFrame(() => {
+						requestAnimationFrame(() => {
+							services.audioService.chipProcessors.forEach((processor, index) => {
+								const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+								if (processor.changePatternDuringPlayback) {
+									processor.changePatternDuringPlayback(
+										0,
+										currentPatternOrderIndex,
+										undefined,
+										speed
+									);
+								} else {
+									processor.playFromRow(0, currentPatternOrderIndex, speed);
+								}
+							});
+						});
+					});
+				} else {
 					const patternId = patternOrder[currentPatternOrderIndex];
-					const pattern = patterns.find((p) => p.id === patternId);
-					if (pattern) {
-						chipProcessor.sendInitPattern(pattern, currentPatternOrderIndex);
-					}
+					const pattern =
+						patterns.find((p) => p.id === patternId) ||
+						PatternService.createEmptyPattern(patternId);
+					services.audioService.chipProcessors.forEach((processor, index) => {
+						const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+						if (processor.changePatternDuringPlayback) {
+							processor.changePatternDuringPlayback(
+								0,
+								currentPatternOrderIndex,
+								pattern,
+								speed
+							);
+						} else {
+							processor.playFromRow(0, currentPatternOrderIndex, speed);
+						}
+					});
 				}
-				setTimeout(() => {
-					services.audioService.playFromRow(0, currentPatternOrderIndex, getSpeedForChip);
-				}, 0);
 			}
 		}
 	});

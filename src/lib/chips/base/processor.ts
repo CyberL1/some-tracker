@@ -21,6 +21,12 @@ export interface ChipProcessor {
 	isAudioNodeAvailable(): boolean;
 	sendInitSpeed(speed: number): void;
 	updateParameter(parameter: string, value: unknown): void;
+	changePatternDuringPlayback?(
+		row: number,
+		patternOrderIndex: number,
+		pattern?: Pattern,
+		speed?: number | null
+	): void;
 }
 
 export interface SettingsSubscriber {

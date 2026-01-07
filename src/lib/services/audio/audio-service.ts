@@ -190,7 +190,7 @@ export class AudioService {
 
 	private applyMuteStateToAllChips(): void {
 		const allMuteStates = channelMuteStore.getAllMuteStates();
-		
+
 		this.chipProcessors.forEach((chipProcessor, chipIndex) => {
 			const chipMutes = allMuteStates.get(chipIndex);
 			if (chipMutes) {

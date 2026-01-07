@@ -42,7 +42,8 @@ type WorkletCommand =
 	| { type: 'init_instruments'; instruments: Instrument[] }
 	| { type: 'update_ay_frequency'; aymFrequency: number }
 	| { type: 'update_int_frequency'; intFrequency: number }
-	| { type: 'set_channel_mute'; channelIndex: number; muted: boolean };
+	| { type: 'set_channel_mute'; channelIndex: number; muted: boolean }
+	| { type: 'change_pattern_during_playback'; row: number; patternOrderIndex?: number; pattern?: Pattern; speed?: number | null };
 
 export class AYProcessor
 	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport
@@ -165,6 +166,21 @@ export class AYProcessor
 
 	sendRequestedPattern(pattern: Pattern, patternOrderIndex: number): void {
 		this.sendCommand({ type: 'set_pattern_data', pattern, patternOrderIndex });
+	}
+
+	changePatternDuringPlayback(
+		row: number,
+		patternOrderIndex: number,
+		pattern?: Pattern,
+		speed?: number | null
+	): void {
+		this.sendCommand({
+			type: 'change_pattern_during_playback',
+			row,
+			patternOrderIndex,
+			pattern,
+			speed
+		});
 	}
 
 	sendUpdateAyFrequency(aymFrequency: number): void {

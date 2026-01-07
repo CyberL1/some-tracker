@@ -66,10 +66,13 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			case 'update_int_frequency':
 				this.handleUpdateIntFrequency(data);
 				break;
-			case 'set_channel_mute':
-				this.handleSetChannelMute(data);
-				break;
-		}
+		case 'set_channel_mute':
+			this.handleSetChannelMute(data);
+			break;
+		case 'change_pattern_during_playback':
+			this.handleChangePatternDuringPlayback(data);
+			break;
+	}
 	}
 
 	async handleInit({ wasmBuffer }) {
@@ -163,6 +166,38 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					this.state.channelEnvelopeEnabled[channelIndex] = false;
 				}
 			}
+		}
+	}
+
+	handleChangePatternDuringPlayback({ row, patternOrderIndex, pattern, speed }) {
+		if (!this.state.wasmModule || !this.initialized || this.paused) {
+			return;
+		}
+
+		if (patternOrderIndex !== undefined) {
+			const patternOrderChanged = this.state.currentPatternOrderIndex !== patternOrderIndex;
+			this.state.currentPatternOrderIndex = patternOrderIndex;
+
+			if (pattern) {
+				this.state.setPattern(pattern, patternOrderIndex);
+			} else if (patternOrderChanged && !this.state.currentPattern) {
+				this.port.postMessage({
+					type: 'request_pattern',
+					patternOrderIndex: patternOrderIndex
+				});
+			}
+		} else if (pattern) {
+			this.state.setPattern(pattern, this.state.currentPatternOrderIndex);
+		}
+
+		if (row !== undefined) {
+			this.state.currentRow = row;
+			this.state.currentTick = 0;
+			this.state.sampleCounter = this.state.samplesPerTick;
+		}
+
+		if (speed !== undefined && speed !== null && speed > 0) {
+			this.state.setSpeed(speed);
 		}
 	}
 
