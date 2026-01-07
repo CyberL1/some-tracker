@@ -51,9 +51,9 @@
 
 	let patternEditor: PatternEditor | null = $state(null);
 	let showSettings = $state(false);
+	let showExportModal = $state(false);
 	let exportProgress = $state(0);
 	let exportMessage = $state('');
-	let showExportModal = $state(false);
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
@@ -192,22 +192,27 @@
 					patternOrder,
 					tables
 				);
-				showExportModal = true;
 				exportProgress = 0;
 				exportMessage = 'Starting export...';
+				showExportModal = true;
+				const startTime = Date.now();
 				try {
 					await exportToWAV(currentProject, 0, (progress, message) => {
 						exportProgress = progress;
 						exportMessage = message;
 					});
+					const elapsed = Date.now() - startTime;
+					const remaining = Math.max(0, 1000 - elapsed); // Ensure at least 1 second visibility
 					setTimeout(() => {
 						showExportModal = false;
-					}, 500);
+					}, remaining);
 				} catch (error) {
 					exportMessage = `Error: ${error instanceof Error ? error.message : 'Export failed'}`;
+					const elapsed = Date.now() - startTime;
+					const remaining = Math.max(0, 2000 - elapsed); // Ensure at least 2 seconds visibility for errors
 					setTimeout(() => {
 						showExportModal = false;
-					}, 2000);
+					}, remaining);
 				}
 				return;
 			}
@@ -257,7 +262,9 @@
 				chipProcessors={container.audioService.chipProcessors} />
 		{/if}
 	</div>
-	{#if showExportModal}
-		<ProgressModal bind:progress={exportProgress} bind:message={exportMessage} />
-	{/if}
+	<ProgressModal
+		open={showExportModal}
+		bind:progress={exportProgress}
+		bind:message={exportMessage}
+		onClose={() => (showExportModal = false)} />
 </main>
