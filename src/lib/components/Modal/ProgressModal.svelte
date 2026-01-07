@@ -1,45 +1,80 @@
 <script lang="ts">
 	import IconCarbonDownload from '~icons/carbon/download';
-	import Modal from './Modal.svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { exportToWAV } from '../../services/file/wav-export';
+	import type { Project } from '../../models/project';
 
-	let {
-		open = $bindable(false),
-		progress = $bindable(0),
-		message = $bindable(''),
-		onClose
-	} = $props<{
-		open?: boolean;
-		progress?: number;
-		message?: string;
-		onClose?: () => void;
+	let { project, resolve, dismiss } = $props<{
+		project: Project;
+		resolve?: (value?: any) => void;
+		dismiss?: (error?: any) => void;
 	}>();
 
+	let progress = $state(0);
+	let message = $state('Starting export...');
+	const abortController = $state(new AbortController());
+
 	const progressPercent = $derived(Math.min(100, Math.max(0, progress)));
+
+	onDestroy(() => {
+		abortController.abort();
+	});
+
+	onMount(async () => {
+		const startTime = Date.now();
+
+		try {
+			await exportToWAV(
+				project,
+				0,
+				(progressValue, messageValue) => {
+					progress = progressValue;
+					message = messageValue;
+				},
+				abortController.signal
+			);
+
+			const elapsed = Date.now() - startTime;
+			const remaining = Math.max(0, 1000 - elapsed);
+			await new Promise((resolve) => setTimeout(resolve, remaining));
+			message = 'Export completed!';
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			resolve?.();
+		} catch (error) {
+			if (error instanceof Error && error.message === 'Export cancelled') {
+				message = 'Export cancelled';
+			} else {
+				message = `Error: ${error instanceof Error ? error.message : 'Export failed'}`;
+			}
+			const elapsed = Date.now() - startTime;
+			const remaining = Math.max(0, 2000 - elapsed);
+			await new Promise((resolve) => setTimeout(resolve, remaining));
+			dismiss?.(error);
+		}
+	});
 </script>
 
-<Modal {open} {onClose}>
-	<div class="flex items-center gap-2 border-b border-neutral-600 bg-neutral-900 px-2 py-1">
-		<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">Exporting WAV</h2>
-		<IconCarbonDownload class="h-3 w-3 text-blue-400" />
-	</div>
+<div class="flex items-center gap-2 border-b border-neutral-600 bg-neutral-900 px-2 py-1">
+	<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">Exporting WAV</h2>
+	<IconCarbonDownload class="h-3 w-3 text-blue-400" />
+</div>
 
-	<div class="p-3">
-		{#if message}
-			<p class="mb-3 text-xs text-neutral-400">{message}</p>
-		{/if}
+<div class="p-3">
+	{#if message}
+		<p class="mb-3 text-xs text-neutral-400">{message}</p>
+	{/if}
 
-		<div class="relative h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+	<div class="relative h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+		<div
+			class="h-full bg-blue-500 transition-all duration-300 ease-out"
+			style="width: {progressPercent}%">
 			<div
-				class="h-full bg-blue-500 transition-all duration-300 ease-out"
-				style="width: {progressPercent}%">
-				<div
-					class="absolute inset-0 bg-blue-400 opacity-30"
-					style="width: 100%; animation: shimmer 1.5s ease-in-out infinite;">
-				</div>
+				class="absolute inset-0 bg-blue-400 opacity-30"
+				style="width: 100%; animation: shimmer 1.5s ease-in-out infinite;">
 			</div>
 		</div>
 	</div>
-</Modal>
+</div>
 
 <style>
 	@keyframes shimmer {

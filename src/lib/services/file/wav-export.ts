@@ -128,9 +128,14 @@ class WavExportService {
 
 	async export(
 		project: Project,
-		onProgress?: (progress: number, message: string) => void
+		onProgress?: (progress: number, message: string) => void,
+		abortSignal?: AbortSignal
 	): Promise<void> {
 		onProgress?.(0, 'Preparing export...');
+
+		if (abortSignal?.aborted) {
+			throw new Error('Export cancelled');
+		}
 
 		if (project.songs.length === 0) {
 			throw new Error('Project has no songs');
@@ -140,6 +145,10 @@ class WavExportService {
 		const renderedSongs: Float32Array[][] = [];
 
 		for (let i = 0; i < project.songs.length; i++) {
+			if (abortSignal?.aborted) {
+				throw new Error('Export cancelled');
+			}
+
 			try {
 				const channels = await this.renderSong(project, i, totalSongs, onProgress);
 				renderedSongs.push(channels);
@@ -151,6 +160,10 @@ class WavExportService {
 			}
 		}
 
+		if (abortSignal?.aborted) {
+			throw new Error('Export cancelled');
+		}
+
 		if (renderedSongs.length === 0) {
 			throw new Error('No audio data to export');
 		}
@@ -158,9 +171,17 @@ class WavExportService {
 		onProgress?.(RENDERING_PROGRESS_MAX, 'Mixing songs...');
 		const [mixedLeft, mixedRight] = mixAudioChannels(renderedSongs);
 
+		if (abortSignal?.aborted) {
+			throw new Error('Export cancelled');
+		}
+
 		onProgress?.(ENCODING_PROGRESS, 'Encoding WAV file...');
 		const wavBuffer = encodeWAV([mixedLeft, mixedRight], SAMPLE_RATE);
 		const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+
+		if (abortSignal?.aborted) {
+			throw new Error('Export cancelled');
+		}
 
 		onProgress?.(DOWNLOAD_PROGRESS, 'Downloading...');
 		const filename = project.name || 'export';
@@ -176,11 +197,16 @@ const wavExportService = new WavExportService();
 export async function exportToWAV(
 	project: Project,
 	songIndex: number = 0,
-	onProgress?: (progress: number, message: string) => void
+	onProgress?: (progress: number, message: string) => void,
+	abortSignal?: AbortSignal
 ): Promise<void> {
 	try {
-		await wavExportService.export(project, onProgress);
+		await wavExportService.export(project, onProgress, abortSignal);
 	} catch (error) {
+		if (error instanceof Error && error.message === 'Export cancelled') {
+			onProgress?.(0, 'Export cancelled');
+			throw error;
+		}
 		console.error('Failed to export WAV:', error);
 		onProgress?.(0, `Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
 		throw error;

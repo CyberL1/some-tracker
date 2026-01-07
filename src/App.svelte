@@ -4,10 +4,11 @@
 	import { menuItems } from './lib/config/app-menu';
 	import { handleFileImport } from './lib/services/file/file-import';
 	import { handleFileExport } from './lib/services/file/file-export';
-	import { exportToWAV } from './lib/services/file/wav-export';
 	import { Project } from './lib/models/project';
-	import ProgressModal from './lib/components/Modal/ProgressModal.svelte';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
+	import ModalContainer from './lib/components/Modal/ModalContainer.svelte';
+	import ProgressModal from './lib/components/Modal/ProgressModal.svelte';
+	import { open } from './lib/services/modal/modal-service';
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio/audio-service';
 	import { ProjectService } from './lib/services/project/project-service';
@@ -51,9 +52,6 @@
 
 	let patternEditor: PatternEditor | null = $state(null);
 	let showSettings = $state(false);
-	let showExportModal = $state(false);
-	let exportProgress = $state(0);
-	let exportMessage = $state('');
 
 	async function handleMenuAction(data: { action: string }) {
 		try {
@@ -192,28 +190,8 @@
 					patternOrder,
 					tables
 				);
-				exportProgress = 0;
-				exportMessage = 'Starting export...';
-				showExportModal = true;
-				const startTime = Date.now();
-				try {
-					await exportToWAV(currentProject, 0, (progress, message) => {
-						exportProgress = progress;
-						exportMessage = message;
-					});
-					const elapsed = Date.now() - startTime;
-					const remaining = Math.max(0, 1000 - elapsed); // Ensure at least 1 second visibility
-					setTimeout(() => {
-						showExportModal = false;
-					}, remaining);
-				} catch (error) {
-					exportMessage = `Error: ${error instanceof Error ? error.message : 'Export failed'}`;
-					const elapsed = Date.now() - startTime;
-					const remaining = Math.max(0, 2000 - elapsed); // Ensure at least 2 seconds visibility for errors
-					setTimeout(() => {
-						showExportModal = false;
-					}, remaining);
-				}
+
+				await open(ProgressModal, { project: currentProject });
 				return;
 			}
 
@@ -262,9 +240,5 @@
 				chipProcessors={container.audioService.chipProcessors} />
 		{/if}
 	</div>
-	<ProgressModal
-		open={showExportModal}
-		bind:progress={exportProgress}
-		bind:message={exportMessage}
-		onClose={() => (showExportModal = false)} />
+	<ModalContainer />
 </main>
