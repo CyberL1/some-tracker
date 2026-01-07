@@ -4,7 +4,8 @@
 	import { menuItems } from './lib/config/app-menu';
 	import { handleFileImport } from './lib/services/file/file-import';
 	import { handleFileExport } from './lib/services/file/file-export';
-	import { Project } from './lib/models/project';
+	import { Project, Table } from './lib/models/project';
+	import type { Song } from './lib/models/song';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import ModalContainer from './lib/components/Modal/ModalContainer.svelte';
 	import ProgressModal from './lib/components/Modal/ProgressModal.svelte';
@@ -19,6 +20,7 @@
 	import { settingsStore } from './lib/stores/settings.svelte';
 	import SettingsModal from './lib/components/Settings/SettingsModal.svelte';
 	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
+	import { convertVT2String } from './lib/services/file/vt-converter';
 
 	settingsStore.init();
 
@@ -35,20 +37,68 @@
 		container.audioService.setVolume(volume);
 	});
 
-	const newProject = new Project();
-	if (newProject.songs.length > 0) {
-		const song = newProject.songs[0];
-		song.chipType = AY_CHIP.type;
-		applySchemaDefaults(song, AY_CHIP.schema);
-	}
-
-	let songs = $state(newProject.songs);
-	let patternOrder = $state(newProject.patternOrder);
-	let tables = $state(newProject.tables);
+	let songs = $state<Song[]>([]);
+	let patternOrder = $state<number[]>([]);
+	let tables = $state<Table[]>([]);
 
 	let projectSettings = $state({
-		title: newProject.name,
-		author: newProject.author
+		title: '',
+		author: ''
+	});
+
+	let demoSongLoaded = $state(false);
+
+	$effect(() => {
+		if (demoSongLoaded) return;
+
+		(async () => {
+			try {
+				const fileName = 'MmcM - SpEc!aL 4 diHaLt.vt2';
+				const baseUrl = import.meta.env.BASE_URL || '/';
+				const filePath = `${baseUrl}${fileName}`.replace(/\/+/g, '/');
+				const response = await fetch(filePath);
+				if (!response.ok) {
+					throw new Error(`Failed to load demo song: ${response.statusText}`);
+				}
+				const content = await response.text();
+				const importedProject = convertVT2String(content);
+
+				container.audioService.clearChipProcessors();
+
+				for (const _song of importedProject.songs) {
+					await container.audioService.addChipProcessor(AY_CHIP);
+				}
+
+				projectSettings = {
+					title: importedProject.name,
+					author: importedProject.author
+				};
+				songs = importedProject.songs;
+				patternOrder = importedProject.patternOrder;
+				tables = importedProject.tables;
+
+				demoSongLoaded = true;
+			} catch (error) {
+				console.error('Failed to load demo song:', error);
+				const newProject = new Project();
+				if (newProject.songs.length > 0) {
+					const song = newProject.songs[0];
+					song.chipType = AY_CHIP.type;
+					applySchemaDefaults(song, AY_CHIP.schema);
+				}
+
+				songs = newProject.songs;
+				patternOrder = newProject.patternOrder;
+				tables = newProject.tables;
+
+				projectSettings = {
+					title: newProject.name,
+					author: newProject.author
+				};
+
+				demoSongLoaded = true;
+			}
+		})();
 	});
 
 	$effect(() => {

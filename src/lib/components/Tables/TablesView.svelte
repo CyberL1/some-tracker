@@ -108,14 +108,16 @@
 			</div>
 
 			<div class="flex-1 overflow-auto p-4">
-				{#key tables[selectedTableIndex].id}
-					<TableEditor
-						bind:this={tableEditor}
-						table={tables[selectedTableIndex]}
-						{asHex}
-						{isExpanded}
-						onTableChange={handleTableChange} />
-				{/key}
+				{#if tables[selectedTableIndex]}
+					{#key tables[selectedTableIndex].id}
+						<TableEditor
+							bind:this={tableEditor}
+							table={tables[selectedTableIndex]}
+							{asHex}
+							{isExpanded}
+							onTableChange={handleTableChange} />
+					{/key}
+				{/if}
 			</div>
 		{/snippet}
 	</Card>
