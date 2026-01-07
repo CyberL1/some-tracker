@@ -29,6 +29,7 @@
 	import { PatternFieldDetection } from '../../services/pattern/editing/pattern-field-detection';
 	import { PatternValueUpdates } from '../../services/pattern/editing/pattern-value-updates';
 	import { undoRedoStore } from '../../stores/undo-redo.svelte';
+	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import {
 		PatternFieldEditAction,
 		BulkPatternEditAction,
@@ -623,6 +624,17 @@
 			return;
 		}
 
+		const fieldInfoBeforeEdit = PatternEditingService.getFieldAtCursor({
+			pattern,
+			selectedRow,
+			selectedColumn,
+			cellPositions,
+			segments,
+			converter,
+			formatter,
+			schema
+		});
+
 		const editingResult = PatternEditingService.handleKeyInput(
 			{
 				pattern,
@@ -644,6 +656,13 @@
 
 			if (editingResult.shouldMoveNext) {
 				moveColumn(1);
+			}
+
+			if (fieldInfoBeforeEdit?.fieldType === 'note' && !playbackStore.isPlaying) {
+				const step = editorStateStore.get().step;
+				if (step > 0) {
+					moveRow(step);
+				}
 			}
 
 			clearAllCaches();

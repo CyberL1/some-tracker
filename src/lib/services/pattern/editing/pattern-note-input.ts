@@ -3,53 +3,52 @@ import { formatNoteFromEnum, parseNoteFromString } from '../../../utils/note-uti
 import type { EditingContext, FieldInfo } from './editing-context';
 import type { Pattern } from '../../../models/song';
 import { PatternValueUpdates } from './pattern-value-updates';
+import { editorStateStore } from '../../../stores/editor-state.svelte';
 
 export class PatternNoteInput {
-	private static readonly FIXED_OCTAVE = 4;
-
 	private static readonly PIANO_KEYBOARD_MAP: Record<
 		string,
-		{ noteName: NoteName; octave: number }
+		{ noteName: NoteName; octaveOffset: number }
 	> = {
-		q: { noteName: NoteName.C, octave: 4 },
-		'2': { noteName: NoteName.CSharp, octave: 4 },
-		w: { noteName: NoteName.D, octave: 4 },
-		'3': { noteName: NoteName.DSharp, octave: 4 },
-		e: { noteName: NoteName.E, octave: 4 },
-		r: { noteName: NoteName.F, octave: 4 },
-		'5': { noteName: NoteName.FSharp, octave: 4 },
-		t: { noteName: NoteName.G, octave: 4 },
-		'6': { noteName: NoteName.GSharp, octave: 4 },
-		y: { noteName: NoteName.A, octave: 4 },
-		'7': { noteName: NoteName.ASharp, octave: 4 },
-		u: { noteName: NoteName.B, octave: 4 },
-		i: { noteName: NoteName.C, octave: 5 },
-		'9': { noteName: NoteName.CSharp, octave: 5 },
-		o: { noteName: NoteName.D, octave: 5 },
-		'0': { noteName: NoteName.DSharp, octave: 5 },
-		p: { noteName: NoteName.E, octave: 5 },
-		'[': { noteName: NoteName.F, octave: 5 },
-		']': { noteName: NoteName.G, octave: 5 },
-		z: { noteName: NoteName.C, octave: 3 },
-		s: { noteName: NoteName.CSharp, octave: 3 },
-		x: { noteName: NoteName.D, octave: 3 },
-		d: { noteName: NoteName.DSharp, octave: 3 },
-		c: { noteName: NoteName.E, octave: 3 },
-		v: { noteName: NoteName.F, octave: 3 },
-		f: { noteName: NoteName.FSharp, octave: 3 },
-		b: { noteName: NoteName.G, octave: 3 },
-		g: { noteName: NoteName.GSharp, octave: 3 },
-		n: { noteName: NoteName.A, octave: 3 },
-		h: { noteName: NoteName.ASharp, octave: 3 },
-		m: { noteName: NoteName.B, octave: 3 },
-		',': { noteName: NoteName.C, octave: 4 },
-		j: { noteName: NoteName.CSharp, octave: 4 },
-		'.': { noteName: NoteName.D, octave: 4 },
-		k: { noteName: NoteName.DSharp, octave: 4 },
-		'/': { noteName: NoteName.E, octave: 4 },
-		l: { noteName: NoteName.FSharp, octave: 4 },
-		';': { noteName: NoteName.GSharp, octave: 4 },
-		"'": { noteName: NoteName.ASharp, octave: 4 }
+		q: { noteName: NoteName.C, octaveOffset: 1 },
+		'2': { noteName: NoteName.CSharp, octaveOffset: 1 },
+		w: { noteName: NoteName.D, octaveOffset: 1 },
+		'3': { noteName: NoteName.DSharp, octaveOffset: 1 },
+		e: { noteName: NoteName.E, octaveOffset: 1 },
+		r: { noteName: NoteName.F, octaveOffset: 1 },
+		'5': { noteName: NoteName.FSharp, octaveOffset: 1 },
+		t: { noteName: NoteName.G, octaveOffset: 1 },
+		'6': { noteName: NoteName.GSharp, octaveOffset: 1 },
+		y: { noteName: NoteName.A, octaveOffset: 1 },
+		'7': { noteName: NoteName.ASharp, octaveOffset: 1 },
+		u: { noteName: NoteName.B, octaveOffset: 1 },
+		i: { noteName: NoteName.C, octaveOffset: 2 },
+		'9': { noteName: NoteName.CSharp, octaveOffset: 2 },
+		o: { noteName: NoteName.D, octaveOffset: 2 },
+		'0': { noteName: NoteName.DSharp, octaveOffset: 2 },
+		p: { noteName: NoteName.E, octaveOffset: 2 },
+		'[': { noteName: NoteName.F, octaveOffset: 2 },
+		']': { noteName: NoteName.G, octaveOffset: 2 },
+		z: { noteName: NoteName.C, octaveOffset: 0 },
+		s: { noteName: NoteName.CSharp, octaveOffset: 0 },
+		x: { noteName: NoteName.D, octaveOffset: 0 },
+		d: { noteName: NoteName.DSharp, octaveOffset: 0 },
+		c: { noteName: NoteName.E, octaveOffset: 0 },
+		v: { noteName: NoteName.F, octaveOffset: 0 },
+		f: { noteName: NoteName.FSharp, octaveOffset: 0 },
+		b: { noteName: NoteName.G, octaveOffset: 0 },
+		g: { noteName: NoteName.GSharp, octaveOffset: 0 },
+		n: { noteName: NoteName.A, octaveOffset: 0 },
+		h: { noteName: NoteName.ASharp, octaveOffset: 0 },
+		m: { noteName: NoteName.B, octaveOffset: 0 },
+		',': { noteName: NoteName.C, octaveOffset: 1 },
+		j: { noteName: NoteName.CSharp, octaveOffset: 1 },
+		'.': { noteName: NoteName.D, octaveOffset: 1 },
+		k: { noteName: NoteName.DSharp, octaveOffset: 1 },
+		'/': { noteName: NoteName.E, octaveOffset: 1 },
+		l: { noteName: NoteName.FSharp, octaveOffset: 1 },
+		';': { noteName: NoteName.GSharp, octaveOffset: 1 },
+		"'": { noteName: NoteName.ASharp, octaveOffset: 1 }
 	};
 
 	private static readonly LETTER_NOTE_MAP: Record<string, NoteName> = {
@@ -70,12 +69,6 @@ export class PatternNoteInput {
 			return null;
 		}
 
-		const upperKey = key.toUpperCase();
-		if (upperKey === 'O' || upperKey === 'A') {
-			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, 'OFF');
-			return { updatedPattern, shouldMoveNext: false };
-		}
-
 		const keyboardNote = this.mapKeyboardKeyToNote(key);
 		if (keyboardNote) {
 			const noteStr = formatNoteFromEnum(keyboardNote.noteName, keyboardNote.octave);
@@ -87,8 +80,15 @@ export class PatternNoteInput {
 			return { updatedPattern, shouldMoveNext: false };
 		}
 
+		const upperKey = key.toUpperCase();
+		if (upperKey === 'A') {
+			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, 'OFF');
+			return { updatedPattern, shouldMoveNext: false };
+		}
+
 		if (this.LETTER_NOTE_MAP[upperKey]) {
-			const noteStr = formatNoteFromEnum(this.LETTER_NOTE_MAP[upperKey], this.FIXED_OCTAVE);
+			const currentOctave = editorStateStore.get().octave;
+			const noteStr = formatNoteFromEnum(this.LETTER_NOTE_MAP[upperKey], currentOctave);
 			const updatedPattern = PatternValueUpdates.updateFieldValue(
 				context,
 				fieldInfo,
@@ -108,7 +108,22 @@ export class PatternNoteInput {
 		key: string
 	): { noteName: NoteName; octave: number } | null {
 		const lowerKey = key.toLowerCase();
-		return this.PIANO_KEYBOARD_MAP[lowerKey] || null;
+		const keyMapping = this.PIANO_KEYBOARD_MAP[lowerKey];
+		if (!keyMapping) {
+			return null;
+		}
+
+		const currentOctave = editorStateStore.get().octave;
+		const calculatedOctave = currentOctave + keyMapping.octaveOffset;
+
+		if (calculatedOctave < 0 || calculatedOctave > 9) {
+			return null;
+		}
+
+		return {
+			noteName: keyMapping.noteName,
+			octave: calculatedOctave
+		};
 	}
 
 	private static isOctaveDigit(key: string): boolean {
