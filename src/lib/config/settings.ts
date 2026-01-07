@@ -6,13 +6,18 @@ export const settingsItems: SettingsItem[] = [
 		description: 'Changes the volume, duh',
 		type: 'range',
 		defaultValue: 100,
-		setting: 'volume'
+		setting: 'volume',
+		category: 'general'
 	},
 	{
 		label: 'Show Visual Grid',
 		description: 'Show offset and octave grids in table editor when expanded',
 		type: 'toggle',
 		defaultValue: true,
-		setting: 'showVisualGrid'
+		setting: 'showVisualGrid',
+		category: 'general'
 	}
 ];
+
+export const generalSettings = settingsItems.filter((item) => item.category === 'general');
+export const keyboardSettings = settingsItems.filter((item) => item.category === 'keyboard');

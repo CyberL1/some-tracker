@@ -8,6 +8,7 @@ export class AudioService {
 	private _audioContext: AudioContext | null = new AudioContext();
 	private _isPlaying = false;
 	public chipSettings: ChipSettings = new ChipSettings();
+	private _masterGainNode: GainNode | null = null;
 
 	//for example 1x FM chip processor, 2x AY chip processors for TSFM track
 	//they will all be mixed together in single audio context
@@ -17,6 +18,10 @@ export class AudioService {
 		// Web browsers like to disable audio contexts when they first exist to prevent auto-play video/audio ads.
 		// We explicitly re-enable it whenever the user does something on the page.
 		if (this._audioContext) {
+			this._masterGainNode = this._audioContext.createGain();
+			this._masterGainNode.connect(this._audioContext.destination);
+			this._masterGainNode.gain.value = 1.0;
+
 			document.addEventListener('keydown', () => this._audioContext?.resume(), {
 				once: true
 			});
@@ -138,7 +143,7 @@ export class AudioService {
 	}
 
 	private createAudioNode() {
-		if (!this._audioContext) {
+		if (!this._audioContext || !this._masterGainNode) {
 			throw new Error('Audio context not initialized');
 		}
 
@@ -150,9 +155,15 @@ export class AudioService {
 			}
 		);
 
-		audioNode.connect(this._audioContext.destination);
+		audioNode.connect(this._masterGainNode);
 
 		return audioNode;
+	}
+
+	setVolume(volume: number) {
+		if (this._masterGainNode) {
+			this._masterGainNode.gain.value = Math.max(0, Math.min(1, volume / 100));
+		}
 	}
 
 	private createChipProcessor(chip: Chip): ChipProcessor {

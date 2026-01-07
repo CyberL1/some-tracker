@@ -30,6 +30,11 @@
 
 	container.audioService.addChipProcessor(AY_CHIP);
 
+	$effect(() => {
+		const volume = settingsStore.state.volume;
+		container.audioService.setVolume(volume);
+	});
+
 	const newProject = new Project();
 	if (newProject.songs.length > 0) {
 		const song = newProject.songs[0];

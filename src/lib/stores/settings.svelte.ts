@@ -19,6 +19,9 @@ export const settingsStore = {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsState));
 		}
 	},
+	get state() {
+		return settingsState;
+	},
 	get: (): Settings => {
 		return settingsState;
 	},

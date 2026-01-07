@@ -9,12 +9,25 @@
 	{@const Component = modal.component}
 	{@const resolve = (value?: any) => modalStore.close(index, value)}
 	{@const baseDismiss = (error?: any) => modalStore.dismiss(index, error)}
+	{@const onCloseRef = { current: null as (() => void) | null }}
 	{@const props = {
 		...modal.props,
 		resolve,
-		dismiss: baseDismiss
+		dismiss: baseDismiss,
+		onCloseRef
+	} as typeof modal.props & {
+		resolve: (value?: any) => void;
+		dismiss: (error?: any) => void;
+		onCloseRef?: { current: (() => void) | null };
 	}}
-	<Modal onClose={() => baseDismiss()}>
+	{@const onCloseHandler = () => {
+		if (onCloseRef.current) {
+			onCloseRef.current();
+		} else {
+			baseDismiss();
+		}
+	}}
+	<Modal onClose={onCloseHandler}>
 		<Component {...props} />
 	</Modal>
 {/each}

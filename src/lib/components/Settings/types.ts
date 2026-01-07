@@ -9,4 +9,5 @@ export interface SettingsItem {
 	type: string;
 	defaultValue: any;
 	setting: keyof Settings;
+	category?: 'general' | 'keyboard';
 }

@@ -25,6 +25,7 @@
 
 <button
 	{onclick}
-	class="cursor-pointer rounded-sm border px-4 py-1.5 text-xs transition-colors focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none {variantClasses} {className}">
+	class="cursor-pointer rounded-sm border px-4 py-1.5 text-xs transition-colors focus:border-transparent focus:ring-1
+		focus:ring-blue-500 focus:outline-none {variantClasses} {className}">
 	{@render children()}
 </button>
