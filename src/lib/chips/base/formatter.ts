@@ -5,6 +5,7 @@ import { formatHex, formatSymbol, parseHex, parseSymbol } from './field-formatte
 import { NoteName } from '../../models/song';
 import { formatNoteFromEnum } from '../../utils/note-utils';
 import { EffectField } from '../../services/pattern/editing/effect-field';
+import { isPrimitive } from '../../utils/type-guards';
 
 export abstract class BaseFormatter implements PatternFormatter {
 	formatRow(
@@ -98,9 +99,9 @@ export abstract class BaseFormatter implements PatternFormatter {
 							result +=
 								effectFormatted !== null
 									? effectFormatted
-									: this.formatField(value, field);
+									: this.formatField(isPrimitive(value) ? value : null, field);
 						} else {
-							result += this.formatField(value, field);
+							result += this.formatField(isPrimitive(value) ? value : null, field);
 						}
 					}
 					i = end + 1;

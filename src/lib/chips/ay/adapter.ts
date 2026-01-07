@@ -3,6 +3,7 @@ import type { PatternConverter } from '../base/adapter';
 import type { Pattern } from '../../models/song';
 import type { GenericPattern, GenericRow, GenericPatternRow } from '../../models/song/generic';
 import { formatNoteFromEnum, parseNoteFromString } from '../../utils/note-utils';
+import { isEffectLike, isNumber, isString, toNumber } from '../../utils/type-guards';
 
 export class AYConverter implements PatternConverter {
 	toGeneric(chipPattern: Pattern): GenericPattern {
@@ -20,33 +21,37 @@ export class AYConverter implements PatternConverter {
 
 		for (let rowIndex = 0; rowIndex < ayPattern.length; rowIndex++) {
 			const ayPatternRow = ayPattern.patternRows[rowIndex];
+			const envelopeEffectValue = ayPatternRow.envelopeEffect;
+			const envelopeEffect = isEffectLike(envelopeEffectValue) ? envelopeEffectValue : null;
 			const genericPatternRow: GenericPatternRow = {
-				envelopeValue: ayPatternRow.envelopeValue,
-				noiseValue: ayPatternRow.noiseValue,
-				envelopeEffect: ayPatternRow.envelopeEffect
+				envelopeValue: toNumber(ayPatternRow.envelopeValue),
+				noiseValue: toNumber(ayPatternRow.noiseValue),
+				envelopeEffect: envelopeEffect
 					? ({
-							effect: ayPatternRow.envelopeEffect.effect,
-							delay: ayPatternRow.envelopeEffect.delay,
-							parameter: ayPatternRow.envelopeEffect.parameter
-						} as unknown as string | number | null | undefined)
+							effect: envelopeEffect.effect,
+							delay: envelopeEffect.delay,
+							parameter: envelopeEffect.parameter
+						} as Record<string, unknown>)
 					: null
 			};
 			generic.patternRows.push(genericPatternRow);
 
 			for (let channelIndex = 0; channelIndex < ayPattern.channels.length; channelIndex++) {
 				const ayRow = ayPattern.channels[channelIndex].rows[rowIndex];
+				const effectValue = ayRow.effects[0];
+				const effect = isEffectLike(effectValue) ? effectValue : null;
 				const genericRow: GenericRow = {
 					note: formatNoteFromEnum(ayRow.note.name, ayRow.note.octave),
-					instrument: ayRow.instrument,
-					volume: ayRow.volume,
-					table: ayRow.table,
-					envelopeShape: ayRow.envelopeShape,
-					effect: ayRow.effects[0]
+					instrument: toNumber(ayRow.instrument),
+					volume: toNumber(ayRow.volume),
+					table: toNumber(ayRow.table),
+					envelopeShape: toNumber(ayRow.envelopeShape),
+					effect: effect
 						? ({
-								effect: ayRow.effects[0].effect,
-								delay: ayRow.effects[0].delay,
-								parameter: ayRow.effects[0].parameter
-							} as unknown as string | number | null | undefined)
+								effect: effect.effect,
+								delay: effect.delay,
+								parameter: effect.parameter
+							} as Record<string, unknown>)
 						: null
 				};
 				generic.channels[channelIndex].rows.push(genericRow);
@@ -63,18 +68,16 @@ export class AYConverter implements PatternConverter {
 			const genericPatternRow = generic.patternRows[rowIndex];
 			const ayPatternRow = ayPattern.patternRows[rowIndex];
 
-			ayPatternRow.envelopeValue = (genericPatternRow.envelopeValue as number) || 0;
-			ayPatternRow.noiseValue = (genericPatternRow.noiseValue as number) || 0;
-			if (genericPatternRow.envelopeEffect) {
-				const effect = genericPatternRow.envelopeEffect as unknown as {
-					effect: number;
-					delay: number;
-					parameter: number;
-				};
+			ayPatternRow.envelopeValue = toNumber(genericPatternRow.envelopeValue);
+			ayPatternRow.noiseValue = toNumber(genericPatternRow.noiseValue);
+			if (
+				genericPatternRow.envelopeEffect &&
+				isEffectLike(genericPatternRow.envelopeEffect)
+			) {
 				ayPatternRow.envelopeEffect = new Effect(
-					effect.effect,
-					effect.delay,
-					effect.parameter
+					genericPatternRow.envelopeEffect.effect,
+					genericPatternRow.envelopeEffect.delay,
+					genericPatternRow.envelopeEffect.parameter
 				);
 			}
 
@@ -83,24 +86,22 @@ export class AYConverter implements PatternConverter {
 				const genericRow = genericChannel.rows[rowIndex];
 				const ayRow = ayPattern.channels[channelIndex].rows[rowIndex];
 
-				if (genericRow.note) {
-					const noteStr = genericRow.note as string;
-					const { noteName, octave } = parseNoteFromString(noteStr);
+				if (genericRow.note && isString(genericRow.note)) {
+					const { noteName, octave } = parseNoteFromString(genericRow.note);
 					ayRow.note = new Note(noteName, octave);
 				}
 
-				ayRow.instrument = (genericRow.instrument as number) || 0;
-				ayRow.volume = (genericRow.volume as number) || 0;
-				ayRow.table = (genericRow.table as number) || 0;
-				ayRow.envelopeShape = (genericRow.envelopeShape as number) || 0;
+				ayRow.instrument = toNumber(genericRow.instrument);
+				ayRow.volume = toNumber(genericRow.volume);
+				ayRow.table = toNumber(genericRow.table);
+				ayRow.envelopeShape = toNumber(genericRow.envelopeShape);
 
-				if (genericRow.effect) {
-					const effect = genericRow.effect as unknown as {
-						effect: number;
-						delay: number;
-						parameter: number;
-					};
-					ayRow.effects[0] = new Effect(effect.effect, effect.delay, effect.parameter);
+				if (genericRow.effect && isEffectLike(genericRow.effect)) {
+					ayRow.effects[0] = new Effect(
+						genericRow.effect.effect,
+						genericRow.effect.delay,
+						genericRow.effect.parameter
+					);
 				}
 			}
 		}
@@ -108,4 +109,3 @@ export class AYConverter implements PatternConverter {
 		return ayPattern;
 	}
 }
-

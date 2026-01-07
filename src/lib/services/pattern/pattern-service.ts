@@ -1,4 +1,5 @@
 import { Pattern, Note, Effect } from '../../models/song';
+import { isEffectLike, toNumber } from '../../utils/type-guards';
 
 export class PatternService {
 	/**
@@ -49,15 +50,18 @@ export class PatternService {
 		// Deep copy pattern rows
 		sourcePattern.patternRows.forEach((patternRow, index) => {
 			const newPatternRow = clonedPattern.patternRows[index];
-			newPatternRow.envelopeValue = patternRow.envelopeValue;
-			newPatternRow.noiseValue = patternRow.noiseValue;
-			newPatternRow.envelopeEffect = patternRow.envelopeEffect
-				? new Effect(
-						patternRow.envelopeEffect.effect,
-						patternRow.envelopeEffect.delay,
-						patternRow.envelopeEffect.parameter
-					)
-				: null;
+			newPatternRow.envelopeValue = toNumber(patternRow.envelopeValue);
+			newPatternRow.noiseValue = toNumber(patternRow.noiseValue);
+			const envelopeEffectValue = patternRow.envelopeEffect;
+			if (isEffectLike(envelopeEffectValue)) {
+				newPatternRow.envelopeEffect = new Effect(
+					envelopeEffectValue.effect,
+					envelopeEffectValue.delay,
+					envelopeEffectValue.parameter
+				);
+			} else {
+				newPatternRow.envelopeEffect = null;
+			}
 		});
 
 		return clonedPattern;

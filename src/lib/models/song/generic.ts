@@ -1,9 +1,9 @@
 export interface GenericRow {
-	[key: string]: string | number | null | undefined;
+	[key: string]: string | number | null | undefined | Record<string, unknown>;
 }
 
 export interface GenericPatternRow {
-	[key: string]: string | number | null | undefined;
+	[key: string]: string | number | null | undefined | Record<string, unknown>;
 }
 
 export interface GenericChannel {

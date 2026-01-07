@@ -104,19 +104,19 @@ function reconstructInstrument(data: any): Instrument {
 }
 
 function reconstructInstrumentRow(data: any): InstrumentRow {
-	return new InstrumentRow(
-		data.tone ?? false,
-		data.noise ?? false,
-		data.envelope ?? false,
-		data.toneAdd ?? 0,
-		data.noiseAdd ?? 0,
-		data.volume ?? 0,
-		data.loop ?? false,
-		data.amplitudeSliding ?? false,
-		data.amplitudeSlideUp ?? false,
-		data.toneAccumulation ?? false,
-		data.noiseAccumulation ?? false
-	);
+	return new InstrumentRow({
+		tone: data.tone ?? false,
+		noise: data.noise ?? false,
+		envelope: data.envelope ?? false,
+		toneAdd: data.toneAdd ?? 0,
+		noiseAdd: data.noiseAdd ?? 0,
+		volume: data.volume ?? 0,
+		loop: data.loop ?? false,
+		amplitudeSliding: data.amplitudeSliding ?? false,
+		amplitudeSlideUp: data.amplitudeSlideUp ?? false,
+		toneAccumulation: data.toneAccumulation ?? false,
+		noiseAccumulation: data.noiseAccumulation ?? false
+	});
 }
 
 export class FileImportService {
