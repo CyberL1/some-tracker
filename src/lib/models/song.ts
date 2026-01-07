@@ -78,8 +78,19 @@ class Row {
 	constructor(data: Partial<Row> = {}) {
 		this.note = data.note || new Note();
 		this.effects = data.effects || [null];
+		this.instrument = data.instrument ?? 0;
+		this.volume = data.volume ?? 0;
+		this.table = data.table ?? 0;
+		this.envelopeShape = data.envelopeShape ?? 0;
 		Object.keys(data).forEach((key) => {
-			if (key !== 'note' && key !== 'effects') {
+			if (
+				key !== 'note' &&
+				key !== 'effects' &&
+				key !== 'instrument' &&
+				key !== 'volume' &&
+				key !== 'table' &&
+				key !== 'envelopeShape'
+			) {
 				this[key] = data[key as keyof Row];
 			}
 		});

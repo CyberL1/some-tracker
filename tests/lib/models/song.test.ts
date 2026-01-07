@@ -119,8 +119,8 @@ describe('Instrument', () => {
 	describe('constructor', () => {
 		it('should create instrument with specified values', () => {
 			const rows = [
-				new InstrumentRow(true, false, false, 0, 0, 10, false),
-				new InstrumentRow(false, true, false, 0, 0, 8, true)
+				new InstrumentRow({ tone: true, noise: false, envelope: false, toneAdd: 0, noiseAdd: 0, volume: 10, loop: false }),
+				new InstrumentRow({ tone: false, noise: true, envelope: false, toneAdd: 0, noiseAdd: 0, volume: 8, loop: true })
 			];
 			const instrument = new Instrument(5, rows, 1);
 
@@ -141,19 +141,19 @@ describe('Instrument', () => {
 describe('InstrumentRow', () => {
 	describe('constructor', () => {
 		it('should create instrument row with all properties', () => {
-			const row = new InstrumentRow(
-				true,
-				false,
-				true,
-				5,
-				3,
-				12,
-				false,
-				true,
-				false,
-				true,
-				false
-			);
+			const row = new InstrumentRow({
+				tone: true,
+				noise: false,
+				envelope: true,
+				toneAdd: 5,
+				noiseAdd: 3,
+				volume: 12,
+				loop: false,
+				amplitudeSliding: true,
+				amplitudeSlideUp: false,
+				toneAccumulation: true,
+				noiseAccumulation: false
+			});
 
 			expect(row.tone).toBe(true);
 			expect(row.noise).toBe(false);
