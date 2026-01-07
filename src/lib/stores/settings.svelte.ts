@@ -9,7 +9,17 @@ export const settingsStore = {
 		const settings = localStorage.getItem(STORAGE_KEY);
 
 		if (settings) {
-			settingsState = JSON.parse(settings) as Settings;
+			try {
+				settingsState = JSON.parse(settings) as Settings;
+			} catch {
+				// If parsing fails, fall back to defaults
+				const initialSettings: Partial<Settings> = {};
+				for (const item of settingsItems) {
+					initialSettings[item.setting] = item.defaultValue as never;
+				}
+				settingsState = initialSettings as Settings;
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsState));
+			}
 		} else {
 			const initialSettings: Partial<Settings> = {};
 			for (const item of settingsItems) {
@@ -20,7 +30,7 @@ export const settingsStore = {
 		}
 	},
 	get: (): Settings => {
-		return settingsState;
+		return { ...settingsState };
 	},
 	set: <K extends keyof Settings>(key: K, value: Settings[K]) => {
 		settingsState = { ...settingsState, [key]: value };

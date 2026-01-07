@@ -31,5 +31,9 @@ export const channelMuteStore = {
 
 	getAllMuteStates(): ChannelMuteState {
 		return new Map(channelMuteState);
+	},
+
+	clear(): void {
+		channelMuteState = new Map();
 	}
 };

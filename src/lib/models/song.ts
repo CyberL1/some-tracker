@@ -51,10 +51,43 @@ class Instrument {
 }
 
 class InstrumentRow {
+	tone: boolean = false;
+	noise: boolean = false;
+	envelope: boolean = false;
+	toneAdd: number = 0;
+	noiseAdd: number = 0;
+	volume: number = 15;
+	loop: boolean = false;
+	amplitudeSliding: boolean = false;
+	amplitudeSlideUp: boolean = false;
+	toneAccumulation: boolean = false;
+	noiseAccumulation: boolean = false;
 	[key: string]: unknown;
 
-	constructor(data: Record<string, unknown> = {}) {
-		Object.assign(this, data);
+	constructor(
+		tone: boolean = false,
+		noise: boolean = false,
+		envelope: boolean = false,
+		toneAdd: number = 0,
+		noiseAdd: number = 0,
+		volume: number = 15,
+		loop: boolean = false,
+		amplitudeSliding: boolean = false,
+		amplitudeSlideUp: boolean = false,
+		toneAccumulation: boolean = false,
+		noiseAccumulation: boolean = false
+	) {
+		this.tone = tone;
+		this.noise = noise;
+		this.envelope = envelope;
+		this.toneAdd = toneAdd;
+		this.noiseAdd = noiseAdd;
+		this.volume = volume;
+		this.loop = loop;
+		this.amplitudeSliding = amplitudeSliding;
+		this.amplitudeSlideUp = amplitudeSlideUp;
+		this.toneAccumulation = toneAccumulation;
+		this.noiseAccumulation = noiseAccumulation;
 	}
 }
 
@@ -72,14 +105,18 @@ class Effect {
 
 class Row {
 	note: Note;
+	instrument: number = 0;
+	volume: number = 0;
 	effects: (Effect | null)[];
 	[key: string]: unknown;
 
 	constructor(data: Partial<Row> = {}) {
 		this.note = data.note || new Note();
+		this.instrument = data.instrument ?? 0;
+		this.volume = data.volume ?? 0;
 		this.effects = data.effects || [null];
 		Object.keys(data).forEach((key) => {
-			if (key !== 'note' && key !== 'effects') {
+			if (key !== 'note' && key !== 'instrument' && key !== 'volume' && key !== 'effects') {
 				this[key] = data[key as keyof Row];
 			}
 		});
