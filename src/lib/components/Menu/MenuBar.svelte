@@ -8,6 +8,8 @@
 	import IconCarbonPlay from '~icons/carbon/play';
 	import IconCarbonChevronUp from '~icons/carbon/chevron-up';
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
+	import IconCarbonLayers from '~icons/carbon/layers';
+	import IconCarbonArrowDown from '~icons/carbon/arrow-down';
 	import { settingsStore } from '../../stores/settings.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import Input from '../Input/Input.svelte';
@@ -108,6 +110,7 @@
 
 	<div class="ml-auto flex items-center gap-3">
 		<div class="flex items-center gap-1.5">
+			<IconCarbonLayers class="h-3.5 w-3.5 text-neutral-400" />
 			<label for="octave-input" class="text-xs font-medium text-neutral-300">Octave:</label>
 			<div class="flex items-center rounded border border-neutral-600 bg-neutral-900">
 				<Input
@@ -144,6 +147,7 @@
 			</div>
 		</div>
 		<div class="flex items-center gap-1.5">
+			<IconCarbonArrowDown class="h-3.5 w-3.5 text-neutral-400" />
 			<label for="step-input" class="text-xs font-medium text-neutral-300">Step:</label>
 			<div class="flex items-center rounded border border-neutral-600 bg-neutral-900">
 				<Input
