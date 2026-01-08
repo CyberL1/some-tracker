@@ -487,15 +487,6 @@
 		}
 	}
 
-	function scheduleDraw() {
-		if (drawAnimationFrame !== null) return;
-
-		drawAnimationFrame = requestAnimationFrame(() => {
-			draw();
-			drawAnimationFrame = null;
-		});
-	}
-
 	function moveRow(delta: number) {
 		if (playbackStore.isPlaying) return;
 
@@ -675,6 +666,7 @@
 			}
 
 			clearAllCaches();
+			draw();
 			return;
 		}
 
@@ -1162,7 +1154,6 @@
 	let lastCanvasWidth = -1;
 	let lastCanvasHeight = -1;
 	let needsSetup = true;
-	let drawAnimationFrame: number | null = null;
 
 	$effect(() => {
 		if (!canvas) return;
@@ -1197,7 +1188,7 @@
 		}
 
 		if (rowChanged || orderChanged || patternChanged || sizeChanged) {
-			scheduleDraw();
+			draw();
 			lastDrawnRow = selectedRow;
 			lastDrawnOrderIndex = currentPatternOrderIndex;
 			lastPatternOrderLength = patternOrder.length;
