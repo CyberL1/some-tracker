@@ -119,9 +119,9 @@ export class PatternFieldInput {
 		key: string
 	): { updatedPattern: Pattern; shouldMoveNext: boolean } | null {
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
-		const currentStr = EffectField.formatValue(currentValue);
+		let currentStr = EffectField.formatValue(currentValue);
 		if (currentStr === null) {
-			return null;
+			currentStr = '...';
 		}
 		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, key);
 		const newEffectObj = EffectField.parseValue(newStr);
