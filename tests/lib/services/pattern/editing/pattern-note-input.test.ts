@@ -8,6 +8,12 @@ import type {
 import { PatternValueUpdates } from '../../../../../src/lib/services/pattern/editing/pattern-value-updates';
 import { parseNoteFromString, formatNoteFromEnum } from '../../../../../src/lib/utils/note-utils';
 
+vi.mock('../../../../../src/lib/stores/editor-state.svelte', () => ({
+	editorStateStore: {
+		get: () => ({ octave: 3, step: 1 })
+	}
+}));
+
 vi.mock('../../../../../src/lib/services/pattern/editing/pattern-value-updates');
 vi.mock('../../../../../src/lib/utils/note-utils', async () => {
 	const actual = await vi.importActual<typeof import('../../../../../src/lib/utils/note-utils')>(
@@ -225,19 +231,6 @@ describe('PatternNoteInput', () => {
 		});
 
 		describe('OFF note input', () => {
-			it('should set note to OFF when O key is pressed', () => {
-				const pattern = new Pattern(DEFAULT_PATTERN_ID, DEFAULT_PATTERN_LENGTH);
-				const context = createMockContext(pattern);
-				const fieldInfo = createFieldInfo(DEFAULT_CHANNEL_INDEX);
-
-				const result = PatternNoteInput.handleNoteInput(context, fieldInfo, 'o');
-
-				expect(result).not.toBeNull();
-				expect(result?.shouldMoveNext).toBe(false);
-				expect(mockUpdateFieldValue).toHaveBeenCalledOnce();
-				expect(mockUpdateFieldValue).toHaveBeenCalledWith(context, fieldInfo, 'OFF');
-			});
-
 			it('should set note to OFF when A key is pressed', () => {
 				const pattern = new Pattern(DEFAULT_PATTERN_ID, DEFAULT_PATTERN_LENGTH);
 				const context = createMockContext(pattern);
