@@ -34,7 +34,11 @@ export class PatternFieldInput {
 		const strategy = FieldStrategyFactory.getStrategy('hex');
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
 		const currentStr = strategy.format(currentValue, field.length);
-		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, upperKey);
+		const newStr = StringManipulation.replaceCharAtOffset(
+			currentStr,
+			fieldInfo.charOffset,
+			upperKey
+		);
 		const newValue = strategy.parse(newStr, field.length);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
@@ -56,7 +60,11 @@ export class PatternFieldInput {
 		const strategy = FieldStrategyFactory.getStrategy('dec');
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
 		const currentStr = strategy.format(currentValue, field.length);
-		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, key);
+		const newStr = StringManipulation.replaceCharAtOffset(
+			currentStr,
+			fieldInfo.charOffset,
+			key
+		);
 		const newValue = strategy.parse(newStr, field.length);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
@@ -85,7 +93,11 @@ export class PatternFieldInput {
 		const strategy = FieldStrategyFactory.getStrategy('symbol');
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
 		const currentStr = strategy.format(currentValue, field.length);
-		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, upperKey);
+		const newStr = StringManipulation.replaceCharAtOffset(
+			currentStr,
+			fieldInfo.charOffset,
+			upperKey
+		);
 		const newValue = strategy.parse(newStr, field.length);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
@@ -107,7 +119,11 @@ export class PatternFieldInput {
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
 		const currentStr =
 			typeof currentValue === 'number' ? currentValue.toString() : String(currentValue);
-		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, key);
+		const newStr = StringManipulation.replaceCharAtOffset(
+			currentStr,
+			fieldInfo.charOffset,
+			key
+		);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newStr);
 		return { updatedPattern, shouldMoveNext: false };
@@ -123,7 +139,11 @@ export class PatternFieldInput {
 		if (currentStr === null) {
 			currentStr = '...';
 		}
-		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, key);
+		const newStr = StringManipulation.replaceCharAtOffset(
+			currentStr,
+			fieldInfo.charOffset,
+			key
+		);
 		const newEffectObj = EffectField.parseValue(newStr);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(

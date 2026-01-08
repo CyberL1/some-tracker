@@ -658,7 +658,7 @@
 				moveColumn(1);
 			}
 
-			if (fieldInfoBeforeEdit?.fieldType === 'note' && !playbackStore.isPlaying) {
+			if (!playbackStore.isPlaying) {
 				const step = editorStateStore.get().step;
 				if (step > 0) {
 					moveRow(step);
