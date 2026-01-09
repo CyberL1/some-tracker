@@ -49,5 +49,5 @@
 {:else if setting.type === 'select' && setting.options}
 	<Select bind:value={value as number} options={selectOptions} />
 {:else if setting.type === 'number'}
-	<Input bind:value={value as string} props={{ type: 'number' }} />
+	<Input bind:value={value as string} type="number" />
 {/if}

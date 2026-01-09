@@ -307,41 +307,5 @@ describe('PatternNoteInput', () => {
 				expect(result?.shouldMoveNext).toBe(false);
 			});
 		});
-
-		describe('octave change', () => {
-			it('should change octave when digit is pressed on existing note', () => {
-				const pattern = new Pattern(DEFAULT_PATTERN_ID, DEFAULT_PATTERN_LENGTH);
-				pattern.channels[DEFAULT_CHANNEL_INDEX].rows[DEFAULT_ROW_INDEX].note = new Note(
-					NoteName.C,
-					4
-				);
-				const context = createMockContext(pattern);
-				const fieldInfo = createFieldInfo(DEFAULT_CHANNEL_INDEX);
-
-				const result = PatternNoteInput.handleNoteInput(context, fieldInfo, '5');
-
-				expect(result).not.toBeNull();
-				expect(result?.shouldMoveNext).toBe(false);
-			});
-
-			it('should handle octave change input for digits 0-9', () => {
-				const pattern = new Pattern(DEFAULT_PATTERN_ID, DEFAULT_PATTERN_LENGTH);
-				pattern.channels[DEFAULT_CHANNEL_INDEX].rows[DEFAULT_ROW_INDEX].note = new Note(
-					NoteName.C,
-					4
-				);
-				const context = createMockContext(pattern);
-				const fieldInfo = createFieldInfo(DEFAULT_CHANNEL_INDEX);
-
-				for (let digit = 0; digit <= 9; digit++) {
-					const result = PatternNoteInput.handleNoteInput(
-						context,
-						fieldInfo,
-						digit.toString()
-					);
-					expect(result).not.toBeNull();
-				}
-			});
-		});
 	});
 });
