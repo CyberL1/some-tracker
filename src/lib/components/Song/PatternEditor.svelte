@@ -1325,10 +1325,13 @@
 		};
 
 		const handlePatternRequest = (requestedOrderIndex: number) => {
-			if (requestedOrderIndex >= 0 && requestedOrderIndex < currentPatternOrder.length) {
-				const patternId = currentPatternOrder[requestedOrderIndex];
+			const latestPatterns = patterns;
+			const latestPatternOrder = patternOrder;
+			
+			if (requestedOrderIndex >= 0 && requestedOrderIndex < latestPatternOrder.length) {
+				const patternId = latestPatternOrder[requestedOrderIndex];
 				const requestedPattern =
-					currentPatterns.find((p) => p.id === patternId) ||
+					latestPatterns.find((p) => p.id === patternId) ||
 					PatternService.createEmptyPattern(patternId);
 
 				chipProcessor.sendRequestedPattern(requestedPattern, requestedOrderIndex);
