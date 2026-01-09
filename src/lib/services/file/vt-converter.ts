@@ -439,10 +439,16 @@ class VT2Converter {
 
 	private parseSamples(lines: string[]): VT2Sample[] {
 		const samples: VT2Sample[] = [];
-		const sampleSections = this.extractSections(lines, /^\[Sample(\d+)\]$/);
+		const sampleSections = this.extractSections(lines, /^\[Sample([0-9]+|[A-Za-z])\]$/i);
 
 		for (const { match, content } of sampleSections) {
-			const id = parseInt(match[1]);
+			const idStr = match[1].toUpperCase();
+			let id: number;
+			if (/^[0-9]+$/.test(idStr)) {
+				id = parseInt(idStr, 10);
+			} else {
+				id = this.parseBase36Digit(idStr);
+			}
 			const sample: VT2Sample = {
 				id,
 				data: content
@@ -762,8 +768,14 @@ class VT2Converter {
 				continue;
 			}
 
-			if (currentMatch && line && !line.startsWith('[')) {
-				currentContent.push(line);
+			if (currentMatch) {
+				if (line && !line.startsWith('[')) {
+					currentContent.push(line);
+				} else if (line.startsWith('[')) {
+					sections.push({ match: currentMatch, content: currentContent });
+					currentMatch = null;
+					currentContent = [];
+				}
 			}
 		}
 
