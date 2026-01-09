@@ -97,10 +97,6 @@ export class PatternNoteInput {
 			return { updatedPattern, shouldMoveNext: false };
 		}
 
-		if (this.isOctaveDigit(key)) {
-			return this.handleOctaveChange(context, fieldInfo, key);
-		}
-
 		return null;
 	}
 
@@ -124,35 +120,5 @@ export class PatternNoteInput {
 			noteName: keyMapping.noteName,
 			octave: calculatedOctave
 		};
-	}
-
-	private static isOctaveDigit(key: string): boolean {
-		return /^[0-9]$/.test(key);
-	}
-
-	private static handleOctaveChange(
-		context: EditingContext,
-		fieldInfo: FieldInfo,
-		key: string
-	): { updatedPattern: Pattern; shouldMoveNext: boolean } | null {
-		const octave = parseInt(key, 10);
-		if (octave < 0 || octave > 9) {
-			return null;
-		}
-
-		const currentNoteStr =
-			(PatternValueUpdates.getFieldValue(context, fieldInfo) as string) || '---';
-		if (currentNoteStr === '---' || currentNoteStr === 'OFF') {
-			return null;
-		}
-
-		const parsed = parseNoteFromString(currentNoteStr);
-		if (parsed.noteName === NoteName.None || parsed.noteName === NoteName.Off) {
-			return null;
-		}
-
-		const noteStr = formatNoteFromEnum(parsed.noteName, octave);
-		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, noteStr);
-		return { updatedPattern, shouldMoveNext: false };
 	}
 }
