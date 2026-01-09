@@ -5,7 +5,7 @@ class TrackerPatternProcessor {
 		this.port = port;
 	}
 
-	parsePatternRow(pattern, rowIndex) {
+	parsePatternRow(pattern, rowIndex, registerState) {
 		if (!pattern || rowIndex >= pattern.length || rowIndex < 0) return;
 
 		const patternRow = pattern.patternRows[rowIndex];
@@ -21,7 +21,13 @@ class TrackerPatternProcessor {
 			this._processEffects(channelIndex, row);
 		}
 
-		this.chipAudioDriver.processPatternRow(this.state, pattern, rowIndex, patternRow);
+		this.chipAudioDriver.processPatternRow(
+			this.state,
+			pattern,
+			rowIndex,
+			patternRow,
+			registerState
+		);
 	}
 
 	processTables() {
@@ -81,11 +87,8 @@ class TrackerPatternProcessor {
 
 		if (row.note.name === 1) {
 			this.state.channelSoundEnabled[channelIndex] = false;
-			this.state.channelTables[channelIndex] = -1;
 			this.state.channelBaseNotes[channelIndex] = 0;
 			this.state.channelCurrentNotes[channelIndex] = 0;
-			this.state.tablePositions[channelIndex] = 0;
-			this.state.tableCounters[channelIndex] = 0;
 			this.state.channelToneSliding[channelIndex] = 0;
 			this.state.channelSlideStep[channelIndex] = 0;
 			this.state.channelSlideAlreadyApplied[channelIndex] = false;

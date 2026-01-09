@@ -54,6 +54,8 @@ export class AYChipRenderer implements ChipRenderer {
 		AyumiState: any;
 		TrackerPatternProcessor: any;
 		AYAudioDriver: any;
+		AyumiEngine: any;
+		AYChipRegisterState: any;
 	}> {
 		onProgress?.(20, 'Loading processor modules...');
 		const baseUrl = import.meta.env.BASE_URL;
@@ -64,8 +66,10 @@ export class AYChipRenderer implements ChipRenderer {
 		);
 		onProgress?.(40, 'Loading audio driver...');
 		const { default: AYAudioDriver } = await import(`${baseUrl}ay-audio-driver.js`);
+		const { default: AyumiEngine } = await import(`${baseUrl}ayumi-engine.js`);
+		const { default: AYChipRegisterState } = await import(`${baseUrl}ay-chip-register-state.js`);
 
-		return { AyumiState, TrackerPatternProcessor, AYAudioDriver };
+		return { AyumiState, TrackerPatternProcessor, AYAudioDriver, AyumiEngine, AYChipRegisterState };
 	}
 
 	private setupState(
@@ -128,6 +132,8 @@ export class AYChipRenderer implements ChipRenderer {
 		state: any,
 		patternProcessor: any,
 		audioDriver: any,
+		ayumiEngine: any,
+		registerState: any,
 		wasm: any,
 		ayumiPtr: number,
 		song: any,
@@ -166,12 +172,13 @@ export class AYChipRenderer implements ChipRenderer {
 
 			if (state.sampleCounter >= state.samplesPerTick) {
 				if (state.currentTick === 0 && state.currentPattern) {
-					patternProcessor.parsePatternRow(state.currentPattern, state.currentRow);
+					patternProcessor.parsePatternRow(state.currentPattern, state.currentRow, registerState);
 				}
 
 				patternProcessor.processTables();
 				patternProcessor.processSlides();
-				audioDriver.processInstruments(state);
+				audioDriver.processInstruments(state, registerState);
+				ayumiEngine.applyRegisterState(registerState);
 
 				const isLastPattern =
 					state.currentPatternOrderIndex >= state.patternOrder.length - 1;
@@ -197,8 +204,8 @@ export class AYChipRenderer implements ChipRenderer {
 				state.sampleCounter = 0;
 			}
 
-			wasm.ayumi_process(ayumiPtr);
-			wasm.ayumi_remove_dc(ayumiPtr);
+			ayumiEngine.process();
+			ayumiEngine.removeDC();
 
 			const leftOffset = ayumiPtr + AYUMI_STRUCT_LEFT_OFFSET;
 			const rightOffset = ayumiPtr + AYUMI_STRUCT_RIGHT_OFFSET;
@@ -227,13 +234,15 @@ export class AYChipRenderer implements ChipRenderer {
 
 		const { wasm, wasmBuffer } = await this.loadWasmModule(onProgress);
 		const ayumiPtr = this.initializeAyumi(wasm, song);
-		const { AyumiState, TrackerPatternProcessor, AYAudioDriver } =
+		const { AyumiState, TrackerPatternProcessor, AYAudioDriver, AyumiEngine, AYChipRegisterState } =
 			await this.loadProcessorModules(onProgress);
 
 		const state = new AyumiState();
 		this.setupState(state, song, project, wasm, ayumiPtr, wasmBuffer);
 
-		const audioDriver = new AYAudioDriver(wasm, ayumiPtr);
+		const audioDriver = new AYAudioDriver();
+		const ayumiEngine = new AyumiEngine(wasm, ayumiPtr);
+		const registerState = new AYChipRegisterState();
 		const patternProcessor = new TrackerPatternProcessor(state, audioDriver, {
 			postMessage: () => {}
 		});
@@ -257,6 +266,8 @@ export class AYChipRenderer implements ChipRenderer {
 				state,
 				patternProcessor,
 				audioDriver,
+				ayumiEngine,
+				registerState,
 				wasm,
 				ayumiPtr,
 				song,
