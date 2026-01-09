@@ -115,9 +115,8 @@ class AYAudioDriver {
 	}
 
 	processPatternRow(state, pattern, rowIndex, patternRow, registerState) {
-		if (patternRow.noiseValue > 0) {
-			registerState.noise = patternRow.noiseValue;
-		}
+		state.noiseBaseValue = patternRow.noiseValue || 0;
+		state.noiseAddValue = 0;
 
 		for (let channelIndex = 0; channelIndex < pattern.channels.length; channelIndex++) {
 			const channel = pattern.channels[channelIndex];
@@ -126,7 +125,11 @@ class AYAudioDriver {
 
 			if (isMuted) {
 				registerState.channels[channelIndex].volume = 0;
-				registerState.channels[channelIndex].mixer = { tone: false, noise: false, envelope: false };
+				registerState.channels[channelIndex].mixer = {
+					tone: false,
+					noise: false,
+					envelope: false
+				};
 				state.channelEnvelopeEnabled[channelIndex] = false;
 			} else {
 				this._processNote(state, channelIndex, row, registerState);
@@ -296,10 +299,13 @@ class AYAudioDriver {
 			const finalTone = (noteTone + sampleTone + toneSliding) & 0xfff;
 			registerState.channels[channelIndex].tone = finalTone;
 
-			if (instrumentRow.noiseAdd !== 0) {
-				state.channelNoiseAccumulator[channelIndex] += instrumentRow.noiseAdd;
-				const noiseValue = state.channelNoiseAccumulator[channelIndex] & 31;
-				registerState.noise = noiseValue;
+			if (instrumentRow.noise) {
+				const noiseValue =
+					state.channelNoiseAccumulator[channelIndex] + instrumentRow.noiseAdd;
+				if (instrumentRow.noiseAccumulation) {
+					state.channelNoiseAccumulator[channelIndex] = noiseValue & 31;
+				}
+				state.noiseAddValue = noiseValue & 31;
 			}
 
 			if (instrumentRow.volume >= 0) {
@@ -359,10 +365,16 @@ class AYAudioDriver {
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			if (state.channelMuted[channelIndex]) {
 				registerState.channels[channelIndex].volume = 0;
-				registerState.channels[channelIndex].mixer = { tone: false, noise: false, envelope: false };
+				registerState.channels[channelIndex].mixer = {
+					tone: false,
+					noise: false,
+					envelope: false
+				};
 				state.channelEnvelopeEnabled[channelIndex] = false;
 			}
 		}
+
+		registerState.noise = (state.noiseBaseValue + state.noiseAddValue) & 0x1f;
 	}
 
 	processEnvelopeSlide(state) {

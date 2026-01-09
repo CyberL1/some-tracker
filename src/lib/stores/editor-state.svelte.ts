@@ -11,13 +11,11 @@ export const editorStateStore = {
 		return editorState;
 	},
 	setOctave: (octave: number) => {
-		if (octave >= 0 && octave <= 9) {
+		if (octave >= 0 && octave <= 8) {
 			editorState = { ...editorState, octave };
 		}
 	},
 	setStep: (step: number) => {
-		if (step >= 1) {
-			editorState = { ...editorState, step };
-		}
+		editorState = { ...editorState, step };
 	}
 };

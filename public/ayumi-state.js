@@ -27,6 +27,8 @@ class AyumiState extends TrackerState {
 		this.envelopeSlideDelta = 0;
 		this.envelopeSlideCurrent = 0;
 		this.envelopeBaseValue = 0;
+		this.noiseBaseValue = 0;
+		this.noiseAddValue = 0;
 	}
 
 	setWasmModule(module, ptr, wasmBuffer) {
@@ -66,6 +68,8 @@ class AyumiState extends TrackerState {
 		this.envelopeSlideDelta = 0;
 		this.envelopeSlideCurrent = 0;
 		this.envelopeBaseValue = 0;
+		this.noiseBaseValue = 0;
+		this.noiseAddValue = 0;
 	}
 }
 

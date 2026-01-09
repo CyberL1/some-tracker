@@ -54,7 +54,7 @@
 
 	function commitOctave() {
 		const octave = parseInt(octaveValue, 10);
-		if (!isNaN(octave) && octave >= 0 && octave <= 9) {
+		if (!isNaN(octave) && octave >= 0 && octave <= 8) {
 			editorStateStore.setOctave(octave);
 		} else {
 			octaveValue = editorState.octave.toString();
@@ -63,7 +63,7 @@
 
 	function commitStep() {
 		const step = parseInt(stepValue, 10);
-		if (!isNaN(step) && step >= 1) {
+		if (!isNaN(step)) {
 			editorStateStore.setStep(step);
 		} else {
 			stepValue = editorState.step.toString();
@@ -72,7 +72,7 @@
 
 	function incrementOctave() {
 		const current = editorStateStore.get().octave;
-		if (current < 9) {
+		if (current < 8) {
 			editorStateStore.setOctave(current + 1);
 		}
 	}
@@ -91,9 +91,7 @@
 
 	function decrementStep() {
 		const current = editorStateStore.get().step;
-		if (current > 1) {
-			editorStateStore.setStep(current - 1);
-		}
+		editorStateStore.setStep(current - 1);
 	}
 </script>
 
@@ -118,7 +116,7 @@
 					id="octave-input"
 					type="number"
 					min={0}
-					max={9}
+					max={8}
 					class="h-6 w-10 border-0 bg-transparent text-center font-mono text-xs focus:ring-0"
 					onblur={commitOctave}
 					onkeydown={(e: KeyboardEvent) => {
@@ -154,7 +152,6 @@
 					bind:value={stepValue}
 					id="step-input"
 					type="number"
-					min={1}
 					class="h-6 w-10 border-0 bg-transparent text-center font-mono text-xs focus:ring-0"
 					onblur={commitStep}
 					onkeydown={(e: KeyboardEvent) => {
@@ -162,6 +159,14 @@
 							e.preventDefault();
 							commitStep();
 							(e.target as HTMLInputElement)?.blur();
+						} else if (e.key === 'ArrowUp') {
+							e.preventDefault();
+							incrementStep();
+							commitStep();
+						} else if (e.key === 'ArrowDown') {
+							e.preventDefault();
+							decrementStep();
+							commitStep();
 						}
 					}} />
 				<div class="flex flex-col border-l border-neutral-600">

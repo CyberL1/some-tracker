@@ -112,7 +112,7 @@ export class PatternNoteInput {
 		const currentOctave = editorStateStore.get().octave;
 		const calculatedOctave = currentOctave + keyMapping.octaveOffset;
 
-		if (calculatedOctave < 0 || calculatedOctave > 9) {
+		if (calculatedOctave < 0 || calculatedOctave > 8) {
 			return null;
 		}
 
