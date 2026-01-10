@@ -74,9 +74,7 @@
 			const newInstruments = currentInstruments ? [...currentInstruments] : [];
 			while (newInstruments.length < TOTAL_INSTRUMENTS) {
 				const id = newInstruments.length;
-				newInstruments.push(
-					new InstrumentModel(id, [], 0, `Instrument ${id + 1}`)
-				);
+				newInstruments.push(new InstrumentModel(id, [], 0, `Instrument ${id + 1}`));
 			}
 			if (newInstruments.length > TOTAL_INSTRUMENTS) {
 				newInstruments.splice(TOTAL_INSTRUMENTS);
@@ -120,7 +118,7 @@
 									: isUsed
 										? 'text-neutral-300 group-hover:text-neutral-100'
 										: 'text-neutral-700 group-hover:text-neutral-600'}">
-								{(instrument.id + 1).toString(16).toUpperCase().padStart(2, '0')}
+								{instrument.id.toString(36).toUpperCase().padStart(2, '0')}
 							</span>
 							<span
 								class="text-xs {isSelected

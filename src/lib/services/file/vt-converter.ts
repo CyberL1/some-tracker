@@ -137,7 +137,8 @@ class VT2Converter {
 						noiseAccumulation: line.noiseAccumulation || false
 					});
 				}),
-				loopPoint
+				loopPoint,
+				`Instrument ${sample.id}`
 			);
 		});
 
@@ -232,7 +233,7 @@ class VT2Converter {
 		song.chipFrequency = module.chipFrequency;
 		song.interruptFrequency = module.interruptFrequency;
 
-		song.instruments = samples.map((sample) => {
+		const convertedInstruments = samples.map((sample) => {
 			let loopPoint = 0;
 			for (let i = 0; i < sample.data.length; i++) {
 				if (sample.data[i].loop) {
@@ -258,9 +259,12 @@ class VT2Converter {
 						noiseAccumulation: line.noiseAccumulation || false
 					});
 				}),
-				loopPoint
+				loopPoint,
+				`Instrument ${sample.id}`
 			);
 		});
+
+		song.instruments = this.initializeInstrumentsArray(convertedInstruments);
 
 		song.patterns = patterns.map((vt2Pattern) => {
 			const pattern = new Pattern(vt2Pattern.id, vt2Pattern.rows.length);
@@ -282,6 +286,16 @@ class VT2Converter {
 		});
 	}
 
+	private initializeInstrumentsArray(convertedInstruments: Instrument[]): Instrument[] {
+		const TOTAL_INSTRUMENTS = 32;
+		const instruments = Array.from({ length: TOTAL_INSTRUMENTS }, (_, i) => {
+			const patternId = i + 1;
+			const converted = convertedInstruments.find((inst) => inst.id === patternId);
+			return converted || new Instrument(patternId, [], 0, `Instrument ${patternId}`);
+		});
+		return instruments;
+	}
+
 	private convertSingleChip(
 		module: VT2Module,
 		patterns: VT2Pattern[],
@@ -291,7 +305,7 @@ class VT2Converter {
 	): Project {
 		const song = new Song();
 		song.tuningTable = tuningTable;
-		song.instruments = instruments;
+		song.instruments = this.initializeInstrumentsArray(instruments);
 		song.initialSpeed = module.speed;
 
 		song.patterns = patterns.map((vt2Pattern) => {
