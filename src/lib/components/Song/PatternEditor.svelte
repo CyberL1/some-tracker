@@ -40,6 +40,10 @@
 		ClipboardService,
 		type ClipboardContext
 	} from '../../services/pattern/clipboard-service';
+	import {
+		PatternKeyboardShortcutsService,
+		type PatternKeyboardShortcutsContext
+	} from '../../services/pattern/pattern-keyboard-shortcuts';
 
 	let {
 		patterns = $bindable(),
@@ -562,47 +566,85 @@
 		handleKeyDown(event);
 	}
 
+	function createShortcutsContext(): PatternKeyboardShortcutsContext {
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const pattern = findOrCreatePattern(patternId);
+
+		return {
+			isPlaying: playbackStore.isPlaying,
+			selectedColumn,
+			selectedRow,
+			currentPatternOrderIndex,
+			pattern,
+			hasSelection,
+			onUndo: () => undoRedoStore.undo(),
+			onRedo: () => undoRedoStore.redo(),
+			onCopy: copySelection,
+			onCut: cutSelection,
+			onPaste: pasteSelection,
+			onDelete: deleteSelection,
+			onSelectAll: (column: number, startRow: number, endRow: number) => {
+				selectionStartRow = startRow;
+				selectionStartColumn = column;
+				selectionEndRow = endRow;
+				selectionEndColumn = column;
+				draw();
+			},
+			onTogglePlayback: () => {
+				playbackStore.isPlaying = true;
+				togglePlayback();
+			},
+			onPausePlayback: () => {
+				playbackStore.isPlaying = false;
+				pausePlayback();
+			},
+			onMoveRow: moveRow,
+			onMoveColumn: moveColumn,
+			onSetSelectedRow: (row: number) => {
+				selectedRow = row;
+			},
+			onSetSelectedColumn: (column: number) => {
+				selectedColumn = column;
+			},
+			onSetCurrentPatternOrderIndex: (index: number) => {
+				currentPatternOrderIndex = index;
+			},
+			onClearSelection: () => {
+				selectionStartRow = null;
+				selectionStartColumn = null;
+				selectionEndRow = null;
+				selectionEndColumn = null;
+				draw();
+			},
+			onSetSelectionAnchor: (row: number, column: number) => {
+				selectionStartRow = row;
+				selectionStartColumn = column;
+			},
+			onExtendSelection: (row: number, column: number) => {
+				selectionEndRow = row;
+				selectionEndColumn = column;
+				draw();
+			},
+			navigationContext: {
+				patterns,
+				patternOrder,
+				currentPattern: pattern,
+				converter,
+				formatter,
+				schema,
+				getCellPositions
+			}
+		};
+	}
+
 	function handleKeyDown(event: KeyboardEvent) {
-		if (
-			(event.ctrlKey || event.metaKey) &&
-			!event.shiftKey &&
-			event.key.toLowerCase() === 'z'
-		) {
-			event.preventDefault();
-			undoRedoStore.undo();
-			return;
-		}
+		const shortcutsContext = createShortcutsContext();
+		const result = PatternKeyboardShortcutsService.handleKeyDown(event, shortcutsContext);
 
-		if (
-			((event.ctrlKey || event.metaKey) &&
-				event.shiftKey &&
-				event.key.toLowerCase() === 'z') ||
-			((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y')
-		) {
-			event.preventDefault();
-			undoRedoStore.redo();
-			return;
-		}
-
-		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
-			event.preventDefault();
-			copySelection();
-			return;
-		}
-
-		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'x') {
-			event.preventDefault();
-			cutSelection();
-			return;
-		}
-
-		if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
-			event.preventDefault();
-			pasteSelection();
-			return;
-		}
-
-		if (event.ctrlKey || event.metaKey || event.altKey) {
+		if (result.handled) {
+			if (result.shouldPreventDefault) {
+				event.preventDefault();
+			}
 			return;
 		}
 
@@ -617,12 +659,6 @@
 		const rowString = getPatternRowData(pattern, selectedRow);
 		const cellPositions = getCellPositions(rowString, selectedRow);
 		const segments = textParser ? textParser.parseRowString(rowString, selectedRow) : undefined;
-
-		if ((event.key === 'Delete' || event.key === 'Backspace') && hasSelection()) {
-			event.preventDefault();
-			deleteSelection();
-			return;
-		}
 
 		const fieldInfoBeforeEdit = PatternEditingService.getFieldAtCursor({
 			pattern,
@@ -667,87 +703,6 @@
 
 			clearAllCaches();
 			draw();
-			return;
-		}
-
-		switch (event.key) {
-			case ' ':
-				event.preventDefault();
-				playbackStore.isPlaying = !playbackStore.isPlaying;
-				if (playbackStore.isPlaying) {
-					togglePlayback();
-				} else {
-					pausePlayback();
-				}
-				break;
-			case 'ArrowUp':
-				if (!playbackStore.isPlaying) {
-					event.preventDefault();
-					moveRow(-1);
-				}
-				break;
-			case 'ArrowDown':
-				if (!playbackStore.isPlaying) {
-					event.preventDefault();
-					moveRow(1);
-				}
-				break;
-			case 'ArrowLeft':
-				event.preventDefault();
-				moveColumn(-1);
-				break;
-			case 'ArrowRight':
-				event.preventDefault();
-				moveColumn(1);
-				break;
-			case 'PageUp':
-				if (!playbackStore.isPlaying) {
-					event.preventDefault();
-					moveRow(-16);
-				}
-				break;
-			case 'PageDown':
-				if (!playbackStore.isPlaying) {
-					event.preventDefault();
-					moveRow(16);
-				}
-				break;
-			case 'Home':
-				event.preventDefault();
-				if (event.ctrlKey) {
-					if (!playbackStore.isPlaying) {
-						selectedRow = 0;
-					}
-				} else {
-					selectedColumn = 0;
-				}
-				break;
-			case 'End':
-				event.preventDefault();
-				if (event.ctrlKey) {
-					if (!playbackStore.isPlaying) {
-						selectedRow = pattern.length - 1;
-					}
-				} else {
-					const navigationState = PatternNavigationService.moveToRowEnd(
-						{
-							selectedRow,
-							currentPatternOrderIndex,
-							selectedColumn
-						},
-						{
-							patterns,
-							patternOrder,
-							currentPattern: pattern,
-							converter,
-							formatter,
-							schema,
-							getCellPositions
-						}
-					);
-					selectedColumn = navigationState.selectedColumn;
-				}
-				break;
 		}
 	}
 
@@ -1327,7 +1282,7 @@
 		const handlePatternRequest = (requestedOrderIndex: number) => {
 			const latestPatterns = patterns;
 			const latestPatternOrder = patternOrder;
-			
+
 			if (requestedOrderIndex >= 0 && requestedOrderIndex < latestPatternOrder.length) {
 				const patternId = latestPatternOrder[requestedOrderIndex];
 				const requestedPattern =
