@@ -122,16 +122,16 @@ describe('Instrument', () => {
 				new InstrumentRow({ tone: true, noise: false, envelope: false, toneAdd: 0, noiseAdd: 0, volume: 10, loop: false }),
 				new InstrumentRow({ tone: false, noise: true, envelope: false, toneAdd: 0, noiseAdd: 0, volume: 8, loop: true })
 			];
-			const instrument = new Instrument(5, rows, 1);
+			const instrument = new Instrument('05', rows, 1);
 
-			expect(instrument.id).toBe(5);
+			expect(instrument.id).toBe('05');
 			expect(instrument.rows).toHaveLength(2);
 			expect(instrument.loop).toBe(1);
 		});
 
 		it('should create instrument with default loop', () => {
 			const rows: InstrumentRow[] = [];
-			const instrument = new Instrument(0, rows);
+			const instrument = new Instrument('01', rows);
 
 			expect(instrument.loop).toBe(0);
 		});

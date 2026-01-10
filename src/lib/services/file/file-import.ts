@@ -23,20 +23,30 @@ function reconstructProject(data: any): Project {
 		songs.length > 0 ? songs : [new Song()],
 		data.loopPointId || 0,
 		data.patternOrder || [0],
-		tables.length > 0 ? tables : Array.from({ length: 32 }, (_, i) => new Table(i, [], 0, `Table ${i + 1}`))
+		tables.length > 0
+			? tables
+			: Array.from({ length: 32 }, (_, i) => new Table(i, [], 0, `Table ${i + 1}`))
 	);
 }
 
 function reconstructTable(data: any): Table {
-	return new Table(data.id ?? 0, data.rows || [], data.loop || 0, data.name || `Table ${(data.id ?? 0) + 1}`);
+	return new Table(
+		data.id ?? 0,
+		data.rows || [],
+		data.loop || 0,
+		data.name || `Table ${(data.id ?? 0) + 1}`
+	);
 }
 
 function reconstructSong(data: any): Song {
 	const song = new Song();
-	song.patterns = data.patterns?.map((patternData: any) => reconstructPattern(patternData)) || [new Pattern(0)];
+	song.patterns = data.patterns?.map((patternData: any) => reconstructPattern(patternData)) || [
+		new Pattern(0)
+	];
 	song.tuningTable = data.tuningTable || song.tuningTable;
 	song.initialSpeed = data.initialSpeed ?? 3;
-	song.instruments = data.instruments?.map((instData: any) => reconstructInstrument(instData)) || [];
+	song.instruments =
+		data.instruments?.map((instData: any) => reconstructInstrument(instData)) || [];
 	song.chipType = data.chipType;
 	song.chipVariant = data.chipVariant;
 	song.chipFrequency = data.chipFrequency;
@@ -53,7 +63,9 @@ function reconstructPattern(data: any): Pattern {
 		) as [Channel, Channel, Channel];
 	}
 	if (data.patternRows && data.patternRows.length > 0) {
-		pattern.patternRows = data.patternRows.map((rowData: any) => reconstructPatternRow(rowData));
+		pattern.patternRows = data.patternRows.map((rowData: any) =>
+			reconstructPatternRow(rowData)
+		);
 	}
 	return pattern;
 }
@@ -96,7 +108,14 @@ function reconstructPatternRow(data: any): any {
 }
 
 function reconstructInstrument(data: any): Instrument {
-	const instrument = new Instrument(data.id ?? 0, [], data.loop ?? 0, data.name ?? '');
+	let id: string;
+	if (typeof data.id === 'string') {
+		id = data.id;
+	} else {
+		const numId = data.id ?? 1;
+		id = numId.toString(36).toUpperCase().padStart(2, '0');
+	}
+	const instrument = new Instrument(id, [], data.loop ?? 0, data.name ?? '');
 	if (data.rows) {
 		instrument.rows = data.rows.map((rowData: any) => reconstructInstrumentRow(rowData));
 	}

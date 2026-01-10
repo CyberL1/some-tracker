@@ -5,13 +5,21 @@
 	import IconCarbonWaveform from '~icons/carbon/waveform';
 	import IconCarbonHexagonSolid from '~icons/carbon/hexagon-solid';
 	import IconCarbonHexagonOutline from '~icons/carbon/hexagon-outline';
+	import IconCarbonAdd from '~icons/carbon/add';
+	import IconCarbonTrashCan from '~icons/carbon/trash-can';
 	import InstrumentEditor from './InstrumentEditor.svelte';
 	import Card from '../Card/Card.svelte';
+	import Input from '../Input/Input.svelte';
 	import { getContext } from 'svelte';
 	import type { AudioService } from '../../services/audio/audio-service';
+	import {
+		isValidInstrumentId,
+		normalizeInstrumentId,
+		getNextAvailableInstrumentId,
+		isInstrumentIdInRange
+	} from '../../utils/instrument-id';
 
 	const services: { audioService: AudioService } = getContext('container');
-	const TOTAL_INSTRUMENTS = 32;
 
 	let {
 		songs = [],
@@ -66,23 +74,79 @@
 		services.audioService.updateInstruments(songs[0].instruments);
 	}
 
-	$effect(() => {
+	function addInstrument(): void {
 		if (songs.length === 0) return;
+		const existingIds = songs[0].instruments.map((inst) => inst.id);
+		const newId = getNextAvailableInstrumentId(existingIds);
+		const newInstrument = new InstrumentModel(newId, [], 0, `Instrument ${newId}`);
+		songs[0].instruments = [...songs[0].instruments, newInstrument];
+		songs = [...songs];
+		selectedInstrumentIndex = songs[0].instruments.length - 1;
+		services.audioService.updateInstruments(songs[0].instruments);
+	}
 
-		const currentInstruments = songs[0].instruments;
-		if (!currentInstruments || currentInstruments.length !== TOTAL_INSTRUMENTS) {
-			const newInstruments = currentInstruments ? [...currentInstruments] : [];
-			while (newInstruments.length < TOTAL_INSTRUMENTS) {
-				const id = newInstruments.length;
-				newInstruments.push(new InstrumentModel(id, [], 0, `Instrument ${id + 1}`));
-			}
-			if (newInstruments.length > TOTAL_INSTRUMENTS) {
-				newInstruments.splice(TOTAL_INSTRUMENTS);
-			}
-			songs[0].instruments = newInstruments;
-			songs = [...songs];
+	function removeInstrument(index: number): void {
+		if (songs.length === 0) return;
+		if (songs[0].instruments.length <= 1) return;
+		songs[0].instruments = songs[0].instruments.filter((_, i) => i !== index);
+		songs = [...songs];
+		if (selectedInstrumentIndex >= songs[0].instruments.length) {
+			selectedInstrumentIndex = songs[0].instruments.length - 1;
 		}
-	});
+		services.audioService.updateInstruments(songs[0].instruments);
+	}
+
+	function updateInstrumentId(index: number, newId: string): void {
+		if (songs.length === 0) return;
+		const normalizedId = normalizeInstrumentId(newId);
+		if (!isValidInstrumentId(normalizedId) || !isInstrumentIdInRange(normalizedId)) {
+			return;
+		}
+		const existingIds = songs[0].instruments.map((inst, i) => (i === index ? '' : inst.id));
+		if (existingIds.includes(normalizedId)) {
+			return;
+		}
+		songs[0].instruments[index].id = normalizedId;
+		songs[0].instruments = [...songs[0].instruments];
+		songs = [...songs];
+		services.audioService.updateInstruments(songs[0].instruments);
+	}
+
+	let editingInstrumentId: number | null = $state(null);
+	let editingInstrumentIdValue = $state('');
+
+	function startEditingInstrumentId(index: number): void {
+		editingInstrumentId = index;
+		editingInstrumentIdValue = instruments[index]?.id || '';
+	}
+
+	function finishEditingInstrumentId(): void {
+		if (editingInstrumentId !== null) {
+			updateInstrumentId(editingInstrumentId, editingInstrumentIdValue);
+			editingInstrumentId = null;
+			editingInstrumentIdValue = '';
+		}
+	}
+
+	function cancelEditingInstrumentId(): void {
+		editingInstrumentId = null;
+		editingInstrumentIdValue = '';
+	}
+
+	function getInstrumentIdError(index: number, id: string): string | null {
+		const normalizedId = normalizeInstrumentId(id);
+		if (!isValidInstrumentId(normalizedId)) {
+			return 'Invalid format (must be 2 characters: 0-9, A-Z)';
+		}
+		if (!isInstrumentIdInRange(normalizedId)) {
+			return 'ID must be between 01 and ZZ';
+		}
+		const existingIds = instruments.map((inst, i) => (i === index ? '' : inst.id));
+		if (existingIds.includes(normalizedId)) {
+			return 'This ID is already used';
+		}
+		return null;
+	}
 
 	$effect(() => {
 		const currentInstruments = instruments;
@@ -101,35 +165,99 @@
 		actions={cardActions}>
 		{#snippet children()}
 			<div class="border-b border-neutral-700 bg-neutral-800">
-				<div class="flex overflow-x-auto">
+				<div class="flex items-center overflow-x-auto">
 					{#each instruments || [] as instrument, index}
 						{@const isUsed = isInstrumentUsed(instrument)}
 						{@const isSelected = selectedInstrumentIndex === index}
-						<button
-							class="group relative flex shrink-0 cursor-pointer flex-col items-center border-r border-neutral-700 p-3 {isSelected
-								? 'bg-blue-900/30'
-								: isUsed
-									? 'bg-neutral-800/40 hover:bg-neutral-800/70'
-									: 'bg-neutral-950/60 hover:bg-neutral-950/80'}"
-							onclick={() => (selectedInstrumentIndex = index)}>
-							<span
-								class="font-mono text-xs font-semibold {isSelected
-									? 'text-blue-200'
+						{@const isEditing = editingInstrumentId === index}
+						{#if isEditing}
+							<div
+								class="group relative flex shrink-0 flex-col items-center border-r border-neutral-700 p-3 {isSelected
+									? 'bg-blue-900/30'
 									: isUsed
-										? 'text-neutral-300 group-hover:text-neutral-100'
-										: 'text-neutral-700 group-hover:text-neutral-600'}">
-								{instrument.id.toString(36).toUpperCase().padStart(2, '0')}
-							</span>
-							<span
-								class="text-xs {isSelected
-									? 'text-blue-300/90'
-									: isUsed
-										? 'text-neutral-400 group-hover:text-neutral-300'
-										: 'text-neutral-800 group-hover:text-neutral-700'}">
-								{instrument.name}
-							</span>
-						</button>
+										? 'bg-neutral-800/40 hover:bg-neutral-800/70'
+										: 'bg-neutral-950/60 hover:bg-neutral-950/80'}">
+								<div class="flex flex-col items-center gap-1">
+									<Input
+										class="w-12 text-center font-mono text-xs"
+										value={editingInstrumentIdValue}
+										oninput={(e) => {
+											const value = (
+												e.target as HTMLInputElement
+											).value.toUpperCase();
+											if (value.length <= 2 && /^[0-9A-Z]*$/.test(value)) {
+												editingInstrumentIdValue = value;
+											}
+										}}
+										onkeydown={(e) => {
+											if (e.key === 'Enter') {
+												finishEditingInstrumentId();
+											} else if (e.key === 'Escape') {
+												cancelEditingInstrumentId();
+											}
+										}}
+										onblur={finishEditingInstrumentId}
+										autofocus />
+									{#if editingInstrumentIdValue}
+										{@const error = getInstrumentIdError(
+											index,
+											editingInstrumentIdValue
+										)}
+										{#if error}
+											<span class="text-[0.6rem] text-red-400">{error}</span>
+										{/if}
+									{/if}
+								</div>
+							</div>
+						{:else}
+							<div
+								class="group relative flex shrink-0 flex-col items-center border-r border-neutral-700">
+								<button
+									class="flex w-full shrink-0 cursor-pointer flex-col items-center p-3 {isSelected
+										? 'bg-blue-900/30'
+										: isUsed
+											? 'bg-neutral-800/40 hover:bg-neutral-800/70'
+											: 'bg-neutral-950/60 hover:bg-neutral-950/80'}"
+									onclick={() => (selectedInstrumentIndex = index)}
+									ondblclick={() => startEditingInstrumentId(index)}>
+									<span
+										class="font-mono text-xs font-semibold {isSelected
+											? 'text-blue-200'
+											: isUsed
+												? 'text-neutral-300 group-hover:text-neutral-100'
+												: 'text-neutral-700 group-hover:text-neutral-600'}">
+										{instrument.id}
+									</span>
+									<span
+										class="text-xs {isSelected
+											? 'text-blue-300/90'
+											: isUsed
+												? 'text-neutral-400 group-hover:text-neutral-300'
+												: 'text-neutral-800 group-hover:text-neutral-700'}">
+										{instrument.name}
+									</span>
+								</button>
+								{#if instruments.length > 1}
+									<button
+										class="absolute top-1 right-1 cursor-pointer rounded p-0.5 text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+										onclick={(e) => {
+											e.stopPropagation();
+											removeInstrument(index);
+										}}
+										title="Remove instrument">
+										<IconCarbonTrashCan class="h-3 w-3" />
+									</button>
+								{/if}
+							</div>
+						{/if}
 					{/each}
+					<button
+						class="ml-2 flex shrink-0 items-center gap-1 rounded border border-neutral-600 bg-neutral-800 px-3 py-2 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100"
+						onclick={addInstrument}
+						title="Add new instrument">
+						<IconCarbonAdd class="h-4 w-4" />
+						<span>Add</span>
+					</button>
 				</div>
 			</div>
 

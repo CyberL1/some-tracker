@@ -46,7 +46,13 @@ class AyumiState extends TrackerState {
 		this.instrumentIdToIndex = new Map();
 		instruments.forEach((instrument, index) => {
 			if (instrument && instrument.id !== undefined) {
-				this.instrumentIdToIndex.set(instrument.id, index);
+				let numericId;
+				if (typeof instrument.id === 'string') {
+					numericId = parseInt(instrument.id, 36);
+				} else {
+					numericId = instrument.id;
+				}
+				this.instrumentIdToIndex.set(numericId, index);
 			}
 		});
 	}

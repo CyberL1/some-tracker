@@ -120,8 +120,13 @@ class VT2Converter {
 				}
 			}
 
+			const instrumentId =
+				typeof sample.id === 'string'
+					? sample.id
+					: sample.id.toString(36).toUpperCase().padStart(2, '0');
+
 			return new Instrument(
-				sample.id,
+				instrumentId,
 				sample.data.map((line) => {
 					return new InstrumentRow({
 						tone: line.tone,
@@ -138,7 +143,7 @@ class VT2Converter {
 					});
 				}),
 				loopPoint,
-				`Instrument ${sample.id}`
+				`Instrument ${instrumentId}`
 			);
 		});
 
@@ -242,8 +247,13 @@ class VT2Converter {
 				}
 			}
 
+			const instrumentId =
+				typeof sample.id === 'string'
+					? sample.id
+					: sample.id.toString(36).toUpperCase().padStart(2, '0');
+
 			return new Instrument(
-				sample.id,
+				instrumentId,
 				sample.data.map((line) => {
 					return new InstrumentRow({
 						tone: line.tone,
@@ -260,7 +270,7 @@ class VT2Converter {
 					});
 				}),
 				loopPoint,
-				`Instrument ${sample.id}`
+				`Instrument ${instrumentId}`
 			);
 		});
 
@@ -287,13 +297,9 @@ class VT2Converter {
 	}
 
 	private initializeInstrumentsArray(convertedInstruments: Instrument[]): Instrument[] {
-		const TOTAL_INSTRUMENTS = 32;
-		const instruments = Array.from({ length: TOTAL_INSTRUMENTS }, (_, i) => {
-			const patternId = i + 1;
-			const converted = convertedInstruments.find((inst) => inst.id === patternId);
-			return converted || new Instrument(patternId, [], 0, `Instrument ${patternId}`);
-		});
-		return instruments;
+		return convertedInstruments.length > 0
+			? convertedInstruments
+			: [new Instrument('01', [], 0, 'Instrument 01')];
 	}
 
 	private convertSingleChip(

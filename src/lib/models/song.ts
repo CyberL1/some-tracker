@@ -39,16 +39,16 @@ class Note {
 }
 
 class Instrument {
-	id: number;
+	id: string;
 	rows: InstrumentRow[] = [];
 	loop: number = 0;
 	name: string = '';
 
-	constructor(id: number, rows: InstrumentRow[], loop: number = 0, name: string = '') {
+	constructor(id: string, rows: InstrumentRow[], loop: number = 0, name: string = '') {
 		this.id = id;
 		this.rows = rows;
 		this.loop = loop;
-		this.name = name || `Instrument ${id + 1}`;
+		this.name = name || `Instrument ${id}`;
 	}
 }
 
