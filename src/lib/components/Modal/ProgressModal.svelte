@@ -2,10 +2,12 @@
 	import IconCarbonDownload from '~icons/carbon/download';
 	import { onMount, onDestroy } from 'svelte';
 	import { exportToWAV } from '../../services/file/wav-export';
+	import { exportToPSG } from '../../services/file/psg-export';
 	import type { Project } from '../../models/project';
 
-	let { project, resolve, dismiss } = $props<{
+	let { project, exportType = 'wav', resolve, dismiss } = $props<{
 		project: Project;
+		exportType?: 'wav' | 'psg';
 		resolve?: (value?: any) => void;
 		dismiss?: (error?: any) => void;
 	}>();
@@ -15,6 +17,7 @@
 	const abortController = $state(new AbortController());
 
 	const progressPercent = $derived(Math.min(100, Math.max(0, progress)));
+	const exportLabel = $derived(exportType.toUpperCase());
 
 	onDestroy(() => {
 		abortController.abort();
@@ -24,7 +27,8 @@
 		const startTime = Date.now();
 
 		try {
-			await exportToWAV(
+			const exportFn = exportType === 'psg' ? exportToPSG : exportToWAV;
+			await exportFn(
 				project,
 				0,
 				(progressValue, messageValue) => {
@@ -55,7 +59,7 @@
 </script>
 
 <div class="flex items-center gap-2 border-b border-neutral-600 bg-neutral-900 px-2 py-1">
-	<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">Exporting WAV</h2>
+	<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">Exporting {exportLabel}</h2>
 	<IconCarbonDownload class="h-3 w-3 text-blue-400" />
 </div>
 

@@ -4,6 +4,7 @@
 	import { menuItems } from './lib/config/app-menu';
 	import { handleFileImport } from './lib/services/file/file-import';
 	import { handleFileExport } from './lib/services/file/file-export';
+	import { exportToPSG } from './lib/services/file/psg-export';
 	import { Project, Table } from './lib/models/project';
 	import type { Song } from './lib/models/song';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
@@ -245,7 +246,21 @@
 					tables
 				);
 
-				await open(ProgressModal, { project: currentProject });
+				await open(ProgressModal, { project: currentProject, exportType: 'wav' });
+				return;
+			}
+
+			if (data.action === 'export-psg') {
+				const currentProject = new Project(
+					projectSettings.title,
+					projectSettings.author,
+					songs,
+					0,
+					patternOrder,
+					tables
+				);
+
+				await open(ProgressModal, { project: currentProject, exportType: 'psg' });
 				return;
 			}
 
