@@ -96,7 +96,7 @@ function reconstructPatternRow(data: any): any {
 }
 
 function reconstructInstrument(data: any): Instrument {
-	const instrument = new Instrument(data.id ?? 0, [], data.loop ?? 0);
+	const instrument = new Instrument(data.id ?? 0, [], data.loop ?? 0, data.name ?? '');
 	if (data.rows) {
 		instrument.rows = data.rows.map((rowData: any) => reconstructInstrumentRow(rowData));
 	}

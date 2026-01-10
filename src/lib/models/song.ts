@@ -42,11 +42,13 @@ class Instrument {
 	id: number;
 	rows: InstrumentRow[] = [];
 	loop: number = 0;
+	name: string = '';
 
-	constructor(id: number, rows: InstrumentRow[], loop: number = 0) {
+	constructor(id: number, rows: InstrumentRow[], loop: number = 0, name: string = '') {
 		this.id = id;
 		this.rows = rows;
 		this.loop = loop;
+		this.name = name || `Instrument ${id + 1}`;
 	}
 }
 

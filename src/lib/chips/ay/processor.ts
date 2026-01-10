@@ -161,7 +161,13 @@ export class AYProcessor
 	}
 
 	sendInitInstruments(instruments: Instrument[]): void {
-		this.sendCommand({ type: 'init_instruments', instruments });
+		const sanitized: Instrument[] = instruments.map((o) => ({
+			id: o.id,
+			rows: Array.from(o.rows).map((row) => ({ ...row })),
+			loop: o.loop,
+			name: o.name
+		}));
+		this.sendCommand({ type: 'init_instruments', instruments: sanitized });
 	}
 
 	sendRequestedPattern(pattern: Pattern, patternOrderIndex: number): void {

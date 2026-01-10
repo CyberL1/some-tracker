@@ -1,0 +1,637 @@
+<script lang="ts">
+	import type { Instrument } from '../../models/song';
+	import IconCarbonTrashCan from '~icons/carbon/trash-can';
+	import IconCarbonDelete from '~icons/carbon/delete';
+	import IconCarbonAdd from '~icons/carbon/add';
+	import IconCarbonVolumeUp from '~icons/carbon/volume-up';
+	import IconCarbonArrowsVertical from '~icons/carbon/arrows-vertical';
+	import IconCarbonGrid from '~icons/carbon/grid';
+	import Input from '../Input/Input.svelte';
+	import { settingsStore } from '../../stores/settings.svelte';
+
+	let {
+		instrument,
+		asHex = false,
+		isExpanded = false,
+		onInstrumentChange
+	}: {
+		instrument: Instrument;
+		asHex: boolean;
+		isExpanded: boolean;
+		onInstrumentChange: (instrument: Instrument) => void;
+	} = $props();
+
+	const VOLUME_VALUES = Array.from({ length: 16 }, (_, i) => i);
+	const userPrefersVisualGrid = $derived(settingsStore.get().showVisualGrid ?? true);
+	const showVolumeGrid = $derived(isExpanded && userPrefersVisualGrid);
+
+	let isDragging = $state(false);
+
+	function getGridButtonClass(isActive: boolean): string {
+		const baseClass =
+			'flex cursor-pointer items-center gap-1.5 rounded border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100';
+		return isActive ? `${baseClass} border-blue-500 bg-blue-900/30 text-blue-200` : baseClass;
+	}
+
+	function formatNum(value: number): string {
+		if (asHex) {
+			const sign = value < 0 ? '-' : '';
+			return sign + Math.abs(value).toString(16).toUpperCase();
+		}
+		return String(value);
+	}
+
+	function beginDragVolume(index: number, value: number) {
+		isDragging = true;
+		updateRow(index, 'volume', value);
+	}
+
+	function dragOverVolume(index: number, value: number) {
+		if (isDragging) {
+			updateRow(index, 'volume', value);
+		}
+	}
+
+	function ensureNonEmptyRows(rowsArray: any[]): any[] {
+		return rowsArray.length === 0
+			? [
+					{
+						tone: false,
+						noise: false,
+						envelope: false,
+						toneAdd: 0,
+						noiseAdd: 0,
+						volume: 0,
+						loop: false,
+						amplitudeSliding: false,
+						amplitudeSlideUp: false,
+						toneAccumulation: false,
+						noiseAccumulation: false
+					}
+				]
+			: rowsArray;
+	}
+
+	let rows = $state(ensureNonEmptyRows([...instrument.rows]));
+	let loopRow = $state(instrument.loop);
+	let name = $state(instrument.name);
+	let loopColumnRef: HTMLTableCellElement | null = $state(null);
+	let tableRef: HTMLTableElement | null = $state(null);
+	let lastInstrumentId = $state(instrument.id);
+	let lastSyncedName = $state(instrument.name);
+	let lastSyncedRows = $state([...instrument.rows]);
+	let lastSyncedLoop = $state(instrument.loop);
+
+	function updateInstrument(updates: Partial<Instrument>) {
+		onInstrumentChange({ ...instrument, ...updates });
+	}
+
+	function updateRow(index: number, field: string, value: any) {
+		rows[index] = { ...rows[index], [field]: value };
+		rows = [...rows];
+		updateInstrument({ rows });
+	}
+
+	function toggleBoolean(index: number, field: string) {
+		const currentValue = rows[index][field];
+		updateRow(index, field, !currentValue);
+	}
+
+	function cycleAmplitudeSlide(index: number) {
+		const row = rows[index];
+		if (!row.amplitudeSliding) {
+			updateRow(index, 'amplitudeSliding', true);
+			updateRow(index, 'amplitudeSlideUp', true);
+		} else if (row.amplitudeSlideUp) {
+			updateRow(index, 'amplitudeSlideUp', false);
+		} else {
+			updateRow(index, 'amplitudeSliding', false);
+			updateRow(index, 'amplitudeSlideUp', false);
+		}
+	}
+
+	function updateNumericField(index: number, field: string, event: Event) {
+		const inputEl = event.target as HTMLInputElement;
+		let text = inputEl.value.trim();
+		const allowedPattern = asHex ? /[^0-9a-fA-F-]/g : /[^0-9-]/g;
+		text = text.replace(/\+/g, '').replace(allowedPattern, '');
+		if (text !== inputEl.value) inputEl.value = text;
+
+		let parsed: number | null = null;
+		if (asHex) {
+			let sign = 1;
+			let temp = text;
+			if (temp.startsWith('-')) {
+				sign = -1;
+				temp = temp.substring(1);
+			}
+			if (/^[0-9a-fA-F]+$/.test(temp)) {
+				parsed = sign * parseInt(temp, 16);
+			}
+		} else {
+			if (/^-?\d+$/.test(text)) {
+				parsed = parseInt(text, 10);
+			}
+		}
+
+		if (parsed !== null) {
+			updateRow(index, field, parsed);
+		}
+	}
+
+	function focusInputInRow(row: HTMLTableRowElement | null) {
+		if (!row) return;
+		const input = row.querySelector('input[type="text"]') as HTMLInputElement | null;
+		if (input) {
+			input.focus();
+			input.select();
+		}
+	}
+
+	function handleNumericKeyDown(index: number, event: KeyboardEvent) {
+		const key = event.key;
+
+		if (key === 'ArrowDown') {
+			event.preventDefault();
+			const nextIndex = index + 1;
+			if (nextIndex < rows.length) {
+				const currentRow = (event.target as HTMLInputElement).closest('tr');
+				focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null);
+			} else if (nextIndex === rows.length) {
+				addRow();
+				setTimeout(() => {
+					const currentRow = (event.target as HTMLInputElement).closest('tr');
+					focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null);
+				}, 0);
+			}
+			return;
+		}
+
+		if (key === 'ArrowUp') {
+			event.preventDefault();
+			const prevIndex = index - 1;
+			if (prevIndex >= 0) {
+				const currentRow = (event.target as HTMLInputElement).closest('tr');
+				focusInputInRow(currentRow?.previousElementSibling as HTMLTableRowElement | null);
+			}
+			return;
+		}
+
+		if (key.length > 1) return;
+		const pattern = asHex ? /^[0-9a-fA-F-]$/ : /^[0-9-]$/;
+		if (!pattern.test(key)) event.preventDefault();
+	}
+
+	function updateArraysAfterRowChange(newRows: any[]) {
+		rows = newRows;
+		if (loopRow >= rows.length) loopRow = rows.length - 1;
+		updateInstrument({ rows });
+	}
+
+	function addRow() {
+		updateArraysAfterRowChange([
+			...rows,
+			{
+				tone: false,
+				noise: false,
+				envelope: false,
+				toneAdd: 0,
+				noiseAdd: 0,
+				volume: 0,
+				loop: false,
+				amplitudeSliding: false,
+				amplitudeSlideUp: false,
+				toneAccumulation: false,
+				noiseAccumulation: false
+			}
+		]);
+	}
+
+	function removeRow(index: number) {
+		if (rows.length === 1) return;
+		updateArraysAfterRowChange(rows.filter((_, i) => i !== index));
+	}
+
+	function removeRowsFromBottom(index: number) {
+		if (rows.length === 1) return;
+		const rowsToKeep = index + 1;
+		if (rowsToKeep >= rows.length) return;
+		updateArraysAfterRowChange(rows.slice(0, rowsToKeep));
+	}
+
+	function setLoop(index: number) {
+		loopRow = index;
+		updateInstrument({ loop: loopRow });
+	}
+
+	export function addRowExternal() {
+		addRow();
+	}
+
+	export function removeLastRowExternal() {
+		removeRow(rows.length - 1);
+	}
+
+	function syncFromInstrument() {
+		rows = ensureNonEmptyRows([...instrument.rows]);
+		loopRow = instrument.loop;
+		name = instrument.name;
+		lastSyncedRows = [...instrument.rows];
+		lastSyncedLoop = instrument.loop;
+		lastSyncedName = instrument.name;
+	}
+
+	$effect(() => {
+		if (instrument.id !== lastInstrumentId) {
+			lastInstrumentId = instrument.id;
+			syncFromInstrument();
+		} else {
+			const rowsChanged =
+				instrument.rows.length !== lastSyncedRows.length ||
+				instrument.rows.some((row, i) => row !== lastSyncedRows[i]);
+			const loopChanged = instrument.loop !== lastSyncedLoop;
+			const nameChanged = instrument.name !== lastSyncedName;
+
+			if (rowsChanged || loopChanged) {
+				rows = ensureNonEmptyRows([...instrument.rows]);
+				loopRow = instrument.loop;
+				lastSyncedRows = [...instrument.rows];
+				lastSyncedLoop = instrument.loop;
+			}
+
+			if (nameChanged) {
+				name = instrument.name;
+				lastSyncedName = instrument.name;
+			}
+		}
+	});
+
+	$effect(() => {
+		if (name !== lastSyncedName) {
+			updateInstrument({ name });
+		}
+	});
+
+	$effect(() => {
+		rows = ensureNonEmptyRows(rows);
+	});
+
+	$effect(() => {
+		const stop = () => {
+			isDragging = false;
+		};
+		window.addEventListener('mouseup', stop);
+		return () => window.removeEventListener('mouseup', stop);
+	});
+</script>
+
+{#snippet volumeCell(index: number, value: number, isSelected: boolean)}
+	<td
+		class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${isSelected ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
+		tabindex="0"
+		title={String(value)}
+		onmousedown={() => beginDragVolume(index, value)}
+		onmouseover={() => dragOverVolume(index, value)}
+		onfocus={() => dragOverVolume(index, value)}>
+		{#if isSelected}
+			{formatNum(value)}
+		{:else}
+			<span class="text-neutral-300 opacity-0 group-hover:opacity-100"
+				>{formatNum(value)}</span>
+		{/if}
+	</td>
+{/snippet}
+
+<div class="w-full overflow-x-auto">
+	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
+		<span class="text-xs text-neutral-400">Name:</span>
+		<Input class="w-48 text-xs" bind:value={name} />
+		{#if isExpanded}
+			<button
+				class="ml-4 {getGridButtonClass(showVolumeGrid)}"
+				onclick={() => {
+					settingsStore.set('showVisualGrid', !userPrefersVisualGrid);
+				}}
+				title="Toggle volume grid">
+				<IconCarbonGrid class="h-3.5 w-3.5" />
+				<span>Volume Grid</span>
+			</button>
+		{/if}
+	</div>
+
+	<div class="flex items-start gap-2 overflow-x-auto">
+		{#key isExpanded}
+			<div class="relative flex flex-col">
+				{#if loopRow >= 0 && loopRow < rows.length && loopColumnRef && tableRef}
+					{@const tbody = tableRef.querySelector('tbody')}
+					{@const firstRow = tbody?.querySelector('tr') as HTMLTableRowElement | null}
+					{@const rowTop = firstRow ? firstRow.offsetTop : 0}
+					{@const rowHeight = isExpanded ? '2rem' : '1.75rem'}
+					{@const leftOffset = isExpanded ? '1rem' : '0.65rem'}
+					<div
+						class="pointer-events-none absolute top-0 z-0"
+						style="left: calc({loopColumnRef.offsetLeft}px + {leftOffset}); margin-top: calc({rowTop}px + {rowHeight} * {loopRow}); height: calc({rowHeight} * {rows.length -
+							loopRow});">
+						<div class="relative h-full">
+							<div
+								class="absolute top-0 left-0 h-full w-0.5 border-l-2 border-blue-200">
+							</div>
+							<div
+								class="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-blue-200">
+							</div>
+							<div
+								class="absolute bottom-0 left-0 h-2 w-2 border-b-2 border-l-2 border-blue-200">
+							</div>
+						</div>
+					</div>
+				{/if}
+				<table
+					bind:this={tableRef}
+					class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+					<thead>
+						<tr>
+							<th class={isExpanded ? 'px-2 py-1.5' : 'px-1 py-1'}>row</th>
+							<th class={isExpanded ? 'w-8 px-1.5' : 'w-6 px-0.5'}></th>
+							<th
+								class={isExpanded ? 'w-6 px-1.5' : 'w-4 px-0.5'}
+								bind:this={loopColumnRef}>{isExpanded ? 'loop' : 'lp'}</th>
+							<th
+								class={isExpanded ? 'w-12 px-1.5' : 'w-8 px-0.5 text-[0.65rem]'}
+								title="Tone Generator">{isExpanded ? 'Tone' : 'T'}</th>
+							<th
+								class={isExpanded ? 'w-12 px-1.5' : 'w-8 px-0.5 text-[0.65rem]'}
+								title="Noise Generator">{isExpanded ? 'Noise' : 'N'}</th>
+							<th
+								class={isExpanded ? 'w-12 px-1.5' : 'w-8 px-0.5 text-[0.65rem]'}
+								title="Hardware Envelope">{isExpanded ? 'Env' : 'E'}</th>
+							<th
+								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
+								title="Tone Offset">{isExpanded ? 'Tone+' : 'T+'}</th>
+							<th
+								class={isExpanded ? 'w-16 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
+								title="Tone Accumulation">
+								{#if isExpanded}
+									<div class="flex items-center justify-center gap-0.5">
+										<span>Tone</span>
+										<span class="text-[0.6rem]">↑</span>
+									</div>
+								{:else}
+									T↑
+								{/if}
+							</th>
+							<th
+								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
+								title="Noise Offset">{isExpanded ? 'Noise+' : 'N+'}</th>
+							<th
+								class={isExpanded ? 'w-16 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
+								title="Noise Accumulation">
+								{#if isExpanded}
+									<div class="flex items-center justify-center gap-0.5">
+										<span>Noise</span>
+										<span class="text-[0.6rem]">↑</span>
+									</div>
+								{:else}
+									N↑
+								{/if}
+							</th>
+							<th
+								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
+								title="Volume Level">
+								<div
+									class="flex items-center justify-center {isExpanded
+										? 'gap-1'
+										: 'gap-0.5'}">
+									<IconCarbonVolumeUp
+										class={isExpanded ? 'h-3 w-3' : 'h-2.5 w-2.5'} />
+									{#if isExpanded}<span>Vol</span>{/if}
+								</div>
+							</th>
+							<th
+								class={isExpanded ? 'w-14 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
+								title="Amplitude Slide: ↑ up / ↓ down / blank off">
+								<div
+									class="flex items-center justify-center {isExpanded
+										? 'gap-1'
+										: 'gap-0.5'}">
+									<IconCarbonArrowsVertical
+										class={isExpanded ? 'h-3 w-3' : 'h-2.5 w-2.5'} />
+									{#if isExpanded}<span>Slide</span>{/if}
+								</div>
+							</th>
+						</tr>
+						{#if showVolumeGrid}
+							<tr>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+								<th></th>
+							</tr>
+						{/if}
+					</thead>
+					<tbody>
+						{#each rows as row, index}
+							<tr class={isExpanded ? 'h-8' : 'h-7'}>
+								<td
+									class="border border-neutral-700 bg-neutral-800 {isExpanded
+										? 'px-2 py-1.5'
+										: 'px-1 py-1 text-[0.65rem]'} text-right">{index}</td>
+								<td
+									class="border border-neutral-700 bg-neutral-800 {isExpanded
+										? 'px-1.5'
+										: 'px-0.5'}">
+									<div
+										class="flex items-center justify-center {isExpanded
+											? 'gap-1'
+											: 'gap-0.5'}">
+										<button
+											class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-400"
+											onclick={(e) => {
+												e.stopPropagation();
+												removeRow(index);
+											}}
+											title="Remove this row">
+											<IconCarbonTrashCan
+												class={isExpanded
+													? 'h-3.5 w-3.5'
+													: 'h-2.5 w-2.5'} />
+										</button>
+										{#if index < rows.length - 1}
+											<button
+												class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-500"
+												onclick={(e) => {
+													e.stopPropagation();
+													removeRowsFromBottom(index);
+												}}
+												title="Remove all rows from bottom up to this one">
+												<IconCarbonDelete
+													class={isExpanded
+														? 'h-3.5 w-3.5'
+														: 'h-2.5 w-2.5'} />
+											</button>
+										{/if}
+									</div>
+								</td>
+								<td
+									class={isExpanded
+										? 'w-6 cursor-pointer px-1.5 text-center text-sm'
+										: 'w-4 cursor-pointer px-0.5 text-center text-[0.65rem]'}
+									onclick={() => setLoop(index)}>
+								</td>
+								<!-- Tone -->
+								<td
+									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.tone
+										? 'bg-green-900/30 text-green-400'
+										: 'text-neutral-600'}"
+									onclick={() => toggleBoolean(index, 'tone')}>
+									{row.tone ? '✓' : ''}
+								</td>
+								<!-- Noise -->
+								<td
+									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.noise
+										? 'bg-green-900/30 text-green-400'
+										: 'text-neutral-600'}"
+									onclick={() => toggleBoolean(index, 'noise')}>
+									{row.noise ? '✓' : ''}
+								</td>
+								<!-- Envelope -->
+								<td
+									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.envelope
+										? 'bg-green-900/30 text-green-400'
+										: 'text-neutral-600'}"
+									onclick={() => toggleBoolean(index, 'envelope')}>
+									{row.envelope ? '✓' : ''}
+								</td>
+								<!-- ToneAdd -->
+								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+									<input
+										type="text"
+										class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 {isExpanded
+											? 'px-2 py-1 text-xs'
+											: 'px-1 py-0.5 text-[0.65rem]'} text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+										value={formatNum(row.toneAdd)}
+										onkeydown={(e) => handleNumericKeyDown(index, e)}
+										onfocus={(e) => (e.target as HTMLInputElement).select()}
+										oninput={(e) => updateNumericField(index, 'toneAdd', e)} />
+								</td>
+								<!-- Tone Accumulation -->
+								<td
+									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.toneAccumulation
+										? 'bg-blue-900/30 text-blue-400'
+										: 'text-neutral-600'}"
+									onclick={() => toggleBoolean(index, 'toneAccumulation')}>
+									{row.toneAccumulation ? '↑' : ''}
+								</td>
+								<!-- NoiseAdd -->
+								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+									<input
+										type="text"
+										class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 {isExpanded
+											? 'px-2 py-1 text-xs'
+											: 'px-1 py-0.5 text-[0.65rem]'} text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+										value={formatNum(row.noiseAdd)}
+										onkeydown={(e) => handleNumericKeyDown(index, e)}
+										onfocus={(e) => (e.target as HTMLInputElement).select()}
+										oninput={(e) => updateNumericField(index, 'noiseAdd', e)} />
+								</td>
+								<!-- Noise Accumulation -->
+								<td
+									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.noiseAccumulation
+										? 'bg-blue-900/30 text-blue-400'
+										: 'text-neutral-600'}"
+									onclick={() => toggleBoolean(index, 'noiseAccumulation')}>
+									{row.noiseAccumulation ? '↑' : ''}
+								</td>
+								<!-- Volume -->
+								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+									<input
+										type="text"
+										class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 {isExpanded
+											? 'px-2 py-1 text-xs'
+											: 'px-1 py-0.5 text-[0.65rem]'} text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+										value={formatNum(row.volume)}
+										onkeydown={(e) => handleNumericKeyDown(index, e)}
+										onfocus={(e) => (e.target as HTMLInputElement).select()}
+										oninput={(e) => updateNumericField(index, 'volume', e)} />
+								</td>
+								<!-- Amplitude Slide (merged: off/up/down) -->
+								<td
+									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.amplitudeSliding &&
+									row.amplitudeSlideUp
+										? 'bg-green-900/30 text-green-400'
+										: row.amplitudeSliding
+											? 'bg-red-900/30 text-red-400'
+											: 'text-neutral-600'}"
+									onclick={() => cycleAmplitudeSlide(index)}
+									title={row.amplitudeSliding
+										? row.amplitudeSlideUp
+											? 'Slide up'
+											: 'Slide down'
+										: 'No slide'}>
+									{row.amplitudeSliding ? (row.amplitudeSlideUp ? '↑' : '↓') : ''}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+					<tfoot>
+						<tr>
+							<td colspan="12" class="px-2 py-1">
+								<div class="flex items-center justify-center">
+									<button
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
+										onclick={addRow}
+										title="Add new row">
+										<IconCarbonAdd class="mr-1 h-3.5 w-3.5" />
+										<span class="mr-1 text-xs">Add new row</span>
+									</button>
+								</div>
+							</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+
+			{#if showVolumeGrid}
+				<table
+					class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+					<thead>
+						<tr>
+							<th class="px-2 py-1.5">row</th>
+							{#each VOLUME_VALUES as v}
+								<th
+									class="w-6 min-w-6 bg-neutral-800 text-center"
+									title={String(v)}>
+									{formatNum(v)}
+								</th>
+							{/each}
+						</tr>
+						<tr>
+							<th></th>
+							{#each VOLUME_VALUES as v}
+								<th class="w-6 min-w-6"></th>
+							{/each}
+						</tr>
+					</thead>
+					<tbody>
+						{#each rows as row, index}
+							<tr class="h-8">
+								<td class="border border-neutral-700 bg-neutral-800 px-2 text-right"
+									>{index}</td>
+								{#each VOLUME_VALUES as v}
+									{@render volumeCell(index, v, v === row.volume)}
+								{/each}
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/if}
+		{/key}
+	</div>
+</div>

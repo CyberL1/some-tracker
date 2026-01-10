@@ -112,6 +112,14 @@ export class AudioService {
 		});
 	}
 
+	updateInstruments(instruments: import('../../models/song').Instrument[]) {
+		this.chipProcessors.forEach((chipProcessor) => {
+			if ('sendInitInstruments' in chipProcessor) {
+				(chipProcessor as any).sendInitInstruments(instruments);
+			}
+		});
+	}
+
 	updateSpeed(speed: number) {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.sendInitSpeed(speed);
