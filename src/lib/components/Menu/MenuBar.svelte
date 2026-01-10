@@ -14,6 +14,7 @@
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import Input from '../Input/Input.svelte';
 	import type { Song } from '../../models/song';
+	import Checkbox from '../Checkbox/Checkbox.svelte';
 
 	let activeMenu = $state('');
 	let {
@@ -200,13 +201,12 @@
 		{#if hasAYSong}
 			<div class="flex items-center gap-1.5">
 				<label class="flex cursor-pointer items-center gap-1.5">
-					<input
-						type="checkbox"
+					<Checkbox
+						showStatus={false}
 						bind:checked={envelopeAsNote}
 						onchange={() => {
 							editorStateStore.setEnvelopeAsNote(envelopeAsNote);
 						}}
-						class="h-3.5 w-3.5 cursor-pointer accent-neutral-500"
 						title="Envelope as Note" />
 					<span class="text-xs font-medium text-neutral-300">Env as Note</span>
 				</label>

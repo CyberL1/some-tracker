@@ -1,23 +1,18 @@
 <script lang="ts">
-	import type { ClassValue } from 'svelte/elements';
+	import type { ClassValue, HTMLInputAttributes } from 'svelte/elements';
 
 	let {
-		checked = $bindable(),
-		id,
 		showStatus = true,
-		class: className
-	}: {
-		checked: boolean;
-		id?: string;
-		showStatus?: boolean;
-		class?: ClassValue;
-	} = $props();
+		checked = $bindable(),
+		...rest
+	}: HTMLInputAttributes & { showStatus?: boolean } = $props();
 </script>
 
-<label for={id} class="flex cursor-pointer items-center gap-2 {className}">
+<label for={rest.id} class="flex cursor-pointer items-center gap-2 {rest.class}">
 	<input
-		{id}
+		id={rest.id}
 		type="checkbox"
+		{...rest}
 		bind:checked
 		class="h-4 w-4 cursor-pointer rounded border-neutral-600 bg-neutral-800 text-blue-500 focus:ring-2 focus:ring-blue-500" />
 	{#if showStatus}
@@ -26,4 +21,3 @@
 		</span>
 	{/if}
 </label>
-
