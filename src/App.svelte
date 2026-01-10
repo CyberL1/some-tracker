@@ -295,7 +295,7 @@
 
 <main
 	class="flex h-screen flex-col gap-1 overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
-	<MenuBar {menuItems} onAction={handleMenuAction} />
+	<MenuBar {menuItems} onAction={handleMenuAction} {songs} />
 	<div class="flex-1 overflow-hidden">
 		<SongView
 			bind:songs

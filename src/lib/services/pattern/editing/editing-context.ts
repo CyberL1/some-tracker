@@ -13,6 +13,7 @@ export interface EditingContext {
 	converter: PatternConverter;
 	formatter: PatternFormatter;
 	schema: Chip['schema'];
+	tuningTable?: number[];
 }
 
 export interface FieldInfo {

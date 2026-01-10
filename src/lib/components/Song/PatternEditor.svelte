@@ -81,6 +81,21 @@
 	const converter = getConverter(chip);
 	const schema = chip.schema;
 
+	$effect(() => {
+		//custom handler for AY formatter to handle envelope as note
+		if (chip.type === 'ay') {
+			formatter.tuningTable = tuningTable;
+			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
+			if (formatter.envelopeAsNote !== newEnvelopeAsNote) {
+				formatter.envelopeAsNote = newEnvelopeAsNote;
+				clearAllCaches();
+				draw();
+			} else {
+				formatter.envelopeAsNote = newEnvelopeAsNote;
+			}
+		}
+	});
+
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
 	let containerDiv: HTMLDivElement;
@@ -668,7 +683,8 @@
 			segments,
 			converter,
 			formatter,
-			schema
+			schema,
+			tuningTable
 		});
 
 		const editingResult = PatternEditingService.handleKeyInput(
@@ -680,7 +696,8 @@
 				segments,
 				converter,
 				formatter,
-				schema
+				schema,
+				tuningTable
 			},
 			event.key
 		);

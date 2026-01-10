@@ -100,9 +100,7 @@ export class PatternNoteInput {
 		return null;
 	}
 
-	private static mapKeyboardKeyToNote(
-		key: string
-	): { noteName: NoteName; octave: number } | null {
+	static mapKeyboardKeyToNote(key: string): { noteName: NoteName; octave: number } | null {
 		const lowerKey = key.toLowerCase();
 		const keyMapping = this.PIANO_KEYBOARD_MAP[lowerKey];
 		if (!keyMapping) {
@@ -120,5 +118,10 @@ export class PatternNoteInput {
 			noteName: keyMapping.noteName,
 			octave: calculatedOctave
 		};
+	}
+
+	static getLetterNote(key: string): NoteName | null {
+		const upperKey = key.toUpperCase();
+		return this.LETTER_NOTE_MAP[upperKey] || null;
 	}
 }

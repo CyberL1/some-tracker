@@ -1,6 +1,7 @@
 let editorState = $state({
 	octave: 4,
-	step: 1
+	step: 1,
+	envelopeAsNote: false
 });
 
 export const editorStateStore = {
@@ -17,5 +18,8 @@ export const editorStateStore = {
 	},
 	setStep: (step: number) => {
 		editorState = { ...editorState, step };
+	},
+	setEnvelopeAsNote: (envelopeAsNote: boolean) => {
+		editorState = { ...editorState, envelopeAsNote };
 	}
 };

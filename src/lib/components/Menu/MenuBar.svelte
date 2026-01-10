@@ -13,20 +13,26 @@
 	import { settingsStore } from '../../stores/settings.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import Input from '../Input/Input.svelte';
+	import type { Song } from '../../models/song';
 
 	let activeMenu = $state('');
 	let {
 		menuItems = [],
-		onAction
+		onAction,
+		songs = []
 	}: {
 		menuItems: MenuItem[];
 		onAction?: (data: { action: string }) => void;
+		songs?: Song[];
 	} = $props();
+
+	const hasAYSong = $derived(songs.some((song) => song.chipType === 'ay'));
 
 	const editorState = $derived(editorStateStore.get());
 
 	let octaveValue = $state(editorStateStore.get().octave.toString());
 	let stepValue = $state(editorStateStore.get().step.toString());
+	let envelopeAsNote = $state(editorStateStore.get().envelopeAsNote);
 
 	$effect(() => {
 		octaveValue = editorState.octave.toString();
@@ -34,6 +40,10 @@
 
 	$effect(() => {
 		stepValue = editorState.step.toString();
+	});
+
+	$effect(() => {
+		envelopeAsNote = editorState.envelopeAsNote;
 	});
 
 	function handleMenuOpen(data: { label: string }) {
@@ -187,6 +197,21 @@
 				</div>
 			</div>
 		</div>
+		{#if hasAYSong}
+			<div class="flex items-center gap-1.5">
+				<label class="flex cursor-pointer items-center gap-1.5">
+					<input
+						type="checkbox"
+						bind:checked={envelopeAsNote}
+						onchange={() => {
+							editorStateStore.setEnvelopeAsNote(envelopeAsNote);
+						}}
+						class="h-3.5 w-3.5 cursor-pointer accent-neutral-500"
+						title="Envelope as Note" />
+					<span class="text-xs font-medium text-neutral-300">Env as Note</span>
+				</label>
+			</div>
+		{/if}
 	</div>
 
 	<div class="absolute top-3.5 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1">

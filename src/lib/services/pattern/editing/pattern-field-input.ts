@@ -4,6 +4,8 @@ import { PatternValueUpdates } from './pattern-value-updates';
 import { StringManipulation } from './string-manipulation';
 import { FieldStrategyFactory } from './field-strategies';
 import { EffectField } from './effect-field';
+import { PatternEnvelopeNoteInput } from './pattern-envelope-note-input';
+import { editorStateStore } from '../../../stores/editor-state.svelte';
 
 export class PatternFieldInput {
 	static handleHexInput(
@@ -11,6 +13,20 @@ export class PatternFieldInput {
 		fieldInfo: FieldInfo,
 		key: string
 	): { updatedPattern: Pattern; shouldMoveNext: boolean } | null {
+		if (fieldInfo.fieldKey === 'envelopeValue' && context.schema.chipType === 'ay') {
+			const envelopeAsNote = editorStateStore.get().envelopeAsNote;
+			if (envelopeAsNote && context.tuningTable) {
+				const noteInputResult = PatternEnvelopeNoteInput.handleEnvelopeNoteInput(
+					context,
+					fieldInfo,
+					key
+				);
+				if (noteInputResult) {
+					return noteInputResult;
+				}
+			}
+		}
+
 		const upperKey = key.toUpperCase();
 		const isEffectField = EffectField.isEffectField(fieldInfo.fieldKey);
 

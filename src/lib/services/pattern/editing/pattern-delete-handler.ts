@@ -32,6 +32,12 @@ export class PatternDeleteHandler {
 			return this.handleEffectFieldDelete(context, fieldInfo);
 		}
 
+		if (fieldInfo.fieldKey === 'envelopeValue' && context.schema.chipType === 'ay') {
+			// Special handling for envelope value when displayed as note
+			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, 0);
+			return { updatedPattern, shouldMoveNext: false };
+		}
+
 		if (field.type === 'hex' || field.type === 'dec' || field.type === 'symbol') {
 			return this.handleNumericFieldDelete(context, fieldInfo, field);
 		}
@@ -40,7 +46,11 @@ export class PatternDeleteHandler {
 			const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
 			const currentStr =
 				typeof currentValue === 'number' ? currentValue.toString() : String(currentValue);
-			const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, '');
+			const newStr = StringManipulation.replaceCharAtOffset(
+				currentStr,
+				fieldInfo.charOffset,
+				''
+			);
 			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newStr);
 			return { updatedPattern, shouldMoveNext: false };
 		}
@@ -79,7 +89,11 @@ export class PatternDeleteHandler {
 			return null;
 		}
 
-		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, '0');
+		const newStr = StringManipulation.replaceCharAtOffset(
+			currentStr,
+			fieldInfo.charOffset,
+			'0'
+		);
 
 		const isAllZeros = /^0+$/.test(newStr);
 		const newValue = isAllZeros ? 0 : strategy.parse(newStr, field.length);
@@ -110,7 +124,11 @@ export class PatternDeleteHandler {
 		}
 
 		const replacementChar = fieldInfo.charOffset === 0 ? '.' : '0';
-		const newStr = StringManipulation.replaceCharAtOffset(currentStr, fieldInfo.charOffset, replacementChar);
+		const newStr = StringManipulation.replaceCharAtOffset(
+			currentStr,
+			fieldInfo.charOffset,
+			replacementChar
+		);
 		const newEffectObj = EffectField.parseValue(newStr);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(
