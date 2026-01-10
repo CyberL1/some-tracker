@@ -5,7 +5,12 @@
 	import { exportToPSG } from '../../services/file/psg-export';
 	import type { Project } from '../../models/project';
 
-	let { project, exportType = 'wav', resolve, dismiss } = $props<{
+	let {
+		project,
+		exportType = 'wav',
+		resolve,
+		dismiss
+	} = $props<{
 		project: Project;
 		exportType?: 'wav' | 'psg';
 		resolve?: (value?: any) => void;
@@ -59,7 +64,9 @@
 </script>
 
 <div class="flex items-center gap-2 border-b border-neutral-600 bg-neutral-900 px-2 py-1">
-	<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">Exporting {exportLabel}</h2>
+	<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">
+		Exporting {exportLabel}
+	</h2>
 	<IconCarbonDownload class="h-3 w-3 text-blue-400" />
 </div>
 

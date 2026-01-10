@@ -18,9 +18,7 @@ export const menuItems: MenuItem[] = [
 						label: 'Song',
 						type: 'expandable',
 						icon: '📁',
-						items: [
-							{ label: 'AY/YM', type: 'normal', action: 'new-song-ay' }
-						]
+						items: [{ label: 'AY/YM', type: 'normal', action: 'new-song-ay' }]
 					}
 				]
 			},

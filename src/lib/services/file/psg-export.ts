@@ -1,20 +1,7 @@
 import type { Project } from '../../models/project';
-import type { Chip } from '../../chips/types';
-import { getChipByType, createRenderer } from '../../chips/registry';
 import { downloadFile, sanitizeFilename } from '../../utils/file-download';
-import { AY_CHIP } from '../../chips/ay';
 
-const SAMPLE_RATE = 44100;
 const DEFAULT_SPEED = 6;
-const DEFAULT_AYM_FREQUENCY = 1773400;
-const AYUMI_STRUCT_SIZE = 22904;
-const AYUMI_STRUCT_LEFT_OFFSET = 22888;
-const AYUMI_STRUCT_RIGHT_OFFSET = 22896;
-const PAN_SETTINGS = [
-	{ channel: 0, left: 0.35, right: 0 },
-	{ channel: 1, left: 0.5, right: 0 },
-	{ channel: 2, left: 0.75, right: 0 }
-];
 
 interface AYRegisterState {
 	registers: number[];
@@ -102,92 +89,6 @@ function encodePSG(registerFrames: number[][]): ArrayBuffer {
 }
 
 class PsgExportService {
-	private async loadWasmModule(
-		onProgress?: (progress: number, message: string) => void
-	): Promise<{ wasm: any; wasmBuffer: ArrayBuffer }> {
-		onProgress?.(0, 'Loading WASM module...');
-		const wasmResponse = await fetch(import.meta.env.BASE_URL + AY_CHIP.wasmUrl);
-		const wasmBuffer = await wasmResponse.arrayBuffer();
-
-		onProgress?.(10, 'Instantiating WASM...');
-		const result = await WebAssembly.instantiate(wasmBuffer, {
-			env: { emscripten_notify_memory_growth: () => {} }
-		});
-
-		return { wasm: result.instance.exports as any, wasmBuffer };
-	}
-
-	private initializeAyumi(wasm: any, song: any): number {
-		const chipFrequency = song.chipFrequency || DEFAULT_AYM_FREQUENCY;
-		const ayumiPtr = wasm.malloc(AYUMI_STRUCT_SIZE);
-		if (!ayumiPtr) {
-			throw new Error('Failed to allocate Ayumi structure');
-		}
-
-		const isYM = song.chipType === 'ay' && song.chipVariant === 'YM' ? 1 : 0;
-		wasm.ayumi_configure(ayumiPtr, isYM, chipFrequency, SAMPLE_RATE);
-
-		PAN_SETTINGS.forEach(({ channel, left, right }) => {
-			wasm.ayumi_set_pan(ayumiPtr, channel, left, right);
-		});
-
-		return ayumiPtr;
-	}
-
-	private async loadProcessorModules(
-		onProgress?: (progress: number, message: string) => void
-	): Promise<{
-		AyumiState: any;
-		TrackerPatternProcessor: any;
-		AYAudioDriver: any;
-		AyumiEngine: any;
-		AYChipRegisterState: any;
-	}> {
-		onProgress?.(20, 'Loading processor modules...');
-		const baseUrl = import.meta.env.BASE_URL;
-		const { default: AyumiState } = await import(`${baseUrl}ayumi-state.js`);
-		onProgress?.(30, 'Loading pattern processor...');
-		const { default: TrackerPatternProcessor } = await import(
-			`${baseUrl}tracker-pattern-processor.js`
-		);
-		onProgress?.(40, 'Loading audio driver...');
-		const { default: AYAudioDriver } = await import(`${baseUrl}ay-audio-driver.js`);
-		const { default: AyumiEngine } = await import(`${baseUrl}ayumi-engine.js`);
-		const { default: AYChipRegisterState } = await import(
-			`${baseUrl}ay-chip-register-state.js`
-		);
-
-		return {
-			AyumiState,
-			TrackerPatternProcessor,
-			AYAudioDriver,
-			AyumiEngine,
-			AYChipRegisterState
-		};
-	}
-
-	private setupState(
-		state: any,
-		song: any,
-		project: Project,
-		wasm: any,
-		ayumiPtr: number,
-		wasmBuffer: ArrayBuffer
-	): void {
-		const chipFrequency = song.chipFrequency || DEFAULT_AYM_FREQUENCY;
-		state.setWasmModule(wasm, ayumiPtr, wasmBuffer);
-		state.setAymFrequency(chipFrequency);
-		state.setTuningTable(song.tuningTable);
-		state.setInstruments(song.instruments);
-		state.setTables(project.tables);
-		state.setPatternOrder(project.patternOrder || [0]);
-		state.setSpeed(song.initialSpeed || DEFAULT_SPEED);
-		if (song.interruptFrequency) {
-			state.intFrequency = song.interruptFrequency;
-		}
-		state.updateSamplesPerTick(SAMPLE_RATE);
-	}
-
 	private getPatterns(song: any, patternOrder: number[]): any[] {
 		const patterns: any[] = [];
 		for (const patternId of patternOrder) {
@@ -214,7 +115,6 @@ class PsgExportService {
 		state: any,
 		patternProcessor: any,
 		audioDriver: any,
-		ayumiEngine: any,
 		registerState: any,
 		song: any,
 		totalRows: number,
@@ -222,25 +122,23 @@ class PsgExportService {
 		onProgress?: (progress: number, message: string) => void
 	): Promise<number[][]> {
 		const registerFrames: number[][] = [];
-		let totalSamples = 0;
-		const maxSamples = SAMPLE_RATE * 300;
+		let totalTicks = 0;
+		const maxTicks = 1000000;
 
 		let lastProgressUpdate = 0;
-		const progressUpdateInterval = SAMPLE_RATE * 0.1;
+		const progressUpdateInterval = 1000;
 		let lastProgressTime = Date.now();
 		const minProgressUpdateMs = 100;
 
 		onProgress?.(50, 'Capturing register states...');
 
-		while (totalSamples < maxSamples) {
+		while (totalTicks < maxTicks) {
 			const now = Date.now();
 			if (
-				(totalSamples - lastProgressUpdate >= progressUpdateInterval ||
+				(totalTicks - lastProgressUpdate >= progressUpdateInterval ||
 					now - lastProgressTime >= minProgressUpdateMs) &&
-				totalSamples > 0
+				totalTicks > 0
 			) {
-				const captureProgress = (totalSamples / maxSamples) * 50;
-				const progress = 50 + captureProgress;
 				let currentRow = 0;
 				for (let i = 0; i < state.currentPatternOrderIndex; i++) {
 					const patternId = state.patternOrder[i];
@@ -252,59 +150,51 @@ class PsgExportService {
 				if (state.currentPattern) {
 					currentRow += state.currentRow;
 				}
+				const captureProgress = (currentRow / totalRows) * 50;
+				const progress = 50 + captureProgress;
 				const message = `Capturing... ${currentRow}/${totalRows} rows`;
 				onProgress?.(progress, message);
-				lastProgressUpdate = totalSamples;
+				lastProgressUpdate = totalTicks;
 				lastProgressTime = now;
 				await new Promise((resolve) => setTimeout(resolve, 0));
 			}
 
-			if (state.sampleCounter >= state.samplesPerTick) {
-				if (state.currentTick === 0 && state.currentPattern) {
-					patternProcessor.parsePatternRow(
-						state.currentPattern,
-						state.currentRow,
-						registerState
-					);
-				}
-
-				patternProcessor.processTables();
-				patternProcessor.processSlides();
-				audioDriver.processInstruments(state, registerState);
-				ayumiEngine.applyRegisterState(registerState);
-
-				const ayRegisters = convertRegisterStateToAYRegisters(registerState);
-				registerFrames.push([...ayRegisters]);
-
-				const isLastPattern =
-					state.currentPatternOrderIndex >= state.patternOrder.length - 1;
-				const isLastRow = state.currentRow >= state.currentPattern.length - 1;
-				const isLastTick = state.currentTick >= state.currentSpeed - 1;
-
-				if (isLastPattern && isLastRow && isLastTick) {
-					break;
-				}
-
-				const needsPatternChange = state.advancePosition();
-				if (needsPatternChange) {
-					if (state.currentPatternOrderIndex >= state.patternOrder.length) {
-						break;
-					}
-					if (state.currentPatternOrderIndex < patterns.length) {
-						state.currentPattern = patterns[state.currentPatternOrderIndex];
-					} else {
-						break;
-					}
-				}
-
-				state.sampleCounter = 0;
+			if (state.currentTick === 0 && state.currentPattern) {
+				patternProcessor.parsePatternRow(
+					state.currentPattern,
+					state.currentRow,
+					registerState
+				);
 			}
 
-			ayumiEngine.process();
-			ayumiEngine.removeDC();
+			patternProcessor.processTables();
+			patternProcessor.processSlides();
+			audioDriver.processInstruments(state, registerState);
 
-			totalSamples++;
-			state.sampleCounter++;
+			const ayRegisters = convertRegisterStateToAYRegisters(registerState);
+			registerFrames.push([...ayRegisters]);
+
+			const isLastPattern = state.currentPatternOrderIndex >= state.patternOrder.length - 1;
+			const isLastRow = state.currentRow >= state.currentPattern.length - 1;
+			const isLastTick = state.currentTick >= state.currentSpeed - 1;
+
+			if (isLastPattern && isLastRow && isLastTick) {
+				break;
+			}
+
+			const needsPatternChange = state.advancePosition();
+			if (needsPatternChange) {
+				if (state.currentPatternOrderIndex >= state.patternOrder.length) {
+					break;
+				}
+				if (state.currentPatternOrderIndex < patterns.length) {
+					state.currentPattern = patterns[state.currentPatternOrderIndex];
+				} else {
+					break;
+				}
+			}
+
+			totalTicks++;
 		}
 
 		return registerFrames;
@@ -327,21 +217,28 @@ class PsgExportService {
 			throw new Error('Song is empty');
 		}
 
-		const { wasm, wasmBuffer } = await this.loadWasmModule(onProgress);
-		const ayumiPtr = this.initializeAyumi(wasm, song);
-		const {
-			AyumiState,
-			TrackerPatternProcessor,
-			AYAudioDriver,
-			AyumiEngine,
-			AYChipRegisterState
-		} = await this.loadProcessorModules(onProgress);
+		onProgress?.(10, 'Loading processor modules...');
+		const baseUrl = import.meta.env.BASE_URL;
+		const { default: AyumiState } = await import(`${baseUrl}ayumi-state.js`);
+		const { default: TrackerPatternProcessor } = await import(
+			`${baseUrl}tracker-pattern-processor.js`
+		);
+		const { default: AYAudioDriver } = await import(`${baseUrl}ay-audio-driver.js`);
+		const { default: AYChipRegisterState } = await import(
+			`${baseUrl}ay-chip-register-state.js`
+		);
 
 		const state = new AyumiState();
-		this.setupState(state, song, project, wasm, ayumiPtr, wasmBuffer);
+		state.setTuningTable(song.tuningTable);
+		state.setInstruments(song.instruments);
+		state.setTables(project.tables);
+		state.setPatternOrder(project.patternOrder || [0]);
+		state.setSpeed(song.initialSpeed || DEFAULT_SPEED);
+		if (song.interruptFrequency) {
+			state.intFrequency = song.interruptFrequency;
+		}
 
 		const audioDriver = new AYAudioDriver();
-		const ayumiEngine = new AyumiEngine(wasm, ayumiPtr);
 		const registerState = new AYChipRegisterState();
 		const patternProcessor = new TrackerPatternProcessor(state, audioDriver, {
 			postMessage: () => {}
@@ -351,7 +248,6 @@ class PsgExportService {
 		const patterns = this.getPatterns(song, patternOrder);
 
 		if (patterns.length === 0) {
-			wasm.free(ayumiPtr);
 			throw new Error('No patterns found');
 		}
 
@@ -366,7 +262,6 @@ class PsgExportService {
 				state,
 				patternProcessor,
 				audioDriver,
-				ayumiEngine,
 				registerState,
 				song,
 				totalRows,
@@ -375,7 +270,6 @@ class PsgExportService {
 			);
 
 			if (abortSignal?.aborted) {
-				wasm.free(ayumiPtr);
 				throw new Error('Export cancelled');
 			}
 
@@ -384,7 +278,6 @@ class PsgExportService {
 			const blob = new Blob([psgBuffer], { type: 'application/octet-stream' });
 
 			if (abortSignal?.aborted) {
-				wasm.free(ayumiPtr);
 				throw new Error('Export cancelled');
 			}
 
@@ -393,10 +286,8 @@ class PsgExportService {
 			const sanitizedFilename = sanitizeFilename(filename);
 			downloadFile(blob, `${sanitizedFilename}.psg`);
 
-			wasm.free(ayumiPtr);
 			onProgress?.(100, 'Complete!');
 		} catch (error) {
-			wasm.free(ayumiPtr);
 			throw error;
 		}
 	}
