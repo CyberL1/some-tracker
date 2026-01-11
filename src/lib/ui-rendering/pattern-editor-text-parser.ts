@@ -175,7 +175,11 @@ export class PatternEditorTextParser {
 				continue;
 			}
 
-			const isAtomic = field?.selectable === 'atomic';
+			const isEnvelopeAsNote =
+				segment.fieldKey === 'envelopeValue' &&
+				this.schema.chipType === 'ay' &&
+				(this.formatter as any).envelopeAsNote;
+			const isAtomic = field?.selectable === 'atomic' || isEnvelopeAsNote;
 
 			if (isAtomic && i === segment.start) {
 				const fieldText = rowString.substring(segment.start, segment.end);
