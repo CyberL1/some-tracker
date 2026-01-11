@@ -10,7 +10,7 @@
 	import { getColors } from '../../utils/colors';
 	import { getFonts } from '../../utils/fonts';
 	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
-	import { getContext } from 'svelte';
+	import { getContext, untrack } from 'svelte';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { playbackStore } from '../../stores/playback.svelte';
 	import { getFormatter, getConverter } from '../../chips/registry';
@@ -87,40 +87,40 @@
 			formatter.tuningTable = tuningTable;
 			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
 			if (formatter.envelopeAsNote !== newEnvelopeAsNote) {
-				// Save the current cursor position before switching modes
-				let currentFieldKey: string | undefined;
-				let currentCharIndex: number | undefined;
-				if (currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
-					const rowString = getPatternRowData(currentPattern, selectedRow);
-					const cellPositions = getCellPositions(rowString, selectedRow);
-					if (selectedColumn >= 0 && selectedColumn < cellPositions.length) {
-						currentFieldKey = cellPositions[selectedColumn].fieldKey;
-						currentCharIndex = cellPositions[selectedColumn].charIndex;
-					}
-				}
-
-				formatter.envelopeAsNote = newEnvelopeAsNote;
-				clearAllCaches();
-
-				// Restore cursor to the closest position based on character index
-				if (currentCharIndex !== undefined && currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
-					const rowString = getPatternRowData(currentPattern, selectedRow);
-					const cellPositions = getCellPositions(rowString, selectedRow);
-
-					// Find the cell with the closest character index
-					let closestColumnIndex = 0;
-					let minDistance = Infinity;
-					for (let i = 0; i < cellPositions.length; i++) {
-						const distance = Math.abs(cellPositions[i].charIndex - currentCharIndex);
-						if (distance < minDistance) {
-							minDistance = distance;
-							closestColumnIndex = i;
+				untrack(() => {
+					// Save the current cursor position before switching modes
+					let currentCharIndex: number | undefined;
+					if (currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
+						const rowString = getPatternRowData(currentPattern, selectedRow);
+						const cellPositions = getCellPositions(rowString, selectedRow);
+						if (selectedColumn >= 0 && selectedColumn < cellPositions.length) {
+							currentCharIndex = cellPositions[selectedColumn].charIndex;
 						}
 					}
-					selectedColumn = closestColumnIndex;
-				}
 
-				draw();
+					formatter.envelopeAsNote = newEnvelopeAsNote;
+					clearAllCaches();
+
+					// Restore cursor to the closest position based on character index
+					if (currentCharIndex !== undefined && currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
+						const rowString = getPatternRowData(currentPattern, selectedRow);
+						const cellPositions = getCellPositions(rowString, selectedRow);
+
+						// Find the cell with the closest character index
+						let closestColumnIndex = 0;
+						let minDistance = Infinity;
+						for (let i = 0; i < cellPositions.length; i++) {
+							const distance = Math.abs(cellPositions[i].charIndex - currentCharIndex);
+							if (distance < minDistance) {
+								minDistance = distance;
+								closestColumnIndex = i;
+							}
+						}
+						selectedColumn = closestColumnIndex;
+					}
+
+					draw();
+				});
 			} else {
 				formatter.envelopeAsNote = newEnvelopeAsNote;
 			}
