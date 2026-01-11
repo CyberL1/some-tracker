@@ -1,10 +1,11 @@
 <script lang="ts">
-	import type { Pattern, Song } from '../../models/song';
+	import type { Pattern, Instrument, Song } from '../../models/song';
 	import type {
 		ChipProcessor,
 		TuningTableSupport,
 		InstrumentSupport
 	} from '../../chips/base/processor';
+	import type { Chip } from '../../chips/types';
 	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Table } from '../../models/project';
 	import Card from '../Card/Card.svelte';
@@ -71,7 +72,6 @@
 		});
 	}
 
-	//TODO: refactor, ui shouldn't be responsible for finding the last speed command
 	function findLastSpeedCommand(
 		song: Song,
 		patternOrder: number[],
@@ -133,7 +133,6 @@
 			chipProcessor.sendInitPattern(currentPattern, sharedPatternOrderIndex);
 			chipProcessor.sendInitSpeed(song.initialSpeed);
 
-			//TODO: probably all chips should have instruments and tuning tables...
 			if (chipProcessor.chip.type === 'ay') {
 				const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
 				const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;

@@ -10,6 +10,7 @@
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
 	import IconCarbonLayers from '~icons/carbon/layers';
 	import IconCarbonArrowDown from '~icons/carbon/arrow-down';
+	import { settingsStore } from '../../stores/settings.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import Input from '../Input/Input.svelte';
 	import type { Song } from '../../models/song';
@@ -30,9 +31,21 @@
 
 	const editorState = $derived(editorStateStore.get());
 
-	let octaveValue = $derived(editorState.octave.toString());
-	let stepValue = $derived(editorState.step.toString());
-	let envelopeAsNote = $derived(editorState.envelopeAsNote);
+	let octaveValue = $state(editorStateStore.get().octave.toString());
+	let stepValue = $state(editorStateStore.get().step.toString());
+	let envelopeAsNote = $state(editorStateStore.get().envelopeAsNote);
+
+	$effect(() => {
+		octaveValue = editorState.octave.toString();
+	});
+
+	$effect(() => {
+		stepValue = editorState.step.toString();
+	});
+
+	$effect(() => {
+		envelopeAsNote = editorState.envelopeAsNote;
+	});
 
 	function handleMenuOpen(data: { label: string }) {
 		activeMenu = data.label;

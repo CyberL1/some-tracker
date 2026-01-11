@@ -7,13 +7,11 @@ export function formatHex(value: number | string | null | undefined, digits: num
 
 const TABLE_OFF_VALUE = -1;
 const TABLE_OFF_DISPLAY = '00';
-const NOTE_OFF_DISPLAY = 'OFF';
 
 function normalizeSymbolValue(value: number | string | null | undefined): number | null {
 	if (value === null || value === undefined) return null;
 	if (typeof value === 'string') {
-		if (value.toUpperCase() === NOTE_OFF_DISPLAY || value === TABLE_OFF_DISPLAY)
-			return TABLE_OFF_VALUE;
+		if (value.toUpperCase() === 'OFF' || value === '00') return TABLE_OFF_VALUE;
 		const parsed = parseInt(value, 36);
 		return isNaN(parsed) ? null : parsed;
 	}
@@ -42,7 +40,7 @@ export function parseSymbol(value: string, length: number): number {
 	if (value === '.'.repeat(length)) return 0;
 
 	const cleaned = value.replace(/\./g, '').toUpperCase();
-	if (cleaned === NOTE_OFF_DISPLAY || cleaned === TABLE_OFF_DISPLAY) return TABLE_OFF_VALUE;
+	if (cleaned === 'OFF' || cleaned === '00') return TABLE_OFF_VALUE;
 
 	const parsed = parseInt(cleaned, 36);
 	return isNaN(parsed) ? 0 : parsed;

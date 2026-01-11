@@ -15,6 +15,7 @@
 	}
 
 	let {
+		buttonType,
 		isHovered,
 		onClick,
 		onMouseEnter,

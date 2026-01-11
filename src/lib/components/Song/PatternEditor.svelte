@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { Pattern, Instrument } from '../../models/song';
-	import type { ChipProcessor } from '../../chips/base/processor';
+	import type {
+		ChipProcessor,
+		TuningTableSupport,
+		InstrumentSupport
+	} from '../../chips/base/processor';
 	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Chip } from '../../chips/types';
 	import { getColors } from '../../utils/colors';
@@ -76,6 +80,52 @@
 	const formatter = getFormatter(chip);
 	const converter = getConverter(chip);
 	const schema = chip.schema;
+
+	$effect(() => {
+		//custom handler for AY formatter to handle envelope as note
+		if (chip.type === 'ay') {
+			formatter.tuningTable = tuningTable;
+			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
+			if (formatter.envelopeAsNote !== newEnvelopeAsNote) {
+				untrack(() => {
+					// Save the current cursor position before switching modes
+					let currentCharIndex: number | undefined;
+					if (currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
+						const rowString = getPatternRowData(currentPattern, selectedRow);
+						const cellPositions = getCellPositions(rowString, selectedRow);
+						if (selectedColumn >= 0 && selectedColumn < cellPositions.length) {
+							currentCharIndex = cellPositions[selectedColumn].charIndex;
+						}
+					}
+
+					formatter.envelopeAsNote = newEnvelopeAsNote;
+					clearAllCaches();
+
+					// Restore cursor to the closest position based on character index
+					if (currentCharIndex !== undefined && currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
+						const rowString = getPatternRowData(currentPattern, selectedRow);
+						const cellPositions = getCellPositions(rowString, selectedRow);
+
+						// Find the cell with the closest character index
+						let closestColumnIndex = 0;
+						let minDistance = Infinity;
+						for (let i = 0; i < cellPositions.length; i++) {
+							const distance = Math.abs(cellPositions[i].charIndex - currentCharIndex);
+							if (distance < minDistance) {
+								minDistance = distance;
+								closestColumnIndex = i;
+							}
+						}
+						selectedColumn = closestColumnIndex;
+					}
+
+					draw();
+				});
+			} else {
+				formatter.envelopeAsNote = newEnvelopeAsNote;
+			}
+		}
+	});
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
@@ -285,6 +335,19 @@
 		}
 	}
 
+	function initPlayback() {
+		chipProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
+		chipProcessor.sendInitSpeed(speed);
+
+		if (chip.type === 'ay') {
+			const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
+			const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
+
+			withTuningTables.sendInitTuningTable(tuningTable);
+			withInstruments.sendInitInstruments(instruments);
+		}
+	}
+
 	function pausePlayback() {
 		services.audioService.stop();
 	}
@@ -295,6 +358,10 @@
 	): ReturnType<PatternEditorTextParser['getCellPositions']> {
 		if (!textParser) return [];
 		return textParser.getCellPositions(rowString, rowIndex);
+	}
+
+	function getTotalCellCount(rowString: string): number {
+		return rowString.replace(/\s/g, '').length;
 	}
 
 	function getVisibleRows(pattern: Pattern): VisibleRow[] {
@@ -698,6 +765,20 @@
 
 	let isHoveringLabel = $state(false);
 
+	function handleMouseMove(event: MouseEvent): void {
+		if (!canvas) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const y = event.clientY - rect.top;
+
+		const wasHovering = isHoveringLabel;
+		isHoveringLabel = y <= lineHeight;
+
+		if (wasHovering !== isHoveringLabel) {
+			canvas.style.cursor = isHoveringLabel ? 'pointer' : 'default';
+		}
+	}
+
 	function handleMouseLeave(): void {
 		if (canvas) {
 			canvas.style.cursor = 'default';
@@ -898,7 +979,6 @@
 			return '---';
 		}
 		if (fieldKey === 'effect' || fieldKey === 'envelopeEffect') {
-			//ay workaround
 			return { effect: 0, delay: 0, parameter: 0 } as unknown as string | number;
 		}
 		if (fieldType === 'hex' || fieldType === 'dec' || fieldType === 'symbol') {
@@ -1219,6 +1299,9 @@
 	$effect(() => {
 		if (!chipProcessor) return;
 
+		const currentPatterns = patterns;
+		const currentPatternOrder = patternOrder;
+
 		const handlePatternUpdate = (
 			currentRow: number,
 			currentPatternOrderIndexUpdate?: number
@@ -1263,59 +1346,6 @@
 		};
 
 		chipProcessor.setCallbacks(handlePatternUpdate, handlePatternRequest, handleSpeedUpdate);
-	});
-
-	$effect(() => {
-		//custom handler for AY formatter to handle envelope as note
-		if (chip.type === 'ay') {
-			formatter.tuningTable = tuningTable;
-			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
-			if (formatter.envelopeAsNote !== newEnvelopeAsNote) {
-				untrack(() => {
-					// Save the current cursor position before switching modes
-					let currentCharIndex: number | undefined;
-					if (currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
-						const rowString = getPatternRowData(currentPattern, selectedRow);
-						const cellPositions = getCellPositions(rowString, selectedRow);
-						if (selectedColumn >= 0 && selectedColumn < cellPositions.length) {
-							currentCharIndex = cellPositions[selectedColumn].charIndex;
-						}
-					}
-
-					formatter.envelopeAsNote = newEnvelopeAsNote;
-					clearAllCaches();
-
-					// Restore cursor to the closest position based on character index
-					if (
-						currentCharIndex !== undefined &&
-						currentPattern &&
-						selectedRow >= 0 &&
-						selectedRow < currentPattern.length
-					) {
-						const rowString = getPatternRowData(currentPattern, selectedRow);
-						const cellPositions = getCellPositions(rowString, selectedRow);
-
-						// Find the cell with the closest character index
-						let closestColumnIndex = 0;
-						let minDistance = Infinity;
-						for (let i = 0; i < cellPositions.length; i++) {
-							const distance = Math.abs(
-								cellPositions[i].charIndex - currentCharIndex
-							);
-							if (distance < minDistance) {
-								minDistance = distance;
-								closestColumnIndex = i;
-							}
-						}
-						selectedColumn = closestColumnIndex;
-					}
-
-					draw();
-				});
-			} else {
-				formatter.envelopeAsNote = newEnvelopeAsNote;
-			}
-		}
 	});
 </script>
 
