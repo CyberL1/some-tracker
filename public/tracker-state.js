@@ -1,6 +1,5 @@
 const DEFAULT_SONG_HZ = 50;
 const DEFAULT_SPEED = 3;
-const DEFAULT_CHANNEL_VOLUMES = [0, 0, 0];
 
 class TrackerState {
 	constructor(channelCount = 3) {
