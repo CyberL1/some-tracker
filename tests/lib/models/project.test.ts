@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Project, Table } from '../../../src/lib/models/project';
 import { Song } from '../../../src/lib/models/song';
+import { AY_CHIP_SCHEMA } from '../../../src/lib/chips/ay/schema';
 
 describe('Project', () => {
 	describe('constructor', () => {
@@ -9,15 +10,14 @@ describe('Project', () => {
 
 			expect(project.name).toBe('');
 			expect(project.author).toBe('');
-			expect(project.songs).toHaveLength(1);
-			expect(project.songs[0]).toBeInstanceOf(Song);
+			expect(project.songs).toHaveLength(0);
 			expect(project.loopPointId).toBe(0);
 			expect(project.patternOrder).toEqual([0]);
 			expect(project.tables).toHaveLength(32);
 		});
 
 		it('should create project with custom values', () => {
-			const song = new Song();
+			const song = new Song(AY_CHIP_SCHEMA);
 			const project = new Project('Test Project', 'Test Author', [song], 5, [0, 1, 2], []);
 
 			expect(project.name).toBe('Test Project');

@@ -14,17 +14,16 @@ export class ProjectService {
 	async resetProject(chip: Chip): Promise<Project> {
 		this.audioService.clearChipProcessors();
 		const newProject = this.createNewProject();
-		if (newProject.songs.length > 0) {
-			const song = newProject.songs[0];
-			song.chipType = chip.type;
-			applySchemaDefaults(song, chip.schema);
-		}
+		const song = new Song(chip.schema);
+		song.chipType = chip.type;
+		applySchemaDefaults(song, chip.schema);
+		newProject.songs = [song];
 		await this.audioService.addChipProcessor(chip);
 		return newProject;
 	}
 
 	async createNewSong(chip: Chip): Promise<Song> {
-		const newSong = new Song();
+		const newSong = new Song(chip.schema);
 		newSong.chipType = chip.type;
 		applySchemaDefaults(newSong, chip.schema);
 		await this.audioService.addChipProcessor(chip);

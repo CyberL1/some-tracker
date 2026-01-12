@@ -82,13 +82,12 @@
 	const schema = chip.schema;
 
 	$effect(() => {
-		//custom handler for AY formatter to handle envelope as note
 		if (chip.type === 'ay') {
-			formatter.tuningTable = tuningTable;
+			const ayFormatter = formatter as { tuningTable?: number[]; envelopeAsNote?: boolean };
+			ayFormatter.tuningTable = tuningTable;
 			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
-			if (formatter.envelopeAsNote !== newEnvelopeAsNote) {
+			if (ayFormatter.envelopeAsNote !== newEnvelopeAsNote) {
 				untrack(() => {
-					// Save the current cursor position before switching modes
 					let currentCharIndex: number | undefined;
 					if (currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
 						const rowString = getPatternRowData(currentPattern, selectedRow);
@@ -98,15 +97,13 @@
 						}
 					}
 
-					formatter.envelopeAsNote = newEnvelopeAsNote;
+					ayFormatter.envelopeAsNote = newEnvelopeAsNote;
 					clearAllCaches();
 
-					// Restore cursor to the closest position based on character index
 					if (currentCharIndex !== undefined && currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
 						const rowString = getPatternRowData(currentPattern, selectedRow);
 						const cellPositions = getCellPositions(rowString, selectedRow);
 
-						// Find the cell with the closest character index
 						let closestColumnIndex = 0;
 						let minDistance = Infinity;
 						for (let i = 0; i < cellPositions.length; i++) {
@@ -122,7 +119,7 @@
 					draw();
 				});
 			} else {
-				formatter.envelopeAsNote = newEnvelopeAsNote;
+				ayFormatter.envelopeAsNote = newEnvelopeAsNote;
 			}
 		}
 	});

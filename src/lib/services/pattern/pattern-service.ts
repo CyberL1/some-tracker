@@ -1,5 +1,6 @@
 import { Pattern, Note, Effect } from '../../models/song';
 import { isEffectLike, toNumber } from '../../utils/type-guards';
+import type { ChipSchema } from '../../chips/base/schema';
 
 export class PatternService {
 	/**
@@ -22,49 +23,60 @@ export class PatternService {
 	/**
 	 * Create a new empty pattern
 	 */
-	static createEmptyPattern(id: number): Pattern {
-		return new Pattern(id);
+	static createEmptyPattern(id: number, schema?: ChipSchema): Pattern {
+		return new Pattern(id, 64, schema);
 	}
 
 	/**
 	 * Create a deep copy of a pattern with a new ID
 	 */
-	static clonePattern(sourcePattern: Pattern, newId: number): Pattern {
-		const clonedPattern = new Pattern(newId, sourcePattern.length);
+	static clonePattern(sourcePattern: Pattern, newId: number, schema?: ChipSchema): Pattern {
+		const clonedPattern = new Pattern(newId, sourcePattern.length, schema);
 
-		// Deep copy channels
 		sourcePattern.channels.forEach((channel, channelIndex) => {
 			channel.rows.forEach((row, rowIndex) => {
 				const newRow = clonedPattern.channels[channelIndex].rows[rowIndex];
 				newRow.note = new Note(row.note.name, row.note.octave);
-				newRow.instrument = row.instrument;
-				newRow.volume = row.volume;
-				newRow.table = row.table;
-				newRow.envelopeShape = row.envelopeShape;
 				newRow.effects = row.effects.map((effect) =>
 					effect ? new Effect(effect.effect, effect.delay, effect.parameter) : null
 				);
+				this.copyRowFields(row, newRow);
 			});
 		});
 
-		// Deep copy pattern rows
 		sourcePattern.patternRows.forEach((patternRow, index) => {
 			const newPatternRow = clonedPattern.patternRows[index];
-			newPatternRow.envelopeValue = toNumber(patternRow.envelopeValue);
-			newPatternRow.noiseValue = toNumber(patternRow.noiseValue);
-			const envelopeEffectValue = patternRow.envelopeEffect;
-			if (isEffectLike(envelopeEffectValue)) {
-				newPatternRow.envelopeEffect = new Effect(
-					envelopeEffectValue.effect,
-					envelopeEffectValue.delay,
-					envelopeEffectValue.parameter
-				);
-			} else {
-				newPatternRow.envelopeEffect = null;
-			}
+			this.copyPatternRowFields(patternRow, newPatternRow);
 		});
 
 		return clonedPattern;
+	}
+
+	private static copyRowFields(source: Record<string, unknown>, target: Record<string, unknown>): void {
+		for (const key of Object.keys(source)) {
+			if (key === 'note' || key === 'effects') continue;
+			const value = source[key];
+			if (isEffectLike(value)) {
+				target[key] = new Effect(value.effect, value.delay, value.parameter);
+			} else if (typeof value === 'object' && value !== null) {
+				target[key] = JSON.parse(JSON.stringify(value));
+			} else {
+				target[key] = value;
+			}
+		}
+	}
+
+	private static copyPatternRowFields(source: Record<string, unknown>, target: Record<string, unknown>): void {
+		for (const key of Object.keys(source)) {
+			const value = source[key];
+			if (isEffectLike(value)) {
+				target[key] = new Effect(value.effect, value.delay, value.parameter);
+			} else if (typeof value === 'object' && value !== null) {
+				target[key] = JSON.parse(JSON.stringify(value));
+			} else {
+				target[key] = value;
+			}
+		}
 	}
 
 	/**
@@ -73,7 +85,8 @@ export class PatternService {
 	static addPatternAfter(
 		patterns: Record<number, Pattern>,
 		patternOrder: number[],
-		index: number
+		index: number,
+		schema?: ChipSchema
 	): {
 		newPatterns: Record<number, Pattern>;
 		newPatternOrder: number[];
@@ -81,7 +94,7 @@ export class PatternService {
 		insertIndex: number;
 	} {
 		const newPatternId = this.findNextAvailablePatternId(patterns, patternOrder);
-		const newPattern = this.createEmptyPattern(newPatternId);
+		const newPattern = this.createEmptyPattern(newPatternId, schema);
 
 		const newPatterns = { ...patterns, [newPatternId]: newPattern };
 		const newPatternOrder = [...patternOrder];
@@ -136,7 +149,8 @@ export class PatternService {
 		patterns: Record<number, Pattern>,
 		patternOrder: number[],
 		index: number,
-		targetPattern: Pattern
+		targetPattern: Pattern,
+		schema?: ChipSchema
 	): {
 		newPatterns: Record<number, Pattern>;
 		newPatternOrder: number[];
@@ -146,7 +160,7 @@ export class PatternService {
 		if (!targetPattern) return null;
 
 		const newPatternId = this.findNextAvailablePatternId(patterns, patternOrder);
-		const clonedPattern = this.clonePattern(targetPattern, newPatternId);
+		const clonedPattern = this.clonePattern(targetPattern, newPatternId, schema);
 
 		const newPatterns = { ...patterns, [newPatternId]: clonedPattern };
 		const newPatternOrder = [...patternOrder];
@@ -169,7 +183,8 @@ export class PatternService {
 		patterns: Record<number, Pattern>,
 		patternOrder: number[],
 		index: number,
-		targetPattern: Pattern
+		targetPattern: Pattern,
+		schema?: ChipSchema
 	): {
 		newPatterns: Record<number, Pattern>;
 		newPatternOrder: number[];
@@ -178,12 +193,11 @@ export class PatternService {
 		if (!targetPattern) return null;
 
 		const newPatternId = this.findNextAvailablePatternId(patterns, patternOrder);
-		const uniquePattern = this.clonePattern(targetPattern, newPatternId);
+		const uniquePattern = this.clonePattern(targetPattern, newPatternId, schema);
 
 		const newPatterns = { ...patterns, [newPatternId]: uniquePattern };
 		const newPatternOrder = [...patternOrder];
 
-		// Replace the pattern ID at this position with the new unique pattern
 		newPatternOrder[index] = newPatternId;
 
 		return {
@@ -218,7 +232,8 @@ export class PatternService {
 		patternOrder: number[],
 		index: number,
 		newId: number,
-		currentPattern?: Pattern
+		currentPattern?: Pattern,
+		schema?: ChipSchema
 	): {
 		newPatterns: Record<number, Pattern>;
 		newPatternOrder: number[];
@@ -227,8 +242,8 @@ export class PatternService {
 
 		if (!patterns[newId]) {
 			const newPattern = currentPattern
-				? this.clonePattern(currentPattern, newId)
-				: this.createEmptyPattern(newId);
+				? this.clonePattern(currentPattern, newId, schema)
+				: this.createEmptyPattern(newId, schema);
 			patterns = { ...patterns, [newId]: newPattern };
 		}
 

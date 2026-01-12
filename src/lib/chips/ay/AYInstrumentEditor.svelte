@@ -6,7 +6,7 @@
 	import IconCarbonVolumeUp from '~icons/carbon/volume-up';
 	import IconCarbonArrowsVertical from '~icons/carbon/arrows-vertical';
 	import IconCarbonGrid from '~icons/carbon/grid';
-	import Input from '../Input/Input.svelte';
+	import Input from '../../components/Input/Input.svelte';
 	import { settingsStore } from '../../stores/settings.svelte';
 
 	let {

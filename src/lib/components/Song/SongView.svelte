@@ -262,7 +262,7 @@
 				{#if tabId === 'tables'}
 					<TablesView bind:tables isExpanded={isRightPanelExpanded} />
 				{:else if tabId === 'instruments'}
-					<InstrumentsView {songs} isExpanded={isRightPanelExpanded} />
+					<InstrumentsView {songs} isExpanded={isRightPanelExpanded} chip={chipProcessors[0].chip} />
 				{:else if tabId === 'details'}
 					<DetailsView {chipProcessors} bind:values={projectSettings} {songs} />
 				{/if}

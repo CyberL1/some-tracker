@@ -12,6 +12,8 @@ import {
 	Instrument,
 	InstrumentRow
 } from '../../models/song';
+import { getChipByType } from '../../chips/registry';
+import type { ChipSchema } from '../../chips/base/schema';
 
 function reconstructProject(data: any): Project {
 	const songs = data.songs?.map((songData: any) => reconstructSong(songData)) || [];
@@ -39,9 +41,11 @@ function reconstructTable(data: any): Table {
 }
 
 function reconstructSong(data: any): Song {
-	const song = new Song();
-	song.patterns = data.patterns?.map((patternData: any) => reconstructPattern(patternData)) || [
-		new Pattern(0)
+	const chip = data.chipType ? getChipByType(data.chipType) : null;
+	const schema = chip?.schema;
+	const song = new Song(schema);
+	song.patterns = data.patterns?.map((patternData: any) => reconstructPattern(patternData, schema)) || [
+		new Pattern(0, 64, schema)
 	];
 	song.tuningTable = data.tuningTable || song.tuningTable;
 	song.initialSpeed = data.initialSpeed ?? 3;
@@ -54,37 +58,34 @@ function reconstructSong(data: any): Song {
 	return song;
 }
 
-function reconstructPattern(data: any): Pattern {
+function reconstructPattern(data: any, schema?: ChipSchema): Pattern {
 	const length = data.length ?? 64;
-	const pattern = new Pattern(data.id ?? 0, length);
+	const pattern = new Pattern(data.id ?? 0, length, schema);
+	const channelLabels = schema?.channelLabels ?? ['A', 'B', 'C'];
 	if (data.channels) {
 		pattern.channels = data.channels.map((channelData: any, index: number) =>
-			reconstructChannel(channelData, ['A', 'B', 'C'][index] as 'A' | 'B' | 'C')
-		) as [Channel, Channel, Channel];
+			reconstructChannel(channelData, channelLabels[index] ?? String.fromCharCode(65 + index), schema)
+		);
 	}
 	if (data.patternRows && data.patternRows.length > 0) {
 		pattern.patternRows = data.patternRows.map((rowData: any) =>
-			reconstructPatternRow(rowData)
+			reconstructPatternRow(rowData, schema)
 		);
 	}
 	return pattern;
 }
 
-function reconstructChannel(data: any, label: 'A' | 'B' | 'C'): Channel {
-	const channel = new Channel(data.rows?.length || 64, label);
+function reconstructChannel(data: any, label: string, schema?: ChipSchema): Channel {
+	const channel = new Channel(data.rows?.length || 64, label, schema?.fields);
 	if (data.rows) {
-		channel.rows = data.rows.map((rowData: any) => reconstructRow(rowData));
+		channel.rows = data.rows.map((rowData: any) => reconstructRow(rowData, schema));
 	}
 	return channel;
 }
 
-function reconstructRow(data: any): Row {
-	const row = new Row();
+function reconstructRow(data: any, schema?: ChipSchema): Row {
+	const row = new Row(schema?.fields, data);
 	row.note = data.note ? reconstructNote(data.note) : new Note();
-	row.instrument = data.instrument ?? 0;
-	row.volume = data.volume ?? 0;
-	row.table = data.table ?? 0;
-	row.envelopeShape = data.envelopeShape ?? 0;
 	row.effects = data.effects?.map((effectData: any) =>
 		effectData ? reconstructEffect(effectData) : null
 	) || [null];
@@ -99,12 +100,29 @@ function reconstructEffect(data: any): Effect {
 	return new Effect(data.effect ?? 0, data.delay ?? 0, data.parameter ?? 0);
 }
 
-function reconstructPatternRow(data: any): any {
-	return {
-		envelopeValue: data.envelopeValue ?? 0,
-		envelopeEffect: data.envelopeEffect ? reconstructEffect(data.envelopeEffect) : null,
-		noiseValue: data.noiseValue ?? 0
-	};
+function reconstructPatternRow(data: any, schema?: ChipSchema): any {
+	const result: Record<string, unknown> = {};
+	if (schema?.globalFields) {
+		for (const key of Object.keys(schema.globalFields)) {
+			if (data[key] !== undefined) {
+				if (key.toLowerCase().includes('effect') && data[key]) {
+					result[key] = reconstructEffect(data[key]);
+				} else {
+					result[key] = data[key];
+				}
+			}
+		}
+	}
+	for (const key of Object.keys(data)) {
+		if (result[key] === undefined) {
+			if (key.toLowerCase().includes('effect') && data[key]) {
+				result[key] = reconstructEffect(data[key]);
+			} else {
+				result[key] = data[key];
+			}
+		}
+	}
+	return result;
 }
 
 function reconstructInstrument(data: any): Instrument {

@@ -7,6 +7,7 @@ export interface ChipField {
 	color?: string;
 	selectable?: 'atomic' | 'character';
 	skip?: boolean;
+	defaultValue?: unknown;
 }
 
 export type SettingType = 'text' | 'number' | 'select' | 'toggle';
@@ -47,5 +48,20 @@ export function applySchemaDefaults<T extends object>(target: T, schema: ChipSch
 				(target as any)[key] = setting.defaultValue;
 			}
 		}
+	}
+}
+
+export function getDefaultForFieldType(type: FieldType): unknown {
+	switch (type) {
+		case 'hex':
+		case 'dec':
+		case 'symbol':
+			return 0;
+		case 'note':
+			return null;
+		case 'text':
+			return '';
+		default:
+			return 0;
 	}
 }

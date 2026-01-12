@@ -1,16 +1,10 @@
 import { AYProcessor } from './processor';
-import type { ChipProcessor } from '../base/processor';
-import type { ChipSchema } from '../base/schema';
+import { AYConverter } from './adapter';
+import { AYFormatter } from './formatter';
+import { AYChipRenderer } from './renderer';
 import { AY_CHIP_SCHEMA } from './schema';
-
-export interface Chip {
-	type: 'ay' | 'fm' | 'sid';
-	name: string;
-	wasmUrl: string;
-	processorName: string;
-	processorMap: () => ChipProcessor;
-	schema: ChipSchema;
-}
+import AYInstrumentEditor from './AYInstrumentEditor.svelte';
+import type { Chip } from '../types';
 
 export const AY_CHIP: Chip = {
 	type: 'ay',
@@ -18,11 +12,12 @@ export const AY_CHIP: Chip = {
 	wasmUrl: 'ayumi.wasm',
 	processorName: 'ayumi-processor',
 	processorMap: () => new AYProcessor(),
-	schema: AY_CHIP_SCHEMA
+	schema: AY_CHIP_SCHEMA,
+	createConverter: () => new AYConverter(),
+	createFormatter: () => new AYFormatter(),
+	createRenderer: () => new AYChipRenderer(),
+	instrumentEditor: AYInstrumentEditor
 };
 
-export { AYProcessor } from './processor';
-export { AYConverter } from './adapter';
-export { AYFormatter } from './formatter';
-export { AYChipRenderer } from './renderer';
+export { AYProcessor, AYConverter, AYFormatter, AYChipRenderer, AYInstrumentEditor };
 

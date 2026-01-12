@@ -1,4 +1,6 @@
 import { PT3TuneTables } from './pt3/tuning-tables';
+import type { ChipSchema, ChipField } from '../chips/base/schema';
+import { getDefaultForFieldType } from '../chips/base/schema';
 
 enum NoteName {
 	None = 0,
@@ -25,8 +27,6 @@ enum EffectType {
 	Vibrato = 4,
 	Speed = 'S'.charCodeAt(0)
 }
-
-type ChannelLabel = 'A' | 'B' | 'C';
 
 class Note {
 	name: NoteName;
@@ -77,42 +77,52 @@ class Row {
 	effects: (Effect | null)[];
 	[key: string]: unknown;
 
-	constructor(data: Partial<Row> = {}) {
+	constructor(fields?: Record<string, ChipField>, data: Partial<Row> = {}) {
 		this.note = data.note || new Note();
 		this.effects = data.effects || [null];
-		this.instrument = data.instrument ?? 0;
-		this.volume = data.volume ?? 0;
-		this.table = data.table ?? 0;
-		this.envelopeShape = data.envelopeShape ?? 0;
-		Object.keys(data).forEach((key) => {
-			if (
-				key !== 'note' &&
-				key !== 'effects' &&
-				key !== 'instrument' &&
-				key !== 'volume' &&
-				key !== 'table' &&
-				key !== 'envelopeShape'
-			) {
+
+		if (fields) {
+			for (const [key, field] of Object.entries(fields)) {
+				if (key === 'note' || key === 'effect') continue;
+				if (data[key as keyof Row] !== undefined) {
+					this[key] = data[key as keyof Row];
+				} else {
+					this[key] = getDefaultForFieldType(field.type);
+				}
+			}
+		}
+
+		for (const key of Object.keys(data)) {
+			if (key !== 'note' && key !== 'effects' && this[key] === undefined) {
 				this[key] = data[key as keyof Row];
 			}
-		});
+		}
 	}
 }
 
 class PatternRow {
 	[key: string]: unknown;
 
-	constructor(data: Record<string, unknown> = {}) {
+	constructor(globalFields?: Record<string, ChipField>, data: Record<string, unknown> = {}) {
+		if (globalFields) {
+			for (const [key, field] of Object.entries(globalFields)) {
+				if (data[key] !== undefined) {
+					this[key] = data[key];
+				} else {
+					this[key] = getDefaultForFieldType(field.type);
+				}
+			}
+		}
 		Object.assign(this, data);
 	}
 }
 
 class Channel {
 	rows: Row[];
-	label: ChannelLabel;
+	label: string;
 
-	constructor(rowCount: number = 64, label: ChannelLabel) {
-		this.rows = Array.from({ length: rowCount }, () => new Row());
+	constructor(rowCount: number, label: string, fields?: Record<string, ChipField>) {
+		this.rows = Array.from({ length: rowCount }, () => new Row(fields));
 		this.label = label;
 	}
 }
@@ -120,18 +130,24 @@ class Channel {
 class Pattern {
 	id: number;
 	length: number;
-	channels: [Channel, Channel, Channel];
+	channels: Channel[];
 	patternRows: PatternRow[];
 
-	constructor(id: number, length: number = 64) {
+	constructor(id: number, length: number = 64, schema?: ChipSchema) {
 		this.id = id;
 		this.length = length;
-		this.channels = [
-			new Channel(length, 'A'),
-			new Channel(length, 'B'),
-			new Channel(length, 'C')
-		];
-		this.patternRows = Array.from({ length }, () => new PatternRow());
+
+		const channelLabels = schema?.channelLabels ?? ['A', 'B', 'C'];
+		const fields = schema?.fields;
+		const globalFields = schema?.globalFields;
+
+		this.channels = channelLabels.map(
+			(label) => new Channel(length, label, fields)
+		);
+		this.patternRows = Array.from(
+			{ length },
+			() => new PatternRow(globalFields)
+		);
 	}
 }
 
@@ -140,23 +156,33 @@ class Song {
 	public tuningTable: number[];
 	public initialSpeed: number;
 	public instruments: Instrument[];
-	public chipType?: 'ay' | 'fm' | 'sid';
+	public chipType?: string;
 	public chipVariant?: string;
 	public chipFrequency?: number;
 	public interruptFrequency: number;
+	private schema?: ChipSchema;
 
-	constructor() {
+	constructor(schema?: ChipSchema) {
+		this.schema = schema;
 		this.initialSpeed = 3;
-		this.patterns = [new Pattern(0)];
+		this.patterns = [new Pattern(0, 64, schema)];
 		this.tuningTable = PT3TuneTables[2];
 		this.instruments = [];
 		this.chipVariant = 'AY';
 		this.interruptFrequency = 50;
 	}
 
+	setSchema(schema: ChipSchema): void {
+		this.schema = schema;
+	}
+
+	getSchema(): ChipSchema | undefined {
+		return this.schema;
+	}
+
 	addPattern(): Pattern {
 		const newId = this.patterns.length;
-		const pattern = new Pattern(newId);
+		const pattern = new Pattern(newId, 64, this.schema);
 		this.patterns.push(pattern);
 		return pattern;
 	}

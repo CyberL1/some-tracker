@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { Song, Pattern, Note, NoteName, Effect, EffectType, Instrument, InstrumentRow } from '../../../src/lib/models/song';
+import { AY_CHIP_SCHEMA } from '../../../src/lib/chips/ay/schema';
 
 describe('Song', () => {
 	describe('constructor', () => {
 		it('should create a song with default values', () => {
-			const song = new Song();
+			const song = new Song(AY_CHIP_SCHEMA);
 
 			expect(song.initialSpeed).toBe(3);
 			expect(song.patterns).toHaveLength(1);
@@ -18,7 +19,7 @@ describe('Song', () => {
 
 	describe('addPattern', () => {
 		it('should add a new pattern with sequential ID', () => {
-			const song = new Song();
+			const song = new Song(AY_CHIP_SCHEMA);
 
 			const pattern1 = song.addPattern();
 			const pattern2 = song.addPattern();
@@ -29,7 +30,7 @@ describe('Song', () => {
 		});
 
 		it('should create pattern with default length', () => {
-			const song = new Song();
+			const song = new Song(AY_CHIP_SCHEMA);
 			const pattern = song.addPattern();
 
 			expect(pattern.length).toBe(64);
@@ -67,7 +68,7 @@ describe('Pattern', () => {
 		});
 
 		it('should initialize empty rows', () => {
-			const pattern = new Pattern(0, 4);
+			const pattern = new Pattern(0, 4, AY_CHIP_SCHEMA);
 
 			expect(pattern.channels[0].rows).toHaveLength(4);
 			expect(pattern.channels[0].rows[0].note.name).toBe(NoteName.None);

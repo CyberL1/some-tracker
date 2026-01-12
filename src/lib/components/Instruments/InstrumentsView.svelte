@@ -7,11 +7,11 @@
 	import IconCarbonHexagonOutline from '~icons/carbon/hexagon-outline';
 	import IconCarbonAdd from '~icons/carbon/add';
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
-	import InstrumentEditor from './InstrumentEditor.svelte';
 	import Card from '../Card/Card.svelte';
 	import Input from '../Input/Input.svelte';
 	import { getContext } from 'svelte';
 	import type { AudioService } from '../../services/audio/audio-service';
+	import type { Chip } from '../../chips/types';
 	import {
 		isValidInstrumentId,
 		normalizeInstrumentId,
@@ -23,10 +23,12 @@
 
 	let {
 		songs = [],
-		isExpanded = false
+		isExpanded = false,
+		chip
 	}: {
 		songs: Song[];
 		isExpanded: boolean;
+		chip: Chip;
 	} = $props();
 
 	// Work with the first song's instruments (or create a new array if no songs)
@@ -37,7 +39,9 @@
 
 	let asHex = $state(false);
 	let selectedInstrumentIndex = $state(0);
-	let instrumentEditor: InstrumentEditor | null = $state(null);
+	let instrumentEditorRef: any = $state(null);
+
+	const InstrumentEditor = $derived(chip.instrumentEditor);
 
 	const hexIcon = $derived(asHex ? IconCarbonHexagonSolid : IconCarbonHexagonOutline);
 
@@ -265,7 +269,7 @@
 				{#if instruments && instruments[selectedInstrumentIndex]}
 					{#key instruments[selectedInstrumentIndex].id}
 						<InstrumentEditor
-							bind:this={instrumentEditor}
+							bind:this={instrumentEditorRef}
 							instrument={instruments[selectedInstrumentIndex]}
 							{asHex}
 							{isExpanded}

@@ -23,8 +23,13 @@ describe('ProjectService', () => {
 			chipType: CHIP_TYPE_AY,
 			template: '',
 			fields: {},
-			globalFields: {}
-		}
+			globalFields: {},
+			channelLabels: ['A', 'B', 'C']
+		},
+		createConverter: () => ({} as any),
+		createFormatter: () => ({} as any),
+		createRenderer: () => ({} as any),
+		instrumentEditor: {} as any
 	});
 
 	beforeEach(() => {
@@ -44,7 +49,7 @@ describe('ProjectService', () => {
 			expect(project).toBeInstanceOf(Project);
 			expect(project.name).toBe('');
 			expect(project.author).toBe('');
-			expect(project.songs).toHaveLength(1);
+			expect(project.songs).toHaveLength(0);
 			expect(project.patternOrder).toEqual(DEFAULT_PATTERN_ORDER);
 			expect(project.tables).toHaveLength(DEFAULT_TABLE_COUNT);
 		});
@@ -87,16 +92,13 @@ describe('ProjectService', () => {
 			expect(project.songs[0].chipType).toBe(CHIP_TYPE_AY);
 		});
 
-		it('should handle empty songs array gracefully', async () => {
+		it('should always create a song with the chip schema', async () => {
 			const mockChip = createMockChip();
-			vi.spyOn(projectService, 'createNewProject').mockReturnValue({
-				...new Project(),
-				songs: []
-			} as Project);
 
 			const project = await projectService.resetProject(mockChip);
 
-			expect(project.songs).toHaveLength(0);
+			expect(project.songs).toHaveLength(1);
+			expect(project.songs[0].chipType).toBe(CHIP_TYPE_AY);
 			expect(mockAudioService.addChipProcessor).toHaveBeenCalledWith(mockChip);
 		});
 	});
