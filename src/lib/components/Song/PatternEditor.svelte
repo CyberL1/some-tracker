@@ -86,7 +86,7 @@
 	const converter = getConverter(chip);
 	const schema = chip.schema;
 	const previewService = new PreviewService();
-	const pressedKeys = new Set<string>();
+	const pressedKeyChannels = new Map<string, number>();
 	let previewInitialized = false;
 
 	$effect(() => {
@@ -98,10 +98,7 @@
 				withTuningTables.sendInitTuningTable(tuningTable);
 				withInstruments.sendInitInstruments(instruments);
 				chipProcessor.sendInitTables(tables);
-				if (!previewInitialized) {
-					previewInitialized = true;
-					console.log('Preview initialized with tuning table, instruments, and tables');
-				}
+				previewInitialized = true;
 			}
 		}
 	});
@@ -764,15 +761,19 @@
 				moveColumn(1);
 			}
 
-			if (!playbackStore.isPlaying) {
-				if (fieldInfoBeforeEdit?.fieldType === 'note' && fieldInfoBeforeEdit?.channelIndex >= 0) {
-					const noteInfo = PatternNoteInput.mapKeyboardKeyToNote(event.key);
-					console.log('Note input detected:', { key: event.key, noteInfo, fieldInfo: fieldInfoBeforeEdit, hasPreviewSupport: chipProcessor && 'playPreviewNote' in chipProcessor });
-					if (noteInfo && chipProcessor && 'playPreviewNote' in chipProcessor) {
-						const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
-						previewService.playNote(processor, editingResult.updatedPattern, noteInfo, fieldInfoBeforeEdit.channelIndex, selectedRow);
-						pressedKeys.add(event.key);
-					}
+			if (!playbackStore.isPlaying && fieldInfoBeforeEdit && fieldInfoBeforeEdit.channelIndex >= 0) {
+				if (chipProcessor && 'playPreviewNote' in chipProcessor && !pressedKeyChannels.has(event.key)) {
+					const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+					const isNoteField = fieldInfoBeforeEdit.fieldType === 'note';
+					previewService.playFromContext(
+						processor,
+						editingResult.updatedPattern,
+						fieldInfoBeforeEdit.channelIndex,
+						selectedRow,
+						schema,
+						isNoteField
+					);
+					pressedKeyChannels.set(event.key, fieldInfoBeforeEdit.channelIndex);
 				}
 
 				const step = editorStateStore.get().step;
@@ -787,12 +788,13 @@
 	}
 
 	function handleKeyUp(event: KeyboardEvent) {
-		if (pressedKeys.has(event.key)) {
+		const channel = pressedKeyChannels.get(event.key);
+		if (channel !== undefined) {
 			if (chipProcessor && 'stopPreviewNote' in chipProcessor) {
 				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
-				previewService.stopNote(processor);
+				previewService.stopNote(processor, channel);
 			}
-			pressedKeys.delete(event.key);
+			pressedKeyChannels.delete(event.key);
 		}
 	}
 

@@ -45,8 +45,8 @@ type WorkletCommand =
 	| { type: 'update_int_frequency'; intFrequency: number }
 	| { type: 'set_channel_mute'; channelIndex: number; muted: boolean }
 	| { type: 'change_pattern_during_playback'; row: number; patternOrderIndex?: number; pattern?: Pattern; speed?: number | null }
-	| { type: 'preview_note'; note: number; instrumentId: string; channel: number; volume: number; table: number | null }
-	| { type: 'stop_preview' };
+	| { type: 'preview_note'; note: number; channel: number; rowData: Record<string, unknown> }
+	| { type: 'stop_preview'; channel: number };
 
 export class AYProcessor
 	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport, PreviewNoteSupport
@@ -243,20 +243,16 @@ export class AYProcessor
 		return this.audioNode !== null;
 	}
 
-	playPreviewNote(note: number, instrumentId: string, channel: number, volume?: number, table?: number | null): void {
-		const command = {
+	playPreviewNote(note: number, channel: number, rowData: Record<string, unknown>): void {
+		this.sendCommand({
 			type: 'preview_note',
 			note,
-			instrumentId,
 			channel,
-			volume: volume ?? 0xf,
-			table: table ?? null
-		};
-		console.log('AYProcessor.playPreviewNote:', command);
-		this.sendCommand(command);
+			rowData
+		});
 	}
 
-	stopPreviewNote(): void {
-		this.sendCommand({ type: 'stop_preview' });
+	stopPreviewNote(channel: number): void {
+		this.sendCommand({ type: 'stop_preview', channel });
 	}
 }

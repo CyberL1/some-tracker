@@ -25,9 +25,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.paused = true;
 		this.fadeInSamples = 0;
 		this.fadeInDuration = 0.01;
-		this.previewActive = false;
-		this.previewChannel = -1;
-		this.previewSampleCounter = 0;
+		this.previewActiveChannels = new Set();
+		this.previewSampleCounters = new Map();
 	}
 
 	async handleMessage(event) {
@@ -83,7 +82,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			this.handlePreviewNote(data);
 			break;
 		case 'stop_preview':
-			this.handleStopPreview();
+			this.handleStopPreview(data.channel);
 			break;
 	}
 	}
@@ -312,26 +311,20 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.handleStopPreview();
 	}
 
-	handlePreviewNote({ note, instrumentId, channel, volume, table }) {
+	handlePreviewNote({ note, channel, rowData }) {
 		if (!this.paused || !this.initialized || !this.state.wasmModule) {
-			console.log('Preview blocked:', { paused: this.paused, initialized: this.initialized, hasWasm: !!this.state.wasmModule });
 			return;
 		}
 
-		console.log('Playing preview note:', { note, instrumentId, channel, volume });
-		console.log('Tuning table available:', !!this.state.currentTuningTable, 'length:', this.state.currentTuningTable?.length);
-		this.previewActive = true;
-		this.previewChannel = channel;
-		this.previewSampleCounter = this.state.samplesPerTick;
+		this.previewActiveChannels.add(channel);
+		this.previewSampleCounters.set(channel, this.state.samplesPerTick);
 
 		if (note >= 0 && note < this.state.currentTuningTable.length) {
 			const toneValue = this.state.currentTuningTable[note];
 			this.registerState.channels[channel].tone = toneValue;
-			console.log('Set tone to:', toneValue, 'for note index:', note);
-		} else {
-			console.log('Note out of range! note:', note, 'table length:', this.state.currentTuningTable?.length);
 		}
 
+		const volume = this.getNumericValue(rowData.volume, 16, 0xf);
 		this.registerState.channels[channel].volume = volume;
 		this.registerState.channels[channel].mixer = {
 			tone: true,
@@ -339,36 +332,37 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			envelope: false
 		};
 
-		console.log('Register state before instrument check:', JSON.stringify(this.registerState.channels[channel]));
+		const instrumentId = rowData.instrument;
+		if (instrumentId !== undefined && instrumentId !== null) {
+			const instrumentIdNumber = typeof instrumentId === 'string' ? parseInt(instrumentId, 10) : instrumentId;
+			const instrumentIndex = this.state.instrumentIdToIndex.get(instrumentIdNumber);
 
-		const instrumentIdNumber = typeof instrumentId === 'string' ? parseInt(instrumentId, 10) : instrumentId;
-		console.log('Looking for instrumentId:', instrumentId, '->', instrumentIdNumber);
-
-		const instrumentIndex = this.state.instrumentIdToIndex.get(instrumentIdNumber);
-		console.log('instrumentIndex result:', instrumentIndex);
-		if (instrumentIndex !== undefined && this.state.instruments[instrumentIndex]) {
-			console.log('Using instrument:', instrumentIndex);
-			this.state.channelInstruments[channel] = instrumentIndex;
-			this.state.instrumentPositions[channel] = 0;
-			this.state.channelSoundEnabled[channel] = true;
-			this.state.channelCurrentNotes[channel] = note;
-			this.state.channelPatternVolumes[channel] = volume;
-			this.audioDriver.resetInstrumentAccumulators(this.state, channel);
+			if (instrumentIndex !== undefined && this.state.instruments[instrumentIndex]) {
+				this.state.channelInstruments[channel] = instrumentIndex;
+				this.state.instrumentPositions[channel] = 0;
+				this.state.channelSoundEnabled[channel] = true;
+				this.state.channelCurrentNotes[channel] = note;
+				this.state.channelPatternVolumes[channel] = volume;
+				this.audioDriver.resetInstrumentAccumulators(this.state, channel);
+			} else {
+				this.state.channelInstruments[channel] = -1;
+			}
 		} else {
-			console.log('No instrument found, using simple tone. Volume:', volume);
 			this.state.channelInstruments[channel] = -1;
 		}
 
-		if (table !== null && table !== undefined && table >= 0) {
-			const tableIndex = table - 1;
+		this.state.channelBaseNotes[channel] = note;
+
+		const table = rowData.table;
+		if (table !== null && table !== undefined && table !== 0) {
+			const tableNumber = typeof table === 'string' ? parseInt(table, 10) : table;
+			const tableIndex = tableNumber - 1;
+
 			if (this.state.tables && this.state.tables[tableIndex]) {
-				console.log('Using table:', table, 'at index:', tableIndex);
 				this.state.channelTables[channel] = tableIndex;
 				this.state.tablePositions[channel] = 0;
 				this.state.tableCounters[channel] = 0;
-				this.state.channelBaseNotes[channel] = note;
 			} else {
-				console.log('Table not found:', table);
 				this.state.channelTables[channel] = -1;
 			}
 		} else {
@@ -377,27 +371,34 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 		if (this.ayumiEngine) {
 			this.ayumiEngine.applyRegisterState(this.registerState);
-			console.log('Applied register state to engine');
 		}
 	}
 
-	handleStopPreview() {
-		if (this.previewActive && this.previewChannel >= 0) {
-			this.registerState.channels[this.previewChannel].volume = 0;
-			this.registerState.channels[this.previewChannel].mixer = {
+	getNumericValue(value, radix, defaultValue) {
+		if (value === undefined || value === null) return defaultValue;
+		if (typeof value === 'number') return value;
+		if (typeof value === 'string') return parseInt(value, radix);
+		return defaultValue;
+	}
+
+	handleStopPreview(channel) {
+		if (channel !== undefined) {
+			this.previewActiveChannels.delete(channel);
+			this.previewSampleCounters.delete(channel);
+			this.registerState.channels[channel].volume = 0;
+			this.registerState.channels[channel].mixer = {
 				tone: false,
 				noise: false,
 				envelope: false
 			};
-			this.state.channelSoundEnabled[this.previewChannel] = false;
+			this.state.channelSoundEnabled[channel] = false;
 
 			if (this.ayumiEngine) {
 				this.ayumiEngine.applyRegisterState(this.registerState);
 			}
-
-			this.previewActive = false;
-			this.previewChannel = -1;
-			this.previewSampleCounter = 0;
+		} else {
+			this.previewActiveChannels.clear();
+			this.previewSampleCounters.clear();
 		}
 	}
 
@@ -413,7 +414,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const rightChannel = output[1];
 			const numSamples = leftChannel.length;
 
-			if (this.paused && !this.previewActive) {
+			if (this.paused && this.previewActiveChannels.size === 0) {
 				for (let i = 0; i < numSamples; i++) {
 					leftChannel[i] = 0;
 					rightChannel[i] = 0;
@@ -422,16 +423,20 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			}
 
 			for (let i = 0; i < numSamples; i++) {
-				if (this.previewActive) {
-					if (this.previewSampleCounter >= this.state.samplesPerTick) {
-						this.patternProcessor.processTables();
-						if (this.previewChannel >= 0 && this.state.channelInstruments && this.state.channelInstruments[this.previewChannel] >= 0) {
-							this.audioDriver.processInstruments(this.state, this.registerState);
+				if (this.previewActiveChannels.size > 0) {
+					for (const channel of this.previewActiveChannels) {
+						const counter = this.previewSampleCounters.get(channel);
+						if (counter >= this.state.samplesPerTick) {
+							this.patternProcessor.processTables();
+							if (this.state.channelInstruments && this.state.channelInstruments[channel] >= 0) {
+								this.audioDriver.processInstruments(this.state, this.registerState);
+							}
+							this.previewSampleCounters.set(channel, 0);
+						} else {
+							this.previewSampleCounters.set(channel, counter + 1);
 						}
-						this.previewSampleCounter = 0;
 					}
 					this.ayumiEngine.applyRegisterState(this.registerState);
-					this.previewSampleCounter++;
 				} else if (
 					this.state.currentPattern &&
 					this.state.currentPattern.length > 0 &&
