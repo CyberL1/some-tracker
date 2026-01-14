@@ -47,6 +47,9 @@
 		PatternKeyboardShortcutsService,
 		type PatternKeyboardShortcutsContext
 	} from '../../services/pattern/pattern-keyboard-shortcuts';
+	import { EnvelopeModeService } from '../../services/pattern/envelope-mode-service';
+	import { PatternRowDataService } from '../../services/pattern/pattern-row-data-service';
+	import { SelectionBoundsService } from '../../services/pattern/selection-bounds-service';
 
 	let {
 		patterns = $bindable(),
@@ -103,19 +106,32 @@
 		}
 	});
 
+	let previousEnvelopeAsNote: boolean | undefined;
+
 	$effect(() => {
 		if (chip.type === 'ay') {
 			const ayFormatter = formatter as { tuningTable?: number[]; envelopeAsNote?: boolean };
 			ayFormatter.tuningTable = tuningTable;
 			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
+
+			const result = EnvelopeModeService.handleModeChange(
+				{ patterns },
+				previousEnvelopeAsNote ?? newEnvelopeAsNote,
+				newEnvelopeAsNote
+			);
+
 			ayFormatter.envelopeAsNote = newEnvelopeAsNote;
-			clearAllCaches();
-			patterns = [...patterns];
-			untrack(() => {
-				if (ctx && renderer && textParser) {
-					draw();
-				}
-			});
+			previousEnvelopeAsNote = newEnvelopeAsNote;
+
+			if (result.shouldRedraw) {
+				clearAllCaches();
+				patterns = result.updatedPatterns;
+				untrack(() => {
+					if (ctx && renderer && textParser) {
+						draw();
+					}
+				});
+			}
 		}
 	});
 
@@ -171,10 +187,12 @@
 	}
 
 	function clearAllCaches(): void {
-		rowStringCache.clear();
-		patternGenericCache.clear();
-		cellPositionsCache.clear();
-		rowSegmentsCache.clear();
+		PatternRowDataService.clearAllCaches(
+			rowStringCache,
+			patternGenericCache,
+			cellPositionsCache,
+			rowSegmentsCache
+		);
 		lastVisibleRowsCache = null;
 	}
 
@@ -188,26 +206,13 @@
 		return currentPattern;
 	}
 
-	function getSelectionBounds(): {
-		minRow: number;
-		maxRow: number;
-		minCol: number;
-		maxCol: number;
-	} | null {
-		if (
-			selectionStartRow === null ||
-			selectionStartColumn === null ||
-			selectionEndRow === null ||
-			selectionEndColumn === null
-		) {
-			return null;
-		}
-		return {
-			minRow: Math.min(selectionStartRow, selectionEndRow),
-			maxRow: Math.max(selectionStartRow, selectionEndRow),
-			minCol: Math.min(selectionStartColumn, selectionEndColumn),
-			maxCol: Math.max(selectionStartColumn, selectionEndColumn)
-		};
+	function getSelectionBounds() {
+		return SelectionBoundsService.getSelectionBounds({
+			selectionStartRow,
+			selectionStartColumn,
+			selectionEndRow,
+			selectionEndColumn
+		});
 	}
 
 	function updatePatternInArray(updatedPattern: Pattern): void {
@@ -429,23 +434,15 @@
 	}
 
 	function getPatternRowData(pattern: Pattern, rowIndex: number): string {
-		let genericPattern = patternGenericCache.get(pattern.id);
-		if (!genericPattern) {
-			genericPattern = converter.toGeneric(pattern);
-			patternGenericCache.set(pattern.id, genericPattern);
-		}
-
-		const genericPatternRow = genericPattern.patternRows[rowIndex];
-		const genericChannels = genericPattern.channels.map((ch) => ch.rows[rowIndex]);
-
-		const rowCacheKey = `${pattern.id}:${rowIndex}`;
-		let rowString = rowStringCache.get(rowCacheKey);
-		if (!rowString) {
-			rowString = formatter.formatRow(genericPatternRow, genericChannels, rowIndex, schema);
-			rowStringCache.set(rowCacheKey, rowString);
-		}
-
-		return rowString;
+		return PatternRowDataService.getRowData({
+			pattern,
+			rowIndex,
+			converter,
+			formatter,
+			schema,
+			patternGenericCache,
+			rowStringCache
+		});
 	}
 
 	function draw() {
