@@ -3,7 +3,8 @@
 	import type {
 		ChipProcessor,
 		TuningTableSupport,
-		InstrumentSupport
+		InstrumentSupport,
+		PreviewNoteSupport
 	} from '../../chips/base/processor';
 	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Chip } from '../../chips/types';
@@ -22,6 +23,8 @@
 		type VisibleRowsCache
 	} from '../../services/pattern/pattern-visible-rows';
 	import { PatternEditingService } from '../../services/pattern/pattern-editing';
+	import { PatternNoteInput } from '../../services/pattern/editing/pattern-note-input';
+	import { PreviewService } from '../../services/audio/preview-service';
 	import { PatternEditorRenderer } from '../../ui-rendering/pattern-editor-renderer';
 	import { PatternEditorTextParser } from '../../ui-rendering/pattern-editor-text-parser';
 	import { Cache } from '../../utils/memoize';
@@ -58,7 +61,8 @@
 		chipProcessor,
 		tuningTable,
 		speed,
-		instruments
+		instruments,
+		tables = []
 	}: {
 		patterns: Pattern[];
 		patternOrder: number[];
@@ -73,6 +77,7 @@
 		tuningTable: number[];
 		speed: number;
 		instruments: Instrument[];
+		tables?: import('../../models/project').Table[];
 	} = $props();
 
 	const services: { audioService: AudioService } = getContext('container');
@@ -80,6 +85,26 @@
 	const formatter = getFormatter(chip);
 	const converter = getConverter(chip);
 	const schema = chip.schema;
+	const previewService = new PreviewService();
+	const pressedKeys = new Set<string>();
+	let previewInitialized = false;
+
+	$effect(() => {
+		if (chipProcessor && chipProcessor.isAudioNodeAvailable()) {
+			if (chip.type === 'ay') {
+				const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
+				const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
+
+				withTuningTables.sendInitTuningTable(tuningTable);
+				withInstruments.sendInitInstruments(instruments);
+				chipProcessor.sendInitTables(tables);
+				if (!previewInitialized) {
+					previewInitialized = true;
+					console.log('Preview initialized with tuning table, instruments, and tables');
+				}
+			}
+		}
+	});
 
 	$effect(() => {
 		if (chip.type === 'ay') {
@@ -740,6 +765,16 @@
 			}
 
 			if (!playbackStore.isPlaying) {
+				if (fieldInfoBeforeEdit?.fieldType === 'note' && fieldInfoBeforeEdit?.channelIndex >= 0) {
+					const noteInfo = PatternNoteInput.mapKeyboardKeyToNote(event.key);
+					console.log('Note input detected:', { key: event.key, noteInfo, fieldInfo: fieldInfoBeforeEdit, hasPreviewSupport: chipProcessor && 'playPreviewNote' in chipProcessor });
+					if (noteInfo && chipProcessor && 'playPreviewNote' in chipProcessor) {
+						const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+						previewService.playNote(processor, editingResult.updatedPattern, noteInfo, fieldInfoBeforeEdit.channelIndex, selectedRow);
+						pressedKeys.add(event.key);
+					}
+				}
+
 				const step = editorStateStore.get().step;
 				if (step > 0) {
 					moveRow(step);
@@ -748,6 +783,16 @@
 
 			clearAllCaches();
 			draw();
+		}
+	}
+
+	function handleKeyUp(event: KeyboardEvent) {
+		if (pressedKeys.has(event.key)) {
+			if (chipProcessor && 'stopPreviewNote' in chipProcessor) {
+				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+				previewService.stopNote(processor);
+			}
+			pressedKeys.delete(event.key);
 		}
 	}
 
@@ -1352,6 +1397,7 @@
 			bind:this={canvas}
 			tabindex="0"
 			onkeydown={handleKeyDown}
+			onkeyup={handleKeyUp}
 			onwheel={handleWheel}
 			onmouseenter={handleMouseEnter}
 			onmouseleave={handleMouseLeave}

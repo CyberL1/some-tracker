@@ -41,3 +41,8 @@ export interface TuningTableSupport {
 export interface InstrumentSupport {
 	sendInitInstruments(instruments: Instrument[]): void;
 }
+
+export interface PreviewNoteSupport {
+	playPreviewNote(note: number, instrumentId: string, channel: number, volume?: number, table?: number | null): void;
+	stopPreviewNote(): void;
+}

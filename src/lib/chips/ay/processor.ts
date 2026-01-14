@@ -6,7 +6,8 @@ import type {
 	ChipProcessor,
 	SettingsSubscriber,
 	TuningTableSupport,
-	InstrumentSupport
+	InstrumentSupport,
+	PreviewNoteSupport
 } from '../base/processor';
 import type { ChipSettings } from '../../services/audio/chip-settings';
 
@@ -43,10 +44,12 @@ type WorkletCommand =
 	| { type: 'update_ay_frequency'; aymFrequency: number }
 	| { type: 'update_int_frequency'; intFrequency: number }
 	| { type: 'set_channel_mute'; channelIndex: number; muted: boolean }
-	| { type: 'change_pattern_during_playback'; row: number; patternOrderIndex?: number; pattern?: Pattern; speed?: number | null };
+	| { type: 'change_pattern_during_playback'; row: number; patternOrderIndex?: number; pattern?: Pattern; speed?: number | null }
+	| { type: 'preview_note'; note: number; instrumentId: string; channel: number; volume: number; table: number | null }
+	| { type: 'stop_preview' };
 
 export class AYProcessor
-	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport
+	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport, PreviewNoteSupport
 {
 	chip: Chip;
 	audioNode: AudioWorkletNode | null = null;
@@ -238,5 +241,22 @@ export class AYProcessor
 
 	isAudioNodeAvailable(): boolean {
 		return this.audioNode !== null;
+	}
+
+	playPreviewNote(note: number, instrumentId: string, channel: number, volume?: number, table?: number | null): void {
+		const command = {
+			type: 'preview_note',
+			note,
+			instrumentId,
+			channel,
+			volume: volume ?? 0xf,
+			table: table ?? null
+		};
+		console.log('AYProcessor.playPreviewNote:', command);
+		this.sendCommand(command);
+	}
+
+	stopPreviewNote(): void {
+		this.sendCommand({ type: 'stop_preview' });
 	}
 }
