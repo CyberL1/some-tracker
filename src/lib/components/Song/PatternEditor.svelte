@@ -108,41 +108,14 @@
 			const ayFormatter = formatter as { tuningTable?: number[]; envelopeAsNote?: boolean };
 			ayFormatter.tuningTable = tuningTable;
 			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
-			if (ayFormatter.envelopeAsNote !== newEnvelopeAsNote) {
-				untrack(() => {
-					let currentCharIndex: number | undefined;
-					if (currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
-						const rowString = getPatternRowData(currentPattern, selectedRow);
-						const cellPositions = getCellPositions(rowString, selectedRow);
-						if (selectedColumn >= 0 && selectedColumn < cellPositions.length) {
-							currentCharIndex = cellPositions[selectedColumn].charIndex;
-						}
-					}
-
-					ayFormatter.envelopeAsNote = newEnvelopeAsNote;
-					clearAllCaches();
-
-					if (currentCharIndex !== undefined && currentPattern && selectedRow >= 0 && selectedRow < currentPattern.length) {
-						const rowString = getPatternRowData(currentPattern, selectedRow);
-						const cellPositions = getCellPositions(rowString, selectedRow);
-
-						let closestColumnIndex = 0;
-						let minDistance = Infinity;
-						for (let i = 0; i < cellPositions.length; i++) {
-							const distance = Math.abs(cellPositions[i].charIndex - currentCharIndex);
-							if (distance < minDistance) {
-								minDistance = distance;
-								closestColumnIndex = i;
-							}
-						}
-						selectedColumn = closestColumnIndex;
-					}
-
+			ayFormatter.envelopeAsNote = newEnvelopeAsNote;
+			clearAllCaches();
+			patterns = [...patterns];
+			untrack(() => {
+				if (ctx && renderer && textParser) {
 					draw();
-				});
-			} else {
-				ayFormatter.envelopeAsNote = newEnvelopeAsNote;
-			}
+				}
+			});
 		}
 	});
 
@@ -775,11 +748,11 @@
 					);
 					pressedKeyChannels.set(event.key, fieldInfoBeforeEdit.channelIndex);
 				}
+			}
 
-				const step = editorStateStore.get().step;
-				if (step > 0) {
-					moveRow(step);
-				}
+			const step = editorStateStore.get().step;
+			if (step > 0) {
+				moveRow(step);
 			}
 
 			clearAllCaches();
