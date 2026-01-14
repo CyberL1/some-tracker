@@ -31,6 +31,7 @@
 	import { channelMuteStore } from '../../stores/channel-mute.svelte';
 	import { PatternFieldDetection } from '../../services/pattern/editing/pattern-field-detection';
 	import { PatternValueUpdates } from '../../services/pattern/editing/pattern-value-updates';
+import { EffectField } from '../../services/pattern/editing/effect-field';
 	import { undoRedoStore } from '../../stores/undo-redo.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import {
@@ -660,6 +661,9 @@
 				selectionEndColumn = column;
 				draw();
 			},
+			onIncrementFieldValue: (delta: number, isOctaveIncrement?: boolean) => {
+				incrementFieldValue(delta, isOctaveIncrement);
+			},
 			navigationContext: {
 				patterns,
 				patternOrder,
@@ -1138,6 +1142,228 @@
 		clearAllCaches();
 		draw();
 	}
+
+	function updateFieldAtPosition(
+		pattern: Pattern,
+		row: number,
+		col: number,
+		fieldInfo: any,
+		currentValue: string | number,
+		delta: number,
+		isOctaveIncrement: boolean
+	): Pattern {
+		const rowString = getPatternRowData(pattern, row);
+		const cellPositions = getCellPositions(rowString, row);
+		const segments = textParser ? textParser.parseRowString(rowString, row) : undefined;
+
+		const fieldDefinition = PatternValueUpdates.getFieldDefinition(
+			{
+				pattern,
+				selectedRow: row,
+				selectedColumn: col,
+				cellPositions,
+				segments,
+				converter,
+				formatter,
+				schema
+			},
+			fieldInfo.fieldKey
+		);
+
+		let adjustedDelta = delta;
+		if (fieldInfo.fieldType === 'note' && isOctaveIncrement) {
+			adjustedDelta = delta * 12;
+		}
+
+		if (fieldInfo.fieldType === 'note') {
+			const newValue = PatternValueUpdates.incrementNoteValue(currentValue as string, adjustedDelta);
+			return PatternValueUpdates.updateFieldValue(
+				{
+					pattern,
+					selectedRow: row,
+					selectedColumn: col,
+					cellPositions,
+					segments,
+					converter,
+					formatter,
+					schema
+				},
+				fieldInfo,
+				newValue
+			);
+		} else if ((fieldInfo.fieldType === 'hex' || fieldInfo.fieldType === 'dec' || fieldInfo.fieldType === 'symbol') && !EffectField.isEffectField(fieldInfo.fieldKey)) {
+			const newValue = PatternValueUpdates.incrementNumericValue(currentValue as number, delta, fieldInfo.fieldType, fieldDefinition?.length);
+			return PatternValueUpdates.updateFieldValue(
+				{
+					pattern,
+					selectedRow: row,
+					selectedColumn: col,
+					cellPositions,
+					segments,
+					converter,
+					formatter,
+					schema
+				},
+				fieldInfo,
+				newValue
+			);
+		} else {
+			return pattern;
+		}
+	}
+
+	function incrementFieldValue(delta: number, isOctaveIncrement = false): void {
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const originalPattern = findOrCreatePattern(patternId);
+		let pattern = originalPattern;
+
+		if (hasSelection()) {
+			const bounds = getSelectionBounds();
+			if (!bounds) return;
+
+			const { minRow, maxRow, minCol, maxCol } = bounds;
+
+			// First pass: check if selection contains any notes
+			let hasNotes = false;
+			for (let row = minRow; row <= maxRow && row < pattern.length; row++) {
+				const rowString = getPatternRowData(pattern, row);
+				const cellPositions = getCellPositions(rowString, row);
+				const segments = textParser ? textParser.parseRowString(rowString, row) : undefined;
+
+				for (let col = minCol; col <= maxCol && col < cellPositions.length; col++) {
+					const cell = cellPositions[col];
+					if (!cell.fieldKey) continue;
+
+					const fieldInfo = PatternFieldDetection.detectFieldAtCursor({
+						pattern,
+						selectedRow: row,
+						selectedColumn: col,
+						cellPositions,
+						segments,
+						converter,
+						formatter,
+						schema
+					});
+					if (fieldInfo && fieldInfo.fieldType === 'note') {
+						hasNotes = true;
+						break;
+					}
+				}
+				if (hasNotes) break;
+			}
+
+			// Second pass: collect cells to update based on whether selection has notes
+			const cellsToUpdate: Array<{ row: number; col: number; fieldInfo: any; currentValue: string | number }> = [];
+
+			for (let row = minRow; row <= maxRow && row < pattern.length; row++) {
+				const rowString = getPatternRowData(pattern, row);
+				const cellPositions = getCellPositions(rowString, row);
+				const segments = textParser ? textParser.parseRowString(rowString, row) : undefined;
+
+				for (let col = minCol; col <= maxCol && col < cellPositions.length; col++) {
+					const cell = cellPositions[col];
+					if (!cell.fieldKey) continue;
+
+					const fieldInfo = PatternFieldDetection.detectFieldAtCursor({
+						pattern,
+						selectedRow: row,
+						selectedColumn: col,
+						cellPositions,
+						segments,
+						converter,
+						formatter,
+						schema
+					});
+					if (!fieldInfo) continue;
+
+					const currentValue = PatternValueUpdates.getFieldValue(
+						{
+							pattern,
+							selectedRow: row,
+							selectedColumn: col,
+							cellPositions,
+							segments,
+							converter,
+							formatter,
+							schema
+						},
+						fieldInfo
+					);
+
+					// If selection has notes, only include notes; otherwise include all compatible fields
+					const shouldInclude = hasNotes
+						? fieldInfo.fieldType === 'note'
+						: (fieldInfo.fieldType === 'note' || fieldInfo.fieldType === 'hex' || fieldInfo.fieldType === 'dec' || fieldInfo.fieldType === 'symbol');
+
+					if (shouldInclude) {
+						cellsToUpdate.push({ row, col, fieldInfo, currentValue });
+					}
+				}
+			}
+
+			for (const { row, col, fieldInfo, currentValue } of cellsToUpdate) {
+				pattern = updateFieldAtPosition(pattern, row, col, fieldInfo, currentValue, delta, isOctaveIncrement);
+			}
+
+			recordBulkPatternEdit(originalPattern, pattern);
+			updatePatternInArray(pattern);
+		} else {
+			const rowString = getPatternRowData(pattern, selectedRow);
+			const cellPositions = getCellPositions(rowString, selectedRow);
+			const segments = textParser ? textParser.parseRowString(rowString, selectedRow) : undefined;
+
+			const fieldInfo = PatternFieldDetection.detectFieldAtCursor({
+				pattern,
+				selectedRow,
+				selectedColumn,
+				cellPositions,
+				segments,
+				converter,
+				formatter,
+				schema
+			});
+
+			if (!fieldInfo) return;
+
+			const currentValue = PatternValueUpdates.getFieldValue(
+				{
+					pattern,
+					selectedRow,
+					selectedColumn,
+					cellPositions,
+					segments,
+					converter,
+					formatter,
+					schema
+				},
+				fieldInfo
+			);
+
+			const updatedPattern = updateFieldAtPosition(pattern, selectedRow, selectedColumn, fieldInfo, currentValue, delta, isOctaveIncrement);
+
+			recordPatternEdit(pattern, updatedPattern);
+			updatePatternInArray(updatedPattern);
+
+			if (!playbackStore.isPlaying && fieldInfo.channelIndex >= 0) {
+				if (chipProcessor && 'playPreviewNote' in chipProcessor) {
+					const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+					const isNoteField = fieldInfo.fieldType === 'note';
+					previewService.playFromContext(
+						processor,
+						updatedPattern,
+						fieldInfo.channelIndex,
+						selectedRow,
+						schema,
+						isNoteField
+					);
+				}
+			}
+		}
+
+		clearAllCaches();
+		draw();
+	}
+
 
 	function updateSize() {
 		if (containerDiv) {

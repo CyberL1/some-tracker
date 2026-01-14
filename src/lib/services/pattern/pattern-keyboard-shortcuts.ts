@@ -26,6 +26,7 @@ export interface PatternKeyboardShortcutsContext {
 	onClearSelection: () => void;
 	onSetSelectionAnchor: (row: number, column: number) => void;
 	onExtendSelection: (row: number, column: number) => void;
+	onIncrementFieldValue: (delta: number, isOctaveIncrement?: boolean) => void;
 	navigationContext: NavigationContext;
 }
 
@@ -39,30 +40,30 @@ export class PatternKeyboardShortcutsService {
 		event: KeyboardEvent,
 		shortcutsContext: PatternKeyboardShortcutsContext
 	): KeyboardShortcutResult {
-		const isModifier = event.ctrlKey || event.metaKey;
+		const isModifier = event.shiftKey;
 		const key = event.key.toLowerCase();
 
-		if (isModifier && !event.shiftKey && key === 'z') {
+		if ((event.ctrlKey || event.metaKey) && !event.shiftKey && key === 'z') {
 			shortcutsContext.onUndo();
 			return { handled: true, shouldPreventDefault: true };
 		}
 
-		if ((isModifier && event.shiftKey && key === 'z') || (isModifier && key === 'y')) {
+		if (((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'z') || ((event.ctrlKey || event.metaKey) && key === 'y')) {
 			shortcutsContext.onRedo();
 			return { handled: true, shouldPreventDefault: true };
 		}
 
-		if (isModifier && key === 'c') {
+		if ((event.ctrlKey || event.metaKey) && key === 'c') {
 			shortcutsContext.onCopy();
 			return { handled: true, shouldPreventDefault: true };
 		}
 
-		if (isModifier && key === 'x') {
+		if ((event.ctrlKey || event.metaKey) && key === 'x') {
 			shortcutsContext.onCut();
 			return { handled: true, shouldPreventDefault: true };
 		}
 
-		if (isModifier && key === 'v') {
+		if ((event.ctrlKey || event.metaKey) && key === 'v') {
 			shortcutsContext.onPaste();
 			return { handled: true, shouldPreventDefault: true };
 		}
@@ -78,7 +79,7 @@ export class PatternKeyboardShortcutsService {
 			return { handled: true, shouldPreventDefault: true };
 		}
 
-		if (isModifier || event.altKey) {
+		if ((event.ctrlKey || event.metaKey) && !isModifier) {
 			return { handled: false, shouldPreventDefault: false };
 		}
 
@@ -350,6 +351,18 @@ export class PatternKeyboardShortcutsService {
 						shortcutsContext.onClearSelection();
 					}
 					shortcutsContext.onSetSelectedColumn(navigationState.selectedColumn);
+				}
+				return { handled: true, shouldPreventDefault: true };
+			case '+':
+			case '=':
+				if (!shortcutsContext.isPlaying) {
+					shortcutsContext.onIncrementFieldValue(1, isModifier);
+				}
+				return { handled: true, shouldPreventDefault: true };
+			case '-':
+			case '_':
+				if (!shortcutsContext.isPlaying) {
+					shortcutsContext.onIncrementFieldValue(-1, isModifier);
 				}
 				return { handled: true, shouldPreventDefault: true };
 		}
