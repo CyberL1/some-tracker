@@ -236,6 +236,7 @@
 					speed={song.initialSpeed}
 					tuningTable={song.tuningTable}
 					instruments={song.instruments}
+					{tables}
 					chip={chipProcessors[i].chip}
 					chipProcessor={chipProcessors[i]} />
 			</Card>

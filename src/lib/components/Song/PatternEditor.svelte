@@ -3,7 +3,8 @@
 	import type {
 		ChipProcessor,
 		TuningTableSupport,
-		InstrumentSupport
+		InstrumentSupport,
+		PreviewNoteSupport
 	} from '../../chips/base/processor';
 	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Chip } from '../../chips/types';
@@ -22,6 +23,8 @@
 		type VisibleRowsCache
 	} from '../../services/pattern/pattern-visible-rows';
 	import { PatternEditingService } from '../../services/pattern/pattern-editing';
+	import { PatternNoteInput } from '../../services/pattern/editing/pattern-note-input';
+	import { PreviewService } from '../../services/audio/preview-service';
 	import { PatternEditorRenderer } from '../../ui-rendering/pattern-editor-renderer';
 	import { PatternEditorTextParser } from '../../ui-rendering/pattern-editor-text-parser';
 	import { Cache } from '../../utils/memoize';
@@ -58,7 +61,8 @@
 		chipProcessor,
 		tuningTable,
 		speed,
-		instruments
+		instruments,
+		tables = []
 	}: {
 		patterns: Pattern[];
 		patternOrder: number[];
@@ -73,6 +77,7 @@
 		tuningTable: number[];
 		speed: number;
 		instruments: Instrument[];
+		tables?: import('../../models/project').Table[];
 	} = $props();
 
 	const services: { audioService: AudioService } = getContext('container');
@@ -80,6 +85,23 @@
 	const formatter = getFormatter(chip);
 	const converter = getConverter(chip);
 	const schema = chip.schema;
+	const previewService = new PreviewService();
+	const pressedKeyChannels = new Map<string, number>();
+	let previewInitialized = false;
+
+	$effect(() => {
+		if (chipProcessor && chipProcessor.isAudioNodeAvailable()) {
+			if (chip.type === 'ay') {
+				const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
+				const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
+
+				withTuningTables.sendInitTuningTable(tuningTable);
+				withInstruments.sendInitInstruments(instruments);
+				chipProcessor.sendInitTables(tables);
+				previewInitialized = true;
+			}
+		}
+	});
 
 	$effect(() => {
 		if (chip.type === 'ay') {
@@ -739,7 +761,21 @@
 				moveColumn(1);
 			}
 
-			if (!playbackStore.isPlaying) {
+			if (!playbackStore.isPlaying && fieldInfoBeforeEdit && fieldInfoBeforeEdit.channelIndex >= 0) {
+				if (chipProcessor && 'playPreviewNote' in chipProcessor && !pressedKeyChannels.has(event.key)) {
+					const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+					const isNoteField = fieldInfoBeforeEdit.fieldType === 'note';
+					previewService.playFromContext(
+						processor,
+						editingResult.updatedPattern,
+						fieldInfoBeforeEdit.channelIndex,
+						selectedRow,
+						schema,
+						isNoteField
+					);
+					pressedKeyChannels.set(event.key, fieldInfoBeforeEdit.channelIndex);
+				}
+
 				const step = editorStateStore.get().step;
 				if (step > 0) {
 					moveRow(step);
@@ -748,6 +784,17 @@
 
 			clearAllCaches();
 			draw();
+		}
+	}
+
+	function handleKeyUp(event: KeyboardEvent) {
+		const channel = pressedKeyChannels.get(event.key);
+		if (channel !== undefined) {
+			if (chipProcessor && 'stopPreviewNote' in chipProcessor) {
+				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+				previewService.stopNote(processor, channel);
+			}
+			pressedKeyChannels.delete(event.key);
 		}
 	}
 
@@ -1352,6 +1399,7 @@
 			bind:this={canvas}
 			tabindex="0"
 			onkeydown={handleKeyDown}
+			onkeyup={handleKeyUp}
 			onwheel={handleWheel}
 			onmouseenter={handleMouseEnter}
 			onmouseleave={handleMouseLeave}
