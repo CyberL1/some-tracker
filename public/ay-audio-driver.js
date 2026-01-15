@@ -80,7 +80,8 @@ class AYAudioDriver {
 		amplitudeSliding,
 		instrumentEnvelopeEnabled,
 		channelEnvelopeEnabled,
-		channelMuted
+		channelMuted,
+		envelopeDisabledByOnOff
 	) {
 		if (channelMuted) {
 			return 0;
@@ -92,7 +93,7 @@ class AYAudioDriver {
 
 		let finalVolume = PT3_VOL[patternVolume][vol];
 
-		if (instrumentEnvelopeEnabled && channelEnvelopeEnabled) {
+		if (instrumentEnvelopeEnabled && channelEnvelopeEnabled && !envelopeDisabledByOnOff) {
 			finalVolume = finalVolume | 16;
 		}
 
@@ -195,8 +196,17 @@ class AYAudioDriver {
 				registerState.envelopePeriod = finalEnvelopeValue;
 				registerState.envelopeShape = row.envelopeShape;
 				state.channelEnvelopeEnabled[channelIndex] = true;
-				this.channelMixerState[channelIndex].envelope = true;
-				registerState.channels[channelIndex].mixer.envelope = true;
+
+				const envelopeOnOffActive = state.envelopeOnOffCounter > 0;
+				const envelopeDisabledByOnOff = envelopeOnOffActive && !state.envelopeOnOffEnabled;
+
+				if (!envelopeDisabledByOnOff) {
+					this.channelMixerState[channelIndex].envelope = true;
+					registerState.channels[channelIndex].mixer.envelope = true;
+				} else {
+					this.channelMixerState[channelIndex].envelope = false;
+					registerState.channels[channelIndex].mixer.envelope = false;
+				}
 			}
 		} else if (row.envelopeShape === 15) {
 			state.channelEnvelopeEnabled[channelIndex] = false;
@@ -383,13 +393,17 @@ class AYAudioDriver {
 			const instrumentVolume = state.channelInstrumentVolumes[channelIndex];
 			const amplitudeSliding = state.channelAmplitudeSliding[channelIndex];
 
+			const envelopeOnOffActive = state.envelopeOnOffCounter > 0;
+			const envelopeDisabledByOnOff = envelopeOnOffActive && !state.envelopeOnOffEnabled;
+
 			let finalVolume = this.calculateVolume(
 				patternVolume,
 				instrumentVolume,
 				amplitudeSliding,
 				instrumentRow.envelope,
 				state.channelEnvelopeEnabled[channelIndex],
-				false
+				false,
+				envelopeDisabledByOnOff
 			);
 
 			registerState.channels[channelIndex].mixer.tone = instrumentRow.tone;
@@ -397,7 +411,11 @@ class AYAudioDriver {
 			this.channelMixerState[channelIndex].tone = instrumentRow.tone;
 			this.channelMixerState[channelIndex].noise = instrumentRow.noise;
 
-			if (instrumentRow.envelope && state.channelEnvelopeEnabled[channelIndex]) {
+			if (
+				instrumentRow.envelope &&
+				state.channelEnvelopeEnabled[channelIndex] &&
+				!envelopeDisabledByOnOff
+			) {
 				registerState.channels[channelIndex].mixer.envelope = true;
 				this.channelMixerState[channelIndex].envelope = true;
 			} else {
@@ -475,13 +493,9 @@ class AYAudioDriver {
 
 	updateEnvelopeWithSlide(state, registerState) {
 		if (state.envelopeBaseValue > 0) {
-			if (state.envelopeOnOffCounter > 0 && !state.envelopeOnOffEnabled) {
-				registerState.envelopePeriod = 0;
-			} else {
-				const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent;
-				const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
-				registerState.envelopePeriod = wrappedValue;
-			}
+			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent;
+			const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
+			registerState.envelopePeriod = wrappedValue;
 		}
 	}
 }
