@@ -186,7 +186,7 @@ class AYAudioDriver {
 		if (state.channelMuted[channelIndex]) return;
 
 		if (row.envelopeShape !== 0 && row.envelopeShape !== 15) {
-			if (patternRow.envelopeValue > 0) {
+			if (patternRow.envelopeValue >= 0) {
 				state.envelopeBaseValue = patternRow.envelopeValue;
 				state.envelopeSlideCurrent = 0;
 				state.envelopeSlideDelta = 0;
@@ -241,11 +241,11 @@ class AYAudioDriver {
 			state.envelopePortamentoActive = false;
 			state.envelopeOnOffCounter = 0;
 		} else if (effect.effect === PORTAMENTO) {
-			if (patternRow.envelopeValue > 0) {
+			if (patternRow.envelopeValue >= 0) {
 				const targetValue = patternRow.envelopeValue;
 				const currentValue = state.envelopeBaseValue;
 
-				if (currentValue > 0) {
+				if (currentValue >= 0) {
 					const portamentoState = EffectAlgorithms.initPortamento(
 						currentValue,
 						targetValue,
