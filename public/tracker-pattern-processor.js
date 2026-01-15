@@ -93,6 +93,7 @@ class TrackerPatternProcessor {
 			this.state.channelSlideStep[channelIndex] = 0;
 			this.state.channelSlideAlreadyApplied[channelIndex] = false;
 			this.state.channelPortamentoActive[channelIndex] = false;
+			this.state.channelOnOffCounter[channelIndex] = 0;
 		} else if (row.note.name !== 0) {
 			this.state.channelSoundEnabled[channelIndex] = true;
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
@@ -102,6 +103,7 @@ class TrackerPatternProcessor {
 
 			this.state.channelBaseNotes[channelIndex] = noteValue;
 			this.state.channelCurrentNotes[channelIndex] = noteValue;
+			this.state.channelOnOffCounter[channelIndex] = 0;
 
 			if (this.state.channelTables[channelIndex] >= 0) {
 				this.state.tablePositions[channelIndex] = 0;
@@ -155,6 +157,7 @@ class TrackerPatternProcessor {
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
 		const PORTAMENTO = 'P'.charCodeAt(0);
+		const ON_OFF = 6;
 		const SPEED = 'S'.charCodeAt(0);
 
 		if (effect.effect === SPEED) {
@@ -169,6 +172,7 @@ class TrackerPatternProcessor {
 			if (delay === 0) delay = 1;
 			this.state.channelSlideDelay[channelIndex] = delay;
 			this.state.channelSlideCount[channelIndex] = delay;
+			this.state.channelOnOffCounter[channelIndex] = 0;
 			if (row.note.name !== 0 && row.note.name !== 1) {
 				this.state.channelToneSliding[channelIndex] = effect.parameter;
 				this.state.channelSlideAlreadyApplied[channelIndex] = true;
@@ -181,6 +185,7 @@ class TrackerPatternProcessor {
 			if (delay === 0) delay = 1;
 			this.state.channelSlideDelay[channelIndex] = delay;
 			this.state.channelSlideCount[channelIndex] = delay;
+			this.state.channelOnOffCounter[channelIndex] = 0;
 			if (row.note.name !== 0 && row.note.name !== 1) {
 				this.state.channelToneSliding[channelIndex] = -effect.parameter;
 				this.state.channelSlideAlreadyApplied[channelIndex] = true;
@@ -228,8 +233,15 @@ class TrackerPatternProcessor {
 					}
 					this.state.channelPortamentoDelay[channelIndex] = delay;
 					this.state.channelPortamentoCount[channelIndex] = delay;
+					this.state.channelOnOffCounter[channelIndex] = 0;
 				}
 			}
+		} else if (effect.effect === ON_OFF) {
+			this.state.channelOffDuration[channelIndex] = effect.parameter & 15;
+			this.state.channelOnDuration[channelIndex] = effect.parameter >> 4;
+			this.state.channelOnOffCounter[channelIndex] = this.state.channelOnDuration[channelIndex];
+			this.state.channelSlideCount[channelIndex] = 0;
+			this.state.channelToneSliding[channelIndex] = 0;
 		}
 	}
 

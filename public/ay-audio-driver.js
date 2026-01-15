@@ -233,6 +233,18 @@ class AYAudioDriver {
 		this.updateEnvelopeWithSlide(state, registerState);
 
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
+			if (state.channelOnOffCounter[channelIndex] > 0) {
+				state.channelOnOffCounter[channelIndex]--;
+				if (state.channelOnOffCounter[channelIndex] === 0) {
+					state.channelSoundEnabled[channelIndex] = !state.channelSoundEnabled[channelIndex];
+					if (state.channelSoundEnabled[channelIndex]) {
+						state.channelOnOffCounter[channelIndex] = state.channelOnDuration[channelIndex];
+					} else {
+						state.channelOnOffCounter[channelIndex] = state.channelOffDuration[channelIndex];
+					}
+				}
+			}
+
 			const isMuted = state.channelMuted[channelIndex];
 			const isSoundEnabled = state.channelSoundEnabled[channelIndex];
 

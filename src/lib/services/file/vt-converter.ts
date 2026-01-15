@@ -86,6 +86,7 @@ class VT2Converter {
 		'1': EffectType.SlideUp,
 		'2': EffectType.SlideDown,
 		'3': EffectType.Portamento,
+		'6': EffectType.OnOff,
 		'9': AYEffectType.EnvelopeSlideUp,
 		A: AYEffectType.EnvelopeSlideDown,
 		B: EffectType.Speed
