@@ -394,8 +394,8 @@ class AYAudioDriver {
 	updateEnvelopeWithSlide(state, registerState) {
 		if (state.envelopeBaseValue > 0) {
 			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent;
-			const clampedValue = Math.max(0, Math.min(0xffff, finalEnvelopeValue));
-			registerState.envelopePeriod = clampedValue;
+			const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
+			registerState.envelopePeriod = wrappedValue;
 		}
 	}
 }

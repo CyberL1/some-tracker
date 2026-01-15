@@ -20,7 +20,7 @@ class AyumiState extends TrackerState {
 		this.channelAmplitudeSliding = Array(3).fill(0);
 		this.channelEnvelopeEnabled = Array(3).fill(false);
 		this.channelMuted = Array(3).fill(false);
-		this.channelSoundEnabled = Array(3).fill(true);
+		this.channelSoundEnabled = Array(3).fill(false);
 
 		this.envelopeSlideDelay = 0;
 		this.envelopeSlideDelayCounter = 0;
@@ -67,7 +67,7 @@ class AyumiState extends TrackerState {
 		this.channelEnvelopeAccumulator.fill(0);
 		this.channelAmplitudeSliding.fill(0);
 		this.channelEnvelopeEnabled.fill(false);
-		this.channelSoundEnabled.fill(true);
+		this.channelSoundEnabled.fill(false);
 
 		this.envelopeSlideDelay = 0;
 		this.envelopeSlideDelayCounter = 0;

@@ -1,9 +1,9 @@
 class AYChipRegisterState {
 	constructor() {
 		this.channels = [
-			{ tone: 0, volume: 0, mixer: { tone: true, noise: true, envelope: false } },
-			{ tone: 0, volume: 0, mixer: { tone: true, noise: true, envelope: false } },
-			{ tone: 0, volume: 0, mixer: { tone: true, noise: true, envelope: false } }
+			{ tone: 0, volume: 0, mixer: { tone: false, noise: false, envelope: false } },
+			{ tone: 0, volume: 0, mixer: { tone: false, noise: false, envelope: false } },
+			{ tone: 0, volume: 0, mixer: { tone: false, noise: false, envelope: false } }
 		];
 		this.noise = 0;
 		this.envelopePeriod = 0;
@@ -14,7 +14,7 @@ class AYChipRegisterState {
 		for (let i = 0; i < 3; i++) {
 			this.channels[i].tone = 0;
 			this.channels[i].volume = 0;
-			this.channels[i].mixer = { tone: true, noise: true, envelope: false };
+			this.channels[i].mixer = { tone: false, noise: false, envelope: false };
 		}
 		this.noise = 0;
 		this.envelopePeriod = 0;
