@@ -1,4 +1,5 @@
 import AYChipRegisterState from './ay-chip-register-state.js';
+import EffectAlgorithms from './effect-algorithms.js';
 
 const PT3_VOL = [
 	[
@@ -203,46 +204,84 @@ class AYAudioDriver {
 			registerState.channels[channelIndex].mixer.envelope = false;
 		}
 
-		this._processEnvelopeEffects(state, channelIndex, row);
+		this._processEnvelopeEffects(state, channelIndex, row, patternRow);
 	}
 
-	_processEnvelopeEffects(state, channelIndex, row) {
-		if (!row.effects[0]) return;
+	_processEnvelopeEffects(state, channelIndex, row, patternRow) {
+		if (!patternRow || !patternRow.envelopeEffect) return;
 
-		const effect = row.effects[0];
-		const ENVELOPE_SLIDE_UP = 9;
-		const ENVELOPE_SLIDE_DOWN = 10;
+		const effect = patternRow.envelopeEffect;
+		const SLIDE_UP = 1;
+		const SLIDE_DOWN = 2;
+		const PORTAMENTO = 'P'.charCodeAt(0);
+		const ON_OFF = 6;
 
-		if (effect.effect === ENVELOPE_SLIDE_UP) {
-			let delay = effect.delay || 1;
-			if (delay === 0) delay = 1;
-			state.envelopeSlideDelay = delay;
-			state.envelopeSlideDelayCounter = delay;
-			state.envelopeSlideDelta = effect.parameter;
-		} else if (effect.effect === ENVELOPE_SLIDE_DOWN) {
-			let delay = effect.delay || 1;
-			if (delay === 0) delay = 1;
-			state.envelopeSlideDelay = delay;
-			state.envelopeSlideDelayCounter = delay;
-			state.envelopeSlideDelta = -effect.parameter;
+		if (effect.effect === SLIDE_UP) {
+			const slideState = EffectAlgorithms.initSlide(effect.parameter, effect.delay);
+			state.envelopeSlideDelay = slideState.delay;
+			state.envelopeSlideDelayCounter = slideState.counter;
+			state.envelopeSlideDelta = slideState.step;
+			state.envelopePortamentoActive = false;
+			state.envelopeOnOffCounter = 0;
+		} else if (effect.effect === SLIDE_DOWN) {
+			const slideState = EffectAlgorithms.initSlide(-effect.parameter, effect.delay);
+			state.envelopeSlideDelay = slideState.delay;
+			state.envelopeSlideDelayCounter = slideState.counter;
+			state.envelopeSlideDelta = slideState.step;
+			state.envelopePortamentoActive = false;
+			state.envelopeOnOffCounter = 0;
+		} else if (effect.effect === PORTAMENTO) {
+			if (patternRow.envelopeValue > 0) {
+				const targetValue = patternRow.envelopeValue;
+				const currentValue = state.envelopeBaseValue;
+
+				if (currentValue > 0) {
+					const portamentoState = EffectAlgorithms.initPortamento(
+						currentValue,
+						targetValue,
+						effect.parameter,
+						effect.delay
+					);
+					state.envelopePortamentoTarget = portamentoState.target;
+					state.envelopePortamentoDelta = portamentoState.delta;
+					state.envelopePortamentoActive = portamentoState.active;
+					state.envelopePortamentoStep = portamentoState.step;
+					state.envelopePortamentoDelay = portamentoState.delay;
+					state.envelopePortamentoCount = portamentoState.counter;
+
+					state.envelopeSlideDelta = 0;
+					state.envelopeSlideDelayCounter = 0;
+					state.envelopeOnOffCounter = 0;
+				}
+			}
+		} else if (effect.effect === ON_OFF) {
+			const onOffState = EffectAlgorithms.initOnOff(effect.parameter);
+			state.envelopeOffDuration = onOffState.offDuration;
+			state.envelopeOnDuration = onOffState.onDuration;
+			state.envelopeOnOffCounter = onOffState.counter;
+			state.envelopeOnOffEnabled = onOffState.enabled;
+			state.envelopeSlideDelta = 0;
+			state.envelopeSlideDelayCounter = 0;
+			state.envelopePortamentoActive = false;
 		}
 	}
 
 	processInstruments(state, registerState) {
 		this.processEnvelopeSlide(state);
+		this.processEnvelopePortamento(state);
+		this.processEnvelopeOnOff(state);
 		this.updateEnvelopeWithSlide(state, registerState);
 
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			if (state.channelOnOffCounter[channelIndex] > 0) {
-				state.channelOnOffCounter[channelIndex]--;
-				if (state.channelOnOffCounter[channelIndex] === 0) {
-					state.channelSoundEnabled[channelIndex] = !state.channelSoundEnabled[channelIndex];
-					if (state.channelSoundEnabled[channelIndex]) {
-						state.channelOnOffCounter[channelIndex] = state.channelOnDuration[channelIndex];
-					} else {
-						state.channelOnOffCounter[channelIndex] = state.channelOffDuration[channelIndex];
-					}
-				}
+				const result = EffectAlgorithms.processOnOffCounter(
+					state.channelOnOffCounter[channelIndex],
+					state.channelOnDuration[channelIndex],
+					state.channelOffDuration[channelIndex],
+					state.channelSoundEnabled[channelIndex]
+				);
+				state.channelOnOffCounter[channelIndex] = result.counter;
+				state.channelSoundEnabled[channelIndex] = result.enabled;
 			}
 
 			const isMuted = state.channelMuted[channelIndex];
@@ -403,11 +442,46 @@ class AYAudioDriver {
 		}
 	}
 
+	processEnvelopePortamento(state) {
+		if (state.envelopePortamentoActive && state.envelopePortamentoCount > 0) {
+			const result = EffectAlgorithms.processPortamentoCounter(
+				state.envelopePortamentoCount,
+				state.envelopePortamentoDelay,
+				state.envelopePortamentoStep,
+				state.envelopeSlideCurrent,
+				state.envelopePortamentoDelta,
+				state.envelopePortamentoTarget,
+				state.envelopeBaseValue
+			);
+			state.envelopePortamentoCount = result.counter;
+			state.envelopeSlideCurrent = result.currentSliding;
+			state.envelopeBaseValue = result.baseValue;
+			state.envelopePortamentoActive = result.active;
+		}
+	}
+
+	processEnvelopeOnOff(state) {
+		if (state.envelopeOnOffCounter > 0) {
+			const result = EffectAlgorithms.processOnOffCounter(
+				state.envelopeOnOffCounter,
+				state.envelopeOnDuration,
+				state.envelopeOffDuration,
+				state.envelopeOnOffEnabled
+			);
+			state.envelopeOnOffCounter = result.counter;
+			state.envelopeOnOffEnabled = result.enabled;
+		}
+	}
+
 	updateEnvelopeWithSlide(state, registerState) {
 		if (state.envelopeBaseValue > 0) {
-			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent;
-			const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
-			registerState.envelopePeriod = wrappedValue;
+			if (state.envelopeOnOffCounter > 0 && !state.envelopeOnOffEnabled) {
+				registerState.envelopePeriod = 0;
+			} else {
+				const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent;
+				const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
+				registerState.envelopePeriod = wrappedValue;
+			}
 		}
 	}
 }

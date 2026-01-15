@@ -10,7 +10,6 @@ import {
 	InstrumentRow
 } from '../../models/song';
 import { PT3TuneTables } from '../../models/pt3/tuning-tables';
-import { AYEffectType } from '../../chips/ay/types';
 
 interface VT2Module {
 	title: string;
@@ -82,13 +81,11 @@ class VT2Converter {
 		B: NoteName.B
 	} as const;
 
-	private readonly effectTypeMap: Record<string, EffectType | AYEffectType> = {
+	private readonly effectTypeMap: Record<string, EffectType> = {
 		'1': EffectType.SlideUp,
 		'2': EffectType.SlideDown,
 		'3': EffectType.Portamento,
 		'6': EffectType.OnOff,
-		'9': AYEffectType.EnvelopeSlideUp,
-		A: AYEffectType.EnvelopeSlideDown,
 		B: EffectType.Speed
 	} as const;
 
@@ -639,7 +636,15 @@ class VT2Converter {
 					vt2ChannelData.envelopeShape ?? 0
 				);
 				row.envelopeShape = vt2ChannelData.envelopeShape ?? 0;
-				row.effects = this.parseEffects(vt2ChannelData.effects || '');
+
+				const { channelEffect, envelopeEffect } = this.parseEffects(
+					vt2ChannelData.effects || ''
+				);
+				row.effects = channelEffect;
+
+				if (envelopeEffect && rowIndex < pattern.patternRows.length) {
+					pattern.patternRows[rowIndex].envelopeEffect = envelopeEffect;
+				}
 			}
 		}
 	}
@@ -680,35 +685,56 @@ class VT2Converter {
 		};
 	}
 
-	private parseEffects(effectsStr: string): (Effect | null)[] {
+	private parseEffects(effectsStr: string): {
+		channelEffect: (Effect | null)[];
+		envelopeEffect: Effect | null;
+	} {
 		const trimmed = effectsStr.trim();
 
 		if (!trimmed || (trimmed.length !== 3 && trimmed.length !== 4)) {
-			return [null];
+			return { channelEffect: [null], envelopeEffect: null };
 		}
 
 		const effectTypeChar = trimmed[0];
 
 		if (effectTypeChar === '.') {
-			return [null];
+			return { channelEffect: [null], envelopeEffect: null };
+		}
+
+		let delay = 0;
+		let parameter = 0;
+
+		if (trimmed.length === 3) {
+			parameter = parseInt(trimmed.slice(1, 3).replace(/\./g, '0'), 16) || 0;
+		} else {
+			const [_, delayChar, param1Char, param2Char] = trimmed;
+			delay = this.parseHexDigit(delayChar);
+			const param1 = param1Char !== '.' ? this.parseHexDigit(param1Char) : 0;
+			const param2 = param2Char !== '.' ? this.parseHexDigit(param2Char) : 0;
+			parameter = (param1 << 4) | param2;
+		}
+
+		if (effectTypeChar === '9') {
+			return {
+				channelEffect: [null],
+				envelopeEffect: new Effect(EffectType.SlideUp, delay, parameter)
+			};
+		} else if (effectTypeChar === 'A') {
+			return {
+				channelEffect: [null],
+				envelopeEffect: new Effect(EffectType.SlideDown, delay, parameter)
+			};
 		}
 
 		const effectType = this.effectTypeMap[effectTypeChar];
 		if (!effectType) {
-			return [null];
+			return { channelEffect: [null], envelopeEffect: null };
 		}
 
-		if (trimmed.length === 3) {
-			const param = parseInt(trimmed.slice(1, 3).replace(/\./g, '0'), 16) || 0;
-			return [new Effect(effectType, 0, param)];
-		} else {
-			const [_, delayChar, param1Char, param2Char] = trimmed;
-			const delay = this.parseHexDigit(delayChar);
-			const param1 = param1Char !== '.' ? this.parseHexDigit(param1Char) : 0;
-			const param2 = param2Char !== '.' ? this.parseHexDigit(param2Char) : 0;
-			const parameter = (param1 << 4) | param2;
-			return [new Effect(effectType, delay, parameter)];
-		}
+		return {
+			channelEffect: [new Effect(effectType, delay, parameter)],
+			envelopeEffect: null
+		};
 	}
 
 	private parseHexDigit(char: string): number {

@@ -1,3 +1,5 @@
+import EffectAlgorithms from './effect-algorithms.js';
+
 class TrackerPatternProcessor {
 	constructor(state, chipAudioDriver, port) {
 		this.state = state;
@@ -167,27 +169,25 @@ class TrackerPatternProcessor {
 				this.port.postMessage({ type: 'speed_update', speed: newSpeed });
 			}
 		} else if (effect.effect === SLIDE_UP) {
-			this.state.channelSlideStep[channelIndex] = effect.parameter;
-			let delay = effect.delay || 1;
-			if (delay === 0) delay = 1;
-			this.state.channelSlideDelay[channelIndex] = delay;
-			this.state.channelSlideCount[channelIndex] = delay;
+			const slideState = EffectAlgorithms.initSlide(effect.parameter, effect.delay);
+			this.state.channelSlideStep[channelIndex] = slideState.step;
+			this.state.channelSlideDelay[channelIndex] = slideState.delay;
+			this.state.channelSlideCount[channelIndex] = slideState.counter;
 			this.state.channelOnOffCounter[channelIndex] = 0;
 			if (row.note.name !== 0 && row.note.name !== 1) {
-				this.state.channelToneSliding[channelIndex] = effect.parameter;
+				this.state.channelToneSliding[channelIndex] = slideState.current;
 				this.state.channelSlideAlreadyApplied[channelIndex] = true;
 			} else {
 				this.state.channelSlideAlreadyApplied[channelIndex] = false;
 			}
 		} else if (effect.effect === SLIDE_DOWN) {
-			this.state.channelSlideStep[channelIndex] = -effect.parameter;
-			let delay = effect.delay || 1;
-			if (delay === 0) delay = 1;
-			this.state.channelSlideDelay[channelIndex] = delay;
-			this.state.channelSlideCount[channelIndex] = delay;
+			const slideState = EffectAlgorithms.initSlide(-effect.parameter, effect.delay);
+			this.state.channelSlideStep[channelIndex] = slideState.step;
+			this.state.channelSlideDelay[channelIndex] = slideState.delay;
+			this.state.channelSlideCount[channelIndex] = slideState.counter;
 			this.state.channelOnOffCounter[channelIndex] = 0;
 			if (row.note.name !== 0 && row.note.name !== 1) {
-				this.state.channelToneSliding[channelIndex] = -effect.parameter;
+				this.state.channelToneSliding[channelIndex] = slideState.step;
 				this.state.channelSlideAlreadyApplied[channelIndex] = true;
 			} else {
 				this.state.channelSlideAlreadyApplied[channelIndex] = false;
@@ -237,9 +237,10 @@ class TrackerPatternProcessor {
 				}
 			}
 		} else if (effect.effect === ON_OFF) {
-			this.state.channelOffDuration[channelIndex] = effect.parameter & 15;
-			this.state.channelOnDuration[channelIndex] = effect.parameter >> 4;
-			this.state.channelOnOffCounter[channelIndex] = this.state.channelOnDuration[channelIndex];
+			const onOffState = EffectAlgorithms.initOnOff(effect.parameter);
+			this.state.channelOffDuration[channelIndex] = onOffState.offDuration;
+			this.state.channelOnDuration[channelIndex] = onOffState.onDuration;
+			this.state.channelOnOffCounter[channelIndex] = onOffState.counter;
 			this.state.channelSlideCount[channelIndex] = 0;
 			this.state.channelToneSliding[channelIndex] = 0;
 		}
@@ -282,16 +283,16 @@ class TrackerPatternProcessor {
 					}
 				} else {
 					if (this.state.channelSlideCount[channelIndex] > 0) {
-						this.state.channelSlideCount[channelIndex]--;
-						if (this.state.channelSlideCount[channelIndex] === 0) {
-							this.state.channelSlideCount[channelIndex] =
-								this.state.channelSlideDelay[channelIndex];
-							if (!this.state.channelSlideAlreadyApplied[channelIndex]) {
-								this.state.channelToneSliding[channelIndex] += slideStep;
-							} else {
-								this.state.channelSlideAlreadyApplied[channelIndex] = false;
-							}
-						}
+						const result = EffectAlgorithms.processSlideCounter(
+							this.state.channelSlideCount[channelIndex],
+							this.state.channelSlideDelay[channelIndex],
+							slideStep,
+							this.state.channelToneSliding[channelIndex],
+							this.state.channelSlideAlreadyApplied[channelIndex]
+						);
+						this.state.channelSlideCount[channelIndex] = result.counter;
+						this.state.channelToneSliding[channelIndex] = result.current;
+						this.state.channelSlideAlreadyApplied[channelIndex] = result.applied;
 					}
 				}
 			}
