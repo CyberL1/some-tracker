@@ -702,10 +702,11 @@ class VT2Converter {
 			return [new Effect(effectType, 0, param)];
 		} else {
 			const [_, delayChar, param1Char, param2Char] = trimmed;
+			const delay = this.parseHexDigit(delayChar);
 			const param1 = param1Char !== '.' ? this.parseHexDigit(param1Char) : 0;
 			const param2 = param2Char !== '.' ? this.parseHexDigit(param2Char) : 0;
 			const parameter = (param1 << 4) | param2;
-			return [new Effect(effectType, 0, parameter)];
+			return [new Effect(effectType, delay, parameter)];
 		}
 	}
 

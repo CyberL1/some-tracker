@@ -214,12 +214,16 @@ class AYAudioDriver {
 		const ENVELOPE_SLIDE_DOWN = 10;
 
 		if (effect.effect === ENVELOPE_SLIDE_UP) {
-			state.envelopeSlideDelay = 1;
-			state.envelopeSlideDelayCounter = 1;
+			let delay = effect.delay || 1;
+			if (delay === 0) delay = 1;
+			state.envelopeSlideDelay = delay;
+			state.envelopeSlideDelayCounter = delay;
 			state.envelopeSlideDelta = effect.parameter;
 		} else if (effect.effect === ENVELOPE_SLIDE_DOWN) {
-			state.envelopeSlideDelay = 1;
-			state.envelopeSlideDelayCounter = 1;
+			let delay = effect.delay || 1;
+			if (delay === 0) delay = 1;
+			state.envelopeSlideDelay = delay;
+			state.envelopeSlideDelayCounter = delay;
 			state.envelopeSlideDelta = -effect.parameter;
 		}
 	}

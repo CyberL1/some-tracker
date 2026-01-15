@@ -26,6 +26,8 @@ class TrackerState {
 		this.channelCurrentNotes = Array(channelCount).fill(0);
 		this.channelToneSliding = Array(channelCount).fill(0);
 		this.channelSlideStep = Array(channelCount).fill(0);
+		this.channelSlideDelay = Array(channelCount).fill(0);
+		this.channelSlideCount = Array(channelCount).fill(0);
 		this.channelPreviousNotes = Array(channelCount).fill(0);
 		this.channelPortamentoTarget = Array(channelCount).fill(-1);
 		this.channelPortamentoDelta = Array(channelCount).fill(0);
@@ -46,6 +48,8 @@ class TrackerState {
 		this.channelCurrentNotes.fill(0);
 		this.channelToneSliding.fill(0);
 		this.channelSlideStep.fill(0);
+		this.channelSlideDelay.fill(0);
+		this.channelSlideCount.fill(0);
 		this.channelPreviousNotes.fill(0);
 		this.channelPortamentoTarget.fill(-1);
 		this.channelPortamentoDelta.fill(0);

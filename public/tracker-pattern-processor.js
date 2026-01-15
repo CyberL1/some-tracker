@@ -165,6 +165,10 @@ class TrackerPatternProcessor {
 			}
 		} else if (effect.effect === SLIDE_UP) {
 			this.state.channelSlideStep[channelIndex] = effect.parameter;
+			let delay = effect.delay || 1;
+			if (delay === 0) delay = 1;
+			this.state.channelSlideDelay[channelIndex] = delay;
+			this.state.channelSlideCount[channelIndex] = delay;
 			if (row.note.name !== 0 && row.note.name !== 1) {
 				this.state.channelToneSliding[channelIndex] = effect.parameter;
 				this.state.channelSlideAlreadyApplied[channelIndex] = true;
@@ -173,6 +177,10 @@ class TrackerPatternProcessor {
 			}
 		} else if (effect.effect === SLIDE_DOWN) {
 			this.state.channelSlideStep[channelIndex] = -effect.parameter;
+			let delay = effect.delay || 1;
+			if (delay === 0) delay = 1;
+			this.state.channelSlideDelay[channelIndex] = delay;
+			this.state.channelSlideCount[channelIndex] = delay;
 			if (row.note.name !== 0 && row.note.name !== 1) {
 				this.state.channelToneSliding[channelIndex] = -effect.parameter;
 				this.state.channelSlideAlreadyApplied[channelIndex] = true;
@@ -261,10 +269,17 @@ class TrackerPatternProcessor {
 						}
 					}
 				} else {
-					if (!this.state.channelSlideAlreadyApplied[channelIndex]) {
-						this.state.channelToneSliding[channelIndex] += slideStep;
-					} else {
-						this.state.channelSlideAlreadyApplied[channelIndex] = false;
+					if (this.state.channelSlideCount[channelIndex] > 0) {
+						this.state.channelSlideCount[channelIndex]--;
+						if (this.state.channelSlideCount[channelIndex] === 0) {
+							this.state.channelSlideCount[channelIndex] =
+								this.state.channelSlideDelay[channelIndex];
+							if (!this.state.channelSlideAlreadyApplied[channelIndex]) {
+								this.state.channelToneSliding[channelIndex] += slideStep;
+							} else {
+								this.state.channelSlideAlreadyApplied[channelIndex] = false;
+							}
+						}
 					}
 				}
 			}
