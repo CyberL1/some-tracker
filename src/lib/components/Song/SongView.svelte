@@ -151,13 +151,11 @@
 			return;
 		}
 		const record: Record<number, Pattern> = {};
-		songs.forEach((song) => {
-			song.patterns.forEach((pattern) => {
-				if (!record[pattern.id]) {
-					record[pattern.id] = pattern;
-				}
-			});
-		});
+		for (const song of songs) {
+			for (const pattern of song.patterns) {
+				record[pattern.id] = pattern;
+			}
+		}
 		patternsRecord = record;
 	});
 
@@ -209,6 +207,7 @@
 				canvasHeight={patternOrderHeight}
 				{lineHeight}
 				{songPatterns}
+				{songs}
 				onPatternCreated={handlePatternCreated} />
 		</Card>
 	</div>

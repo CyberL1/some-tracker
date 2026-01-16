@@ -19,6 +19,7 @@
 		canvasHeight?: number;
 		lineHeight?: number;
 		songPatterns?: Pattern[];
+		songs?: any[];
 		onPatternCreated?: (pattern: Pattern) => void;
 	}
 
@@ -29,6 +30,7 @@
 		patternOrder = $bindable(),
 		canvasHeight = 600,
 		songPatterns = [],
+		songs = [],
 		onPatternCreated
 	}: Props = $props();
 
@@ -401,22 +403,13 @@
 	}
 
 	function ensurePatternInRecord(patternId: number): Pattern | null {
-		let pattern = patterns[patternId];
-
-		if (pattern) {
-			return pattern;
+		for (const song of songs) {
+			const found = song.patterns.find((p: Pattern) => p.id === patternId);
+			if (found) {
+				return found;
+			}
 		}
-
-		const foundPattern = songPatterns.find((p) => p.id === patternId);
-
-		if (!foundPattern) {
-			return null;
-		}
-
-		pattern = foundPattern;
-		patterns = { ...patterns, [patternId]: pattern };
-
-		return pattern;
+		return patterns[patternId] || null;
 	}
 
 	function clonePatternAtIndex(index: number): void {
