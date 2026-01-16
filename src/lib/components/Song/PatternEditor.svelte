@@ -31,7 +31,7 @@
 	import { channelMuteStore } from '../../stores/channel-mute.svelte';
 	import { PatternFieldDetection } from '../../services/pattern/editing/pattern-field-detection';
 	import { PatternValueUpdates } from '../../services/pattern/editing/pattern-value-updates';
-import { EffectField } from '../../services/pattern/editing/effect-field';
+	import { EffectField } from '../../services/pattern/editing/effect-field';
 	import { undoRedoStore } from '../../stores/undo-redo.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import {
@@ -735,8 +735,16 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 				moveColumn(1);
 			}
 
-			if (!playbackStore.isPlaying && fieldInfoBeforeEdit && fieldInfoBeforeEdit.channelIndex >= 0) {
-				if (chipProcessor && 'playPreviewNote' in chipProcessor && !pressedKeyChannels.has(event.key)) {
+			if (
+				!playbackStore.isPlaying &&
+				fieldInfoBeforeEdit &&
+				fieldInfoBeforeEdit.channelIndex >= 0
+			) {
+				if (
+					chipProcessor &&
+					'playPreviewNote' in chipProcessor &&
+					!pressedKeyChannels.has(event.key)
+				) {
 					const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
 					const isNoteField = fieldInfoBeforeEdit.fieldType === 'note';
 					previewService.playFromContext(
@@ -1176,7 +1184,10 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 		}
 
 		if (fieldInfo.fieldType === 'note') {
-			const newValue = PatternValueUpdates.incrementNoteValue(currentValue as string, adjustedDelta);
+			const newValue = PatternValueUpdates.incrementNoteValue(
+				currentValue as string,
+				adjustedDelta
+			);
 			return PatternValueUpdates.updateFieldValue(
 				{
 					pattern,
@@ -1191,8 +1202,18 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 				fieldInfo,
 				newValue
 			);
-		} else if ((fieldInfo.fieldType === 'hex' || fieldInfo.fieldType === 'dec' || fieldInfo.fieldType === 'symbol') && !EffectField.isEffectField(fieldInfo.fieldKey)) {
-			const newValue = PatternValueUpdates.incrementNumericValue(currentValue as number, delta, fieldInfo.fieldType, fieldDefinition?.length);
+		} else if (
+			(fieldInfo.fieldType === 'hex' ||
+				fieldInfo.fieldType === 'dec' ||
+				fieldInfo.fieldType === 'symbol') &&
+			!EffectField.isEffectField(fieldInfo.fieldKey)
+		) {
+			const newValue = PatternValueUpdates.incrementNumericValue(
+				currentValue as number,
+				delta,
+				fieldInfo.fieldType,
+				fieldDefinition?.length
+			);
 			return PatternValueUpdates.updateFieldValue(
 				{
 					pattern,
@@ -1253,7 +1274,12 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 			}
 
 			// Second pass: collect cells to update based on whether selection has notes
-			const cellsToUpdate: Array<{ row: number; col: number; fieldInfo: any; currentValue: string | number }> = [];
+			const cellsToUpdate: Array<{
+				row: number;
+				col: number;
+				fieldInfo: any;
+				currentValue: string | number;
+			}> = [];
 
 			for (let row = minRow; row <= maxRow && row < pattern.length; row++) {
 				const rowString = getPatternRowData(pattern, row);
@@ -1293,7 +1319,10 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 					// If selection has notes, only include notes; otherwise include all compatible fields
 					const shouldInclude = hasNotes
 						? fieldInfo.fieldType === 'note'
-						: (fieldInfo.fieldType === 'note' || fieldInfo.fieldType === 'hex' || fieldInfo.fieldType === 'dec' || fieldInfo.fieldType === 'symbol');
+						: fieldInfo.fieldType === 'note' ||
+							fieldInfo.fieldType === 'hex' ||
+							fieldInfo.fieldType === 'dec' ||
+							fieldInfo.fieldType === 'symbol';
 
 					if (shouldInclude) {
 						cellsToUpdate.push({ row, col, fieldInfo, currentValue });
@@ -1302,7 +1331,15 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 			}
 
 			for (const { row, col, fieldInfo, currentValue } of cellsToUpdate) {
-				pattern = updateFieldAtPosition(pattern, row, col, fieldInfo, currentValue, delta, isOctaveIncrement);
+				pattern = updateFieldAtPosition(
+					pattern,
+					row,
+					col,
+					fieldInfo,
+					currentValue,
+					delta,
+					isOctaveIncrement
+				);
 			}
 
 			recordBulkPatternEdit(originalPattern, pattern);
@@ -1310,7 +1347,9 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 		} else {
 			const rowString = getPatternRowData(pattern, selectedRow);
 			const cellPositions = getCellPositions(rowString, selectedRow);
-			const segments = textParser ? textParser.parseRowString(rowString, selectedRow) : undefined;
+			const segments = textParser
+				? textParser.parseRowString(rowString, selectedRow)
+				: undefined;
 
 			const fieldInfo = PatternFieldDetection.detectFieldAtCursor({
 				pattern,
@@ -1339,7 +1378,15 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 				fieldInfo
 			);
 
-			const updatedPattern = updateFieldAtPosition(pattern, selectedRow, selectedColumn, fieldInfo, currentValue, delta, isOctaveIncrement);
+			const updatedPattern = updateFieldAtPosition(
+				pattern,
+				selectedRow,
+				selectedColumn,
+				fieldInfo,
+				currentValue,
+				delta,
+				isOctaveIncrement
+			);
 
 			recordPatternEdit(pattern, updatedPattern);
 			updatePatternInArray(updatedPattern);
@@ -1363,7 +1410,6 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 		clearAllCaches();
 		draw();
 	}
-
 
 	function updateSize() {
 		if (containerDiv) {
@@ -1554,13 +1600,18 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 
 			selectedRow = currentRow;
 			if (currentPatternOrderIndexUpdate !== undefined) {
-				if (!userManuallyChangedPattern) {
+				// Always follow playback pattern changes, but reset manual change flag
+				// if playback has moved to a different pattern or enough time has passed
+				if (currentPatternOrderIndexUpdate !== currentPatternOrderIndex) {
+					// Playback has moved to a different pattern - always follow
 					currentPatternOrderIndex = currentPatternOrderIndexUpdate;
 					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
+					userManuallyChangedPattern = false;
 				} else if (
-					currentPatternOrderIndexUpdate === currentPatternOrderIndex &&
+					userManuallyChangedPattern &&
 					now - lastManualPatternChangeTime > MANUAL_PATTERN_CHANGE_TIMEOUT_MS
 				) {
+					// Enough time has passed since manual change - reset the flag
 					userManuallyChangedPattern = false;
 					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
 				}

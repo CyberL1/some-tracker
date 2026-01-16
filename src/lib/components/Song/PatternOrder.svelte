@@ -5,6 +5,7 @@
 	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
 	import { PatternService } from '../../services/pattern/pattern-service';
 	import { PatternOrderRenderer } from '../../ui-rendering/pattern-order-renderer';
+	import { playbackStore } from '../../stores/playback.svelte';
 	import IconCarbonUnlink from '~icons/carbon/unlink';
 	import IconCarbonCopy from '~icons/carbon/copy';
 	import IconCarbonSubtract from '~icons/carbon/subtract';
@@ -192,6 +193,10 @@
 		const clickedIndex = Math.round(currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT);
 
 		if (clickedIndex >= 0 && clickedIndex < patternOrder.length) {
+			if (playbackStore.isPlaying && clickedIndex === currentPatternOrderIndex) {
+				return;
+			}
+
 			if (x <= PADDING + CELL_WIDTH && x >= PADDING) {
 				finishPatternEdit();
 				switchPattern(clickedIndex);

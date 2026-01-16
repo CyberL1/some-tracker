@@ -87,6 +87,10 @@ class TrackerState {
 		if (orderIndex !== undefined) {
 			this.currentPatternOrderIndex = orderIndex;
 		}
+		// Ensure current row is within valid bounds for the new pattern
+		if (this.currentPattern && this.currentRow >= this.currentPattern.length) {
+			this.currentRow = Math.max(0, this.currentPattern.length - 1);
+		}
 	}
 
 	setSpeed(speed) {

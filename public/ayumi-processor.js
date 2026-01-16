@@ -27,6 +27,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.fadeInDuration = 0.01;
 		this.previewActiveChannels = new Set();
 		this.previewSampleCounters = new Map();
+		this.pendingRowAfterPatternChange = null;
 	}
 
 	async handleMessage(event) {
@@ -72,19 +73,19 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			case 'update_int_frequency':
 				this.handleUpdateIntFrequency(data);
 				break;
-		case 'set_channel_mute':
-			this.handleSetChannelMute(data);
-			break;
-		case 'change_pattern_during_playback':
-			this.handleChangePatternDuringPlayback(data);
-			break;
-		case 'preview_note':
-			this.handlePreviewNote(data);
-			break;
-		case 'stop_preview':
-			this.handleStopPreview(data.channel);
-			break;
-	}
+			case 'set_channel_mute':
+				this.handleSetChannelMute(data);
+				break;
+			case 'change_pattern_during_playback':
+				this.handleChangePatternDuringPlayback(data);
+				break;
+			case 'preview_note':
+				this.handlePreviewNote(data);
+				break;
+			case 'stop_preview':
+				this.handleStopPreview(data.channel);
+				break;
+		}
 	}
 
 	async handleInit({ wasmBuffer }) {
@@ -152,6 +153,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 	handleSetPatternData(data) {
 		this.state.setPattern(data.pattern, data.patternOrderIndex);
+
+		// If we have a pending row from a pattern change, apply it now (clamping handled by setPattern)
+		if (this.pendingRowAfterPatternChange !== null) {
+			this.state.currentRow = this.pendingRowAfterPatternChange;
+			this.state.currentTick = 0;
+			this.state.sampleCounter = this.state.samplesPerTick;
+			this.pendingRowAfterPatternChange = null;
+		}
 	}
 
 	handleUpdateAyFrequency(data) {
@@ -168,7 +177,11 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			this.state.channelMuted[channelIndex] = muted;
 			if (muted) {
 				this.registerState.channels[channelIndex].volume = 0;
-				this.registerState.channels[channelIndex].mixer = { tone: false, noise: false, envelope: false };
+				this.registerState.channels[channelIndex].mixer = {
+					tone: false,
+					noise: false,
+					envelope: false
+				};
 				this.state.channelEnvelopeEnabled[channelIndex] = false;
 				if (this.ayumiEngine) {
 					this.ayumiEngine.applyRegisterState(this.registerState);
@@ -182,30 +195,44 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			return;
 		}
 
+		let patternChanged = false;
+
 		if (patternOrderIndex !== undefined) {
 			const patternOrderChanged = this.state.currentPatternOrderIndex !== patternOrderIndex;
 			this.state.currentPatternOrderIndex = patternOrderIndex;
 
 			if (pattern) {
 				this.state.setPattern(pattern, patternOrderIndex);
+				patternChanged = true;
 			} else if (patternOrderChanged && !this.state.currentPattern) {
 				this.port.postMessage({
 					type: 'request_pattern',
 					patternOrderIndex: patternOrderIndex
 				});
+				// Store pending row to be applied when pattern arrives
+				if (row !== undefined) {
+					this.pendingRowAfterPatternChange = row;
+				}
 			}
 		} else if (pattern) {
 			this.state.setPattern(pattern, this.state.currentPatternOrderIndex);
+			patternChanged = true;
 		}
 
-		if (row !== undefined) {
+		// Handle speed changes
+		if (speed !== undefined && speed !== null && speed > 0) {
+			this.state.setSpeed(speed);
+		}
+
+		// Handle row changes - row clamping is now handled in TrackerState.setPattern
+		if (row !== undefined && (patternChanged || this.state.currentPattern)) {
 			this.state.currentRow = row;
 			this.state.currentTick = 0;
 			this.state.sampleCounter = this.state.samplesPerTick;
-		}
-
-		if (speed !== undefined && speed !== null && speed > 0) {
-			this.state.setSpeed(speed);
+		} else if (row !== undefined && !patternChanged) {
+			// If we're changing pattern order but don't have the pattern yet,
+			// store the row to be applied when the pattern arrives
+			this.pendingRowAfterPatternChange = row;
 		}
 	}
 
@@ -291,7 +318,11 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		for (let ch = 0; ch < 3; ch++) {
 			if (this.state.channelMuted[ch]) {
 				this.registerState.channels[ch].volume = 0;
-				this.registerState.channels[ch].mixer = { tone: false, noise: false, envelope: false };
+				this.registerState.channels[ch].mixer = {
+					tone: false,
+					noise: false,
+					envelope: false
+				};
 				this.state.channelEnvelopeEnabled[ch] = false;
 			}
 		}
@@ -334,7 +365,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 		const instrumentId = rowData.instrument;
 		if (instrumentId !== undefined && instrumentId !== null) {
-			const instrumentIdNumber = typeof instrumentId === 'string' ? parseInt(instrumentId, 10) : instrumentId;
+			const instrumentIdNumber =
+				typeof instrumentId === 'string' ? parseInt(instrumentId, 10) : instrumentId;
 			const instrumentIndex = this.state.instrumentIdToIndex.get(instrumentIdNumber);
 
 			if (instrumentIndex !== undefined && this.state.instruments[instrumentIndex]) {
@@ -428,7 +460,10 @@ class AyumiProcessor extends AudioWorkletProcessor {
 						const counter = this.previewSampleCounters.get(channel);
 						if (counter >= this.state.samplesPerTick) {
 							this.patternProcessor.processTables();
-							if (this.state.channelInstruments && this.state.channelInstruments[channel] >= 0) {
+							if (
+								this.state.channelInstruments &&
+								this.state.channelInstruments[channel] >= 0
+							) {
 								this.audioDriver.processInstruments(this.state, this.registerState);
 							}
 							this.previewSampleCounters.set(channel, 0);
@@ -442,52 +477,52 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					this.state.currentPattern.length > 0 &&
 					this.state.sampleCounter >= this.state.samplesPerTick
 				) {
-				if (this.state.currentTick === 0) {
-					this.patternProcessor.parsePatternRow(
-						this.state.currentPattern,
-						this.state.currentRow,
-						this.registerState
-					);
+					if (this.state.currentTick === 0) {
+						this.patternProcessor.parsePatternRow(
+							this.state.currentPattern,
+							this.state.currentRow,
+							this.registerState
+						);
 
-					this.port.postMessage({
-						type: 'position_update',
-						currentRow: this.state.currentRow,
-						currentTick: this.state.currentTick,
-						currentPatternOrderIndex: this.state.currentPatternOrderIndex
-					});
+						this.port.postMessage({
+							type: 'position_update',
+							currentRow: this.state.currentRow,
+							currentTick: this.state.currentTick,
+							currentPatternOrderIndex: this.state.currentPatternOrderIndex
+						});
+					}
+
+					this.enforceMuteState();
+
+					this.patternProcessor.processTables();
+					this.patternProcessor.processSlides();
+					this.patternProcessor.processArpeggio();
+					this.audioDriver.processInstruments(this.state, this.registerState);
+
+					this.enforceMuteState();
+
+					this.ayumiEngine.applyRegisterState(this.registerState);
+
+					const needsPatternChange = this.state.advancePosition();
+					if (needsPatternChange) {
+						this.port.postMessage({
+							type: 'request_pattern',
+							patternOrderIndex: this.state.currentPatternOrderIndex
+						});
+					}
+
+					this.state.sampleCounter = 0;
 				}
 
-				this.enforceMuteState();
+				this.ayumiEngine.process();
+				this.ayumiEngine.removeDC();
 
-				this.patternProcessor.processTables();
-				this.patternProcessor.processSlides();
-				this.patternProcessor.processArpeggio();
-				this.audioDriver.processInstruments(this.state, this.registerState);
+				const { wasmModule, ayumiPtr } = this.state;
+				const leftOffset = ayumiPtr + AYUMI_STRUCT_LEFT_OFFSET;
+				const rightOffset = ayumiPtr + AYUMI_STRUCT_RIGHT_OFFSET;
 
-				this.enforceMuteState();
-
-				this.ayumiEngine.applyRegisterState(this.registerState);
-
-				const needsPatternChange = this.state.advancePosition();
-				if (needsPatternChange) {
-					this.port.postMessage({
-						type: 'request_pattern',
-						patternOrderIndex: this.state.currentPatternOrderIndex
-					});
-				}
-
-				this.state.sampleCounter = 0;
-			}
-
-			this.ayumiEngine.process();
-			this.ayumiEngine.removeDC();
-
-			const { wasmModule, ayumiPtr } = this.state;
-			const leftOffset = ayumiPtr + AYUMI_STRUCT_LEFT_OFFSET;
-			const rightOffset = ayumiPtr + AYUMI_STRUCT_RIGHT_OFFSET;
-
-			const leftValue = new Float64Array(wasmModule.memory.buffer, leftOffset, 1)[0];
-			const rightValue = new Float64Array(wasmModule.memory.buffer, rightOffset, 1)[0];
+				const leftValue = new Float64Array(wasmModule.memory.buffer, leftOffset, 1)[0];
+				const rightValue = new Float64Array(wasmModule.memory.buffer, rightOffset, 1)[0];
 
 				// Apply fade-in if needed
 				if (this.fadeInSamples > 0) {
