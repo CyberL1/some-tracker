@@ -20,7 +20,7 @@ enum NoteName {
 }
 
 enum EffectType {
-	Arpeggio = 0,
+	Arpeggio = 'A'.charCodeAt(0),
 	SlideUp = 1,
 	SlideDown = 2,
 	Portamento = 'P'.charCodeAt(0),

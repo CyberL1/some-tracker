@@ -221,12 +221,20 @@ class AYAudioDriver {
 		if (!patternRow || !patternRow.envelopeEffect) return;
 
 		const effect = patternRow.envelopeEffect;
+		const ARPEGGIO = 'A'.charCodeAt(0);
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
 		const PORTAMENTO = 'P'.charCodeAt(0);
 		const ON_OFF = 6;
 
-		if (effect.effect === SLIDE_UP) {
+		if (effect.effect === ARPEGGIO) {
+			const arpeggioState = EffectAlgorithms.initArpeggio(effect.parameter, effect.delay);
+			state.envelopeArpeggioSemitone1 = arpeggioState.semitone1;
+			state.envelopeArpeggioSemitone2 = arpeggioState.semitone2;
+			state.envelopeArpeggioDelay = arpeggioState.delay;
+			state.envelopeArpeggioCounter = arpeggioState.counter;
+			state.envelopeArpeggioPosition = arpeggioState.position;
+		} else if (effect.effect === SLIDE_UP) {
 			const slideState = EffectAlgorithms.initSlide(effect.parameter, effect.delay);
 			state.envelopeSlideDelay = slideState.delay;
 			state.envelopeSlideDelayCounter = slideState.counter;
@@ -281,6 +289,7 @@ class AYAudioDriver {
 		this.processEnvelopePortamento(state);
 		this.processEnvelopeOnOff(state);
 		this.updateEnvelopeWithSlide(state, registerState);
+		this.processEnvelopeArpeggio(state, registerState);
 
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			if (state.channelOnOffCounter[channelIndex] > 0) {
@@ -489,6 +498,68 @@ class AYAudioDriver {
 			state.envelopeOnOffCounter = result.counter;
 			state.envelopeOnOffEnabled = result.enabled;
 		}
+	}
+
+	processEnvelopeArpeggio(state, registerState) {
+		if (state.envelopeArpeggioCounter > 0) {
+			const result = EffectAlgorithms.processArpeggioCounter(
+				state.envelopeArpeggioCounter,
+				state.envelopeArpeggioDelay,
+				state.envelopeArpeggioPosition
+			);
+			state.envelopeArpeggioCounter = result.counter;
+			state.envelopeArpeggioPosition = result.position;
+
+			const baseEnvelopePeriod = state.envelopeBaseValue;
+			if (baseEnvelopePeriod > 0) {
+				const semitoneOffset = EffectAlgorithms.getArpeggioOffset(
+					result.position,
+					state.envelopeArpeggioSemitone1,
+					state.envelopeArpeggioSemitone2
+				);
+
+				const baseNoteIndex = this.envelopePeriodToNote(
+					baseEnvelopePeriod,
+					state.currentTuningTable
+				);
+				if (baseNoteIndex !== null) {
+					const arpeggioNoteIndex = baseNoteIndex + semitoneOffset;
+					const maxNote = state.currentTuningTable.length - 1;
+					let finalNoteIndex = arpeggioNoteIndex;
+					if (finalNoteIndex < 0) finalNoteIndex = 0;
+					if (finalNoteIndex > maxNote) finalNoteIndex = maxNote;
+
+					const arpeggioEnvelopePeriod = Math.round(
+						state.currentTuningTable[finalNoteIndex] / 16
+					);
+					registerState.envelopePeriod = arpeggioEnvelopePeriod;
+				}
+			}
+		}
+	}
+
+	envelopePeriodToNote(envelopePeriod, tuningTable) {
+		if (envelopePeriod === 0) {
+			return null;
+		}
+
+		let nearestNote = -1;
+		let bestDistance = Infinity;
+
+		for (let i = 0; i < tuningTable.length; i++) {
+			const noteEnvelopePeriod = Math.round(tuningTable[i] / 16);
+			if (noteEnvelopePeriod === envelopePeriod) {
+				return i;
+			}
+
+			const distance = Math.abs(noteEnvelopePeriod - envelopePeriod);
+			if (distance < bestDistance) {
+				bestDistance = distance;
+				nearestNote = i;
+			}
+		}
+
+		return nearestNote >= 0 ? nearestNote : null;
 	}
 
 	updateEnvelopeWithSlide(state, registerState) {

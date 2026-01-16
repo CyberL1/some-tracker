@@ -121,6 +121,44 @@ class EffectAlgorithms {
 		}
 		return { counter, enabled };
 	}
+
+	static initArpeggio(parameter, delay) {
+		const semitone1 = (parameter >> 4) & 15;
+		const semitone2 = parameter & 15;
+		const normalizedDelay = delay || 1;
+		const effectiveDelay = normalizedDelay === 0 ? 1 : normalizedDelay;
+		return {
+			semitone1,
+			semitone2,
+			delay: effectiveDelay,
+			counter: effectiveDelay,
+			position: 0
+		};
+	}
+
+	static processArpeggioCounter(counter, delay, position) {
+		if (counter > 0) {
+			const newCounter = counter - 1;
+			if (newCounter === 0) {
+				const newPosition = (position + 1) % 3;
+				return {
+					counter: delay,
+					position: newPosition
+				};
+			}
+			return {
+				counter: newCounter,
+				position
+			};
+		}
+		return { counter, position };
+	}
+
+	static getArpeggioOffset(position, semitone1, semitone2) {
+		if (position === 1) return semitone1;
+		if (position === 2) return semitone2;
+		return 0;
+	}
 }
 
 export default EffectAlgorithms;

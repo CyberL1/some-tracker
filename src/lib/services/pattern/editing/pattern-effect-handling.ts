@@ -8,6 +8,8 @@ export class PatternEffectHandling {
 		let type: string;
 		if (effect.effect === 0) {
 			type = '.';
+		} else if (effect.effect === 'A'.charCodeAt(0)) {
+			type = 'A';
 		} else if (effect.effect === 'S'.charCodeAt(0)) {
 			type = 'S';
 		} else if (effect.effect === 'P'.charCodeAt(0)) {
@@ -31,6 +33,8 @@ export class PatternEffectHandling {
 		const typeChar = value[0] || '.';
 		if (typeChar === '.') {
 			type = 0;
+		} else if (typeChar === 'A' || typeChar === 'a') {
+			type = 'A'.charCodeAt(0);
 		} else if (typeChar === 'S' || typeChar === 's') {
 			type = 'S'.charCodeAt(0);
 		} else if (typeChar === 'P' || typeChar === 'p') {

@@ -177,6 +177,7 @@ export class AYChipRenderer implements ChipRenderer {
 
 				patternProcessor.processTables();
 				patternProcessor.processSlides();
+				patternProcessor.processArpeggio();
 				audioDriver.processInstruments(state, registerState);
 				ayumiEngine.applyRegisterState(registerState);
 

@@ -37,6 +37,11 @@ class TrackerState {
 		this.channelOnDuration = Array(channelCount).fill(0);
 		this.channelOffDuration = Array(channelCount).fill(0);
 		this.channelOnOffCounter = Array(channelCount).fill(0);
+		this.channelArpeggioSemitone1 = Array(channelCount).fill(0);
+		this.channelArpeggioSemitone2 = Array(channelCount).fill(0);
+		this.channelArpeggioDelay = Array(channelCount).fill(0);
+		this.channelArpeggioCounter = Array(channelCount).fill(0);
+		this.channelArpeggioPosition = Array(channelCount).fill(0);
 	}
 
 	reset() {
@@ -62,6 +67,11 @@ class TrackerState {
 		this.channelOnDuration.fill(0);
 		this.channelOffDuration.fill(0);
 		this.channelOnOffCounter.fill(0);
+		this.channelArpeggioSemitone1.fill(0);
+		this.channelArpeggioSemitone2.fill(0);
+		this.channelArpeggioDelay.fill(0);
+		this.channelArpeggioCounter.fill(0);
+		this.channelArpeggioPosition.fill(0);
 	}
 
 	setTuningTable(table) {

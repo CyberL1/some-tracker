@@ -37,6 +37,11 @@ class AyumiState extends TrackerState {
 		this.envelopeOffDuration = 0;
 		this.envelopeOnOffCounter = 0;
 		this.envelopeOnOffEnabled = false;
+		this.envelopeArpeggioSemitone1 = 0;
+		this.envelopeArpeggioSemitone2 = 0;
+		this.envelopeArpeggioDelay = 0;
+		this.envelopeArpeggioCounter = 0;
+		this.envelopeArpeggioPosition = 0;
 		this.noiseBaseValue = 0;
 		this.noiseAddValue = 0;
 	}
@@ -94,6 +99,11 @@ class AyumiState extends TrackerState {
 		this.envelopeOffDuration = 0;
 		this.envelopeOnOffCounter = 0;
 		this.envelopeOnOffEnabled = false;
+		this.envelopeArpeggioSemitone1 = 0;
+		this.envelopeArpeggioSemitone2 = 0;
+		this.envelopeArpeggioDelay = 0;
+		this.envelopeArpeggioCounter = 0;
+		this.envelopeArpeggioPosition = 0;
 		this.noiseBaseValue = 0;
 		this.noiseAddValue = 0;
 	}

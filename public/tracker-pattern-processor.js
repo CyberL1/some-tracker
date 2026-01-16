@@ -156,13 +156,21 @@ class TrackerPatternProcessor {
 		if (!row.effects[0]) return;
 
 		const effect = row.effects[0];
+		const ARPEGGIO = 'A'.charCodeAt(0);
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
 		const PORTAMENTO = 'P'.charCodeAt(0);
 		const ON_OFF = 6;
 		const SPEED = 'S'.charCodeAt(0);
 
-		if (effect.effect === SPEED) {
+		if (effect.effect === ARPEGGIO) {
+			const arpeggioState = EffectAlgorithms.initArpeggio(effect.parameter, effect.delay);
+			this.state.channelArpeggioSemitone1[channelIndex] = arpeggioState.semitone1;
+			this.state.channelArpeggioSemitone2[channelIndex] = arpeggioState.semitone2;
+			this.state.channelArpeggioDelay[channelIndex] = arpeggioState.delay;
+			this.state.channelArpeggioCounter[channelIndex] = arpeggioState.counter;
+			this.state.channelArpeggioPosition[channelIndex] = arpeggioState.position;
+		} else if (effect.effect === SPEED) {
 			const newSpeed = effect.parameter;
 			if (newSpeed > 0) {
 				this.state.setSpeed(newSpeed);
@@ -295,6 +303,39 @@ class TrackerPatternProcessor {
 						this.state.channelSlideAlreadyApplied[channelIndex] = result.applied;
 					}
 				}
+			}
+		}
+	}
+
+	processArpeggio() {
+		for (
+			let channelIndex = 0;
+			channelIndex < this.state.channelArpeggioCounter.length;
+			channelIndex++
+		) {
+			if (this.state.channelArpeggioCounter[channelIndex] > 0) {
+				const result = EffectAlgorithms.processArpeggioCounter(
+					this.state.channelArpeggioCounter[channelIndex],
+					this.state.channelArpeggioDelay[channelIndex],
+					this.state.channelArpeggioPosition[channelIndex]
+				);
+				this.state.channelArpeggioCounter[channelIndex] = result.counter;
+				this.state.channelArpeggioPosition[channelIndex] = result.position;
+
+				const baseNote = this.state.channelBaseNotes[channelIndex];
+				const semitoneOffset = EffectAlgorithms.getArpeggioOffset(
+					result.position,
+					this.state.channelArpeggioSemitone1[channelIndex],
+					this.state.channelArpeggioSemitone2[channelIndex]
+				);
+				const arpeggioNote = baseNote + semitoneOffset;
+
+				const maxNote = this.state.currentTuningTable.length - 1;
+				let finalNote = arpeggioNote;
+				if (finalNote < 0) finalNote = 0;
+				if (finalNote > maxNote) finalNote = maxNote;
+
+				this.state.channelCurrentNotes[channelIndex] = finalNote;
 			}
 		}
 	}
