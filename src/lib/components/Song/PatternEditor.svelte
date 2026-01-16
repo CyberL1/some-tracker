@@ -51,6 +51,7 @@
 	import { EnvelopeModeService } from '../../services/pattern/envelope-mode-service';
 	import { PatternRowDataService } from '../../services/pattern/pattern-row-data-service';
 	import { SelectionBoundsService } from '../../services/pattern/selection-bounds-service';
+	import { envelopePeriodToNote, noteToEnvelopePeriod } from '../../utils/envelope-note-conversion';
 
 	let {
 		patterns = $bindable(),
@@ -1247,6 +1248,29 @@
 				fieldInfo,
 				newValue
 			);
+		} else if (fieldInfo.fieldKey === 'envelopeValue' && editorStateStore.get().envelopeAsNote && tuningTable) {
+			const currentPeriod = currentValue as number;
+			const noteIndex = envelopePeriodToNote(currentPeriod, tuningTable);
+			if (noteIndex !== null) {
+				const semitonesDelta = isOctaveIncrement ? delta * 12 : delta;
+				const newNoteIndex = Math.max(0, Math.min(tuningTable.length - 1, noteIndex + semitonesDelta));
+				const newPeriod = noteToEnvelopePeriod(newNoteIndex, tuningTable);
+				return PatternValueUpdates.updateFieldValue(
+					{
+						pattern,
+						selectedRow: row,
+						selectedColumn: col,
+						cellPositions,
+						segments,
+						converter,
+						formatter,
+						schema
+					},
+					fieldInfo,
+					newPeriod
+				);
+			}
+			return pattern;
 		} else if (
 			(fieldInfo.fieldType === 'hex' ||
 				fieldInfo.fieldType === 'dec' ||

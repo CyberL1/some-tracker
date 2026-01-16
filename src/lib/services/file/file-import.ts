@@ -157,6 +157,27 @@ function reconstructInstrumentRow(data: any): InstrumentRow {
 }
 
 export class FileImportService {
+	static async decompressData(blob: Blob): Promise<string> {
+		const stream = blob.stream();
+		const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+		const chunks: Uint8Array[] = [];
+		const reader = decompressedStream.getReader();
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			chunks.push(value);
+		}
+		const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+		const combined = new Uint8Array(totalLength);
+		let offset = 0;
+		for (const chunk of chunks) {
+			combined.set(chunk, offset);
+			offset += chunk.length;
+		}
+		const decoder = new TextDecoder();
+		return decoder.decode(combined);
+	}
+
 	static async importVT2(): Promise<Project | null> {
 		try {
 			const input = document.createElement('input');
@@ -200,11 +221,11 @@ export class FileImportService {
 		}
 	}
 
-	static async importJSON(): Promise<Project | null> {
+	static async importBTP(): Promise<Project | null> {
 		try {
 			const input = document.createElement('input');
 			input.type = 'file';
-			input.accept = '.json';
+			input.accept = '.btp';
 			input.style.display = 'none';
 
 			document.body.appendChild(input);
@@ -222,12 +243,12 @@ export class FileImportService {
 					}
 
 					try {
-						const text = await file.text();
+						const text = await this.decompressData(file);
 						const data = JSON.parse(text);
 						const project = reconstructProject(data);
 						resolve(project);
 					} catch (error) {
-						console.error('Error loading JSON file:', error);
+						console.error('Error loading BTP file:', error);
 						reject(error);
 					}
 				};
@@ -240,7 +261,7 @@ export class FileImportService {
 				input.click();
 			});
 		} catch (error) {
-			console.error('Error importing JSON file:', error);
+			console.error('Error importing BTP file:', error);
 			throw error;
 		}
 	}
@@ -248,8 +269,7 @@ export class FileImportService {
 	static async handleMenuAction(action: string): Promise<Project | null> {
 		switch (action) {
 			case 'open':
-			case 'import-json':
-				return await this.importJSON();
+				return await this.importBTP();
 			case 'import-vt2':
 				return await this.importVT2();
 			default:
