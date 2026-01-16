@@ -157,6 +157,8 @@
 	let isSelecting = $state(false);
 	let mouseDownCell: { row: number; column: number } | null = null;
 	let hadSelectionBeforeClick = $state(false);
+	let autoScrollInterval: number | null = null;
+	let autoScrollDirection: number = 0;
 
 	const rowStringCache = new Cache<string, string>(500);
 	const patternGenericCache = new Cache<number, ReturnType<typeof converter.toGeneric>>(100);
@@ -789,6 +791,44 @@
 		moveRow(Math.sign(event.deltaY));
 	}
 
+	function startAutoScroll(direction: number): void {
+		if (autoScrollInterval !== null || direction === 0) return;
+
+		autoScrollDirection = direction;
+		autoScrollInterval = window.setInterval(() => {
+			moveRow(autoScrollDirection);
+		}, 50);
+	}
+
+	function stopAutoScroll(): void {
+		if (autoScrollInterval !== null) {
+			clearInterval(autoScrollInterval);
+			autoScrollInterval = null;
+			autoScrollDirection = 0;
+		}
+	}
+
+	function handleGlobalMouseMove(event: MouseEvent): void {
+		if (!canvas || !isSelecting) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const y = event.clientY - rect.top;
+
+		const scrollMargin = lineHeight * 2;
+		const isAboveCanvas = event.clientY < rect.top;
+		const isBelowCanvas = event.clientY > rect.bottom;
+		const isNearTop = y < lineHeight + scrollMargin;
+		const isNearBottom = y > canvasHeight - scrollMargin;
+
+		if (isAboveCanvas || isNearTop) {
+			startAutoScroll(-1);
+		} else if (isBelowCanvas || isNearBottom) {
+			startAutoScroll(1);
+		} else {
+			stopAutoScroll();
+		}
+	}
+
 	let isHoveringLabel = $state(false);
 
 	function handleMouseMove(event: MouseEvent): void {
@@ -944,6 +984,8 @@
 			selectionEndRow = cell.row;
 			selectionEndColumn = cell.column;
 			isSelecting = true;
+			window.addEventListener('mousemove', handleGlobalMouseMove);
+			window.addEventListener('mouseup', handleCanvasMouseUp);
 		}
 
 		canvas.focus();
@@ -967,6 +1009,9 @@
 	}
 
 	function handleCanvasMouseUp(): void {
+		stopAutoScroll();
+		window.removeEventListener('mousemove', handleGlobalMouseMove);
+		window.removeEventListener('mouseup', handleCanvasMouseUp);
 		if (isSelecting && mouseDownCell) {
 			if (
 				selectionStartRow === selectionEndRow &&

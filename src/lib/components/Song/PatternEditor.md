@@ -75,6 +75,11 @@ Main canvas-based tracker interface for editing musical patterns. Handles render
 - **mouseDownCell** - Cell coordinates where mouse button was pressed
 - **hadSelectionBeforeClick** - Prevents accidental selection clearing on single click
 
+### Auto-Scroll State
+
+- **autoScrollInterval** - Timer ID for continuous scrolling during selection
+- **autoScrollDirection** - Scroll direction: -1 (up), 0 (stopped), 1 (down)
+
 ## Caching System
 
 Performance optimization through memoization:
@@ -191,8 +196,22 @@ Performance optimization through memoization:
 - **handleCanvasMouseDown(event)** - Starts selection or toggles channel mute
     - Clicks on channel labels toggle mute state
     - Clicks on cells start selection (shift extends existing selection)
+    - Attaches global mouse listeners for out-of-bounds tracking
 - **handleCanvasMouseMove(event)** - Extends selection during drag operation
 - **handleCanvasMouseUp()** - Finalizes selection or moves cursor if single click
+    - Cleans up global mouse listeners and stops auto-scroll
+
+### Auto-Scroll During Selection
+
+- **handleGlobalMouseMove(event)** - Tracks mouse position globally during selection
+    - Detects when mouse moves above canvas bounds (triggers upward scroll)
+    - Detects when mouse moves below canvas bounds (triggers downward scroll)
+    - Detects when mouse is near top/bottom edges within canvas (2 line height margin)
+    - Automatically stops scrolling when mouse returns to center area
+- **startAutoScroll(direction)** - Initiates continuous scrolling
+    - Scrolls every 50ms in specified direction
+    - Only starts if no scroll is already active
+- **stopAutoScroll()** - Stops continuous scrolling and clears interval timer
 
 ## Wheel Input
 
