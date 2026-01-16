@@ -160,6 +160,7 @@
 	let hadSelectionBeforeClick = $state(false);
 	let autoScrollInterval: number | null = null;
 	let autoScrollDirection: number = 0;
+	let isEnterKeyHeld = $state(false);
 
 	const rowStringCache = new Cache<string, string>(500);
 	const patternGenericCache = new Cache<number, ReturnType<typeof converter.toGeneric>>(100);
@@ -680,6 +681,13 @@
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'Enter' && !event.repeat && !isEnterKeyHeld) {
+			event.preventDefault();
+			isEnterKeyHeld = true;
+			playFromCursor();
+			return;
+		}
+
 		const shortcutsContext = createShortcutsContext();
 		const result = PatternKeyboardShortcutsService.handleKeyDown(event, shortcutsContext);
 
@@ -773,6 +781,12 @@
 	}
 
 	function handleKeyUp(event: KeyboardEvent) {
+		if (event.key === 'Enter' && isEnterKeyHeld) {
+			isEnterKeyHeld = false;
+			pausePlayback();
+			return;
+		}
+
 		const channel = pressedKeyChannels.get(event.key);
 		if (channel !== undefined) {
 			if (chipProcessor && 'stopPreviewNote' in chipProcessor) {
