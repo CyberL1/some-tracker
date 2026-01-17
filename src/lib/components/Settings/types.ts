@@ -1,6 +1,7 @@
 export interface Settings {
 	volume: number;
 	showVisualGrid: boolean;
+	envelopeAsNote: boolean;
 }
 
 export interface SettingsItem {

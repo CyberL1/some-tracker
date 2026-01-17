@@ -22,8 +22,10 @@
 	import SettingsModal from './lib/components/Settings/SettingsModal.svelte';
 	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
 	import { convertVT2String } from './lib/services/file/vt-converter';
+	import { editorStateStore } from './lib/stores/editor-state.svelte';
 
 	settingsStore.init();
+	editorStateStore.init();
 
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
@@ -36,6 +38,11 @@
 	$effect(() => {
 		const volume = settingsStore.state.volume;
 		container.audioService.setVolume(volume);
+	});
+
+	$effect(() => {
+		const envelopeAsNote = settingsStore.state.envelopeAsNote;
+		editorStateStore.setEnvelopeAsNote(envelopeAsNote);
 	});
 
 	let songs = $state<Song[]>([]);

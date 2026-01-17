@@ -1,3 +1,5 @@
+import { settingsStore } from './settings.svelte';
+
 let editorState = $state({
 	octave: 4,
 	step: 1,
@@ -5,6 +7,9 @@ let editorState = $state({
 });
 
 export const editorStateStore = {
+	init() {
+		editorState = { ...editorState, envelopeAsNote: settingsStore.get().envelopeAsNote };
+	},
 	get state() {
 		return editorState;
 	},
@@ -20,6 +25,8 @@ export const editorStateStore = {
 		editorState = { ...editorState, step };
 	},
 	setEnvelopeAsNote: (envelopeAsNote: boolean) => {
+		if (editorState.envelopeAsNote === envelopeAsNote) return;
 		editorState = { ...editorState, envelopeAsNote };
+		settingsStore.set('envelopeAsNote', envelopeAsNote);
 	}
 };

@@ -16,6 +16,14 @@ export const settingsItems: SettingsItem[] = [
 		defaultValue: true,
 		setting: 'showVisualGrid',
 		category: 'general'
+	},
+	{
+		label: 'Envelope as Note',
+		description: 'Enable envelope input as note for AY chips',
+		type: 'toggle',
+		defaultValue: false,
+		setting: 'envelopeAsNote',
+		category: 'general'
 	}
 ];
 
