@@ -249,6 +249,11 @@
 				return;
 			}
 
+			if (data.action === 'appearance') {
+				await open(SettingsModal, { initialTabId: 'appearance' });
+				return;
+			}
+
 			if (data.action === 'save' || data.action === 'save-as') {
 				const currentProject = new Project(
 					projectSettings.title,

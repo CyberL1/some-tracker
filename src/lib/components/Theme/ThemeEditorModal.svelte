@@ -2,11 +2,15 @@
 	import type { Theme, ThemeColors } from '../../types/theme';
 	import { themeStore } from '../../stores/theme.svelte';
 	import { themeService } from '../../services/theme/theme-service';
-	import { darkenColor } from '../../utils/colors';
 	import Button from '../Button/Button.svelte';
 	import Input from '../Input/Input.svelte';
 	import { FormField } from '../FormField';
 	import Portal from '../Modal/Portal.svelte';
+	import {
+		PATTERN_EDITOR_COLOR_KEYS,
+		PATTERN_ORDER_COLOR_KEYS,
+		APP_COLOR_KEYS
+	} from '../../config/theme-colors';
 
 	let { theme, isNew, resolve, dismiss, onSave } = $props<{
 		theme: Theme;
@@ -19,54 +23,63 @@
 	let editedTheme = $state<Theme>({ ...theme });
 	let editedColors = $state<ThemeColors>({ ...theme.colors });
 
-	const patternEditorFields: Array<{ key: keyof ThemeColors; label: string }> = [
-		{ key: 'patternBg', label: 'Pattern Background' },
-		{ key: 'patternText', label: 'Pattern Text' },
-		{ key: 'patternEmpty', label: 'Empty Cell Background' },
-		{ key: 'patternEmptySelected', label: 'Empty Selected Cell' },
-		{ key: 'patternNote', label: 'Note Value' },
-		{ key: 'patternInstrument', label: 'Instrument Value' },
-		{ key: 'patternEffect', label: 'Effect Value' },
-		{ key: 'patternEnvelope', label: 'Envelope Value' },
-		{ key: 'patternNoise', label: 'Noise Value' },
-		{ key: 'patternHeader', label: 'Header Row Background' },
-		{ key: 'patternSelected', label: 'Selected Row Background' },
-		{ key: 'patternCellSelected', label: 'Selected Cell Background' },
-		{ key: 'patternRowNum', label: 'Row Number' },
-		{ key: 'patternAlternate', label: 'Alternate Row Background' },
-		{ key: 'patternAlternateEmpty', label: 'Alternate Empty Cell' },
-		{ key: 'patternTable', label: 'Table Value' },
-		{ key: 'patternRowNumAlternate', label: 'Alternate Row Number' },
-		{ key: 'patternEditing', label: 'Editing Cell Indicator' }
-	];
+	const colorLabels: Record<string, string> = {
+		patternBg: 'Pattern Background',
+		patternText: 'Pattern Text',
+		patternEmpty: 'Empty Cell Background',
+		patternEmptySelected: 'Empty Selected Cell',
+		patternNote: 'Note Value',
+		patternInstrument: 'Instrument Value',
+		patternEffect: 'Effect Value',
+		patternEnvelope: 'Envelope Value',
+		patternNoise: 'Noise Value',
+		patternSelected: 'Selected Row Background',
+		patternCellSelected: 'Selected Cell Background',
+		patternRowNum: 'Row Number',
+		patternAlternate: 'Alternate Row Background',
+		patternAlternateEmpty: 'Alternate Empty Cell',
+		patternTable: 'Table Value',
+		patternRowNumAlternate: 'Alternate Row Number',
+		patternNoteOff: 'Note Off Value',
+		patternTableOff: 'Table Off Value',
+		orderBg: 'Pattern Order Background',
+		orderText: 'Pattern Order Text',
+		orderEmpty: 'Empty Pattern Cell',
+		orderSelected: 'Selected Pattern Cell',
+		orderHovered: 'Hovered Pattern Cell',
+		orderAlternate: 'Alternate Row Background',
+		orderBorder: 'Pattern Order Borders',
+		appBackground: 'Background 1',
+		appSurface: 'Surface 1',
+		appSurfaceSecondary: 'Surface 2',
+		appSurfaceHover: 'Surface 3',
+		appSurfaceActive: 'Surface 4',
+		appTextPrimary: 'Text 1',
+		appTextSecondary: 'Text 2',
+		appTextTertiary: 'Text 3',
+		appTextMuted: 'Text 4',
+		appBorder: 'Border 1',
+		appBorderHover: 'Border 2',
+		appPrimary: 'Primary 1',
+		appPrimaryHover: 'Primary 2',
+		appSecondary: 'Secondary 1',
+		appSecondaryHover: 'Secondary 2'
+	};
 
-	const patternOrderFields: Array<{ key: keyof ThemeColors; label: string }> = [
-		{ key: 'orderBg', label: 'Pattern Order Background' },
-		{ key: 'orderText', label: 'Pattern Order Text' },
-		{ key: 'orderEmpty', label: 'Empty Pattern Cell' },
-		{ key: 'orderSelected', label: 'Selected Pattern Cell' },
-		{ key: 'orderHovered', label: 'Hovered Pattern Cell' },
-		{ key: 'orderAlternate', label: 'Alternate Row Background' },
-		{ key: 'orderBorder', label: 'Pattern Order Borders' }
-	];
+	const patternEditorFields = PATTERN_EDITOR_COLOR_KEYS.map((key) => ({
+		key: key as keyof ThemeColors,
+		label: colorLabels[key]
+	}));
 
-	const appFields: Array<{ key: keyof ThemeColors; label: string }> = [
-		{ key: 'appBackground', label: 'Background 1' },
-		{ key: 'appSurface', label: 'Surface 1' },
-		{ key: 'appSurfaceSecondary', label: 'Surface 2' },
-		{ key: 'appSurfaceHover', label: 'Surface 3' },
-		{ key: 'appSurfaceActive', label: 'Surface 4' },
-		{ key: 'appTextPrimary', label: 'Text 1' },
-		{ key: 'appTextSecondary', label: 'Text 2' },
-		{ key: 'appTextTertiary', label: 'Text 3' },
-		{ key: 'appTextMuted', label: 'Text 4' },
-		{ key: 'appBorder', label: 'Border 1' },
-		{ key: 'appBorderHover', label: 'Border 2' },
-		{ key: 'appPrimary', label: 'Primary 1' },
-		{ key: 'appPrimaryHover', label: 'Primary 2' },
-		{ key: 'appSecondary', label: 'Secondary 1' },
-		{ key: 'appSecondaryHover', label: 'Secondary 2' }
-	];
+	const patternOrderFields = PATTERN_ORDER_COLOR_KEYS.map((key) => ({
+		key: key as keyof ThemeColors,
+		label: colorLabels[key]
+	}));
+
+	const appFields = APP_COLOR_KEYS.map((key) => ({
+		key: key as keyof ThemeColors,
+		label: colorLabels[key]
+	}));
 
 	let rafId: number | null = null;
 
@@ -74,8 +87,6 @@
 		editedTheme.colors = editedColors;
 
 		const colors = editedColors;
-		const patternNote = colors.patternNote;
-		const patternTable = colors.patternTable;
 		
 		const previewColors: ThemeColors = {
 			patternBg: colors.patternBg,
@@ -87,7 +98,6 @@
 			patternEffect: colors.patternEffect,
 			patternEnvelope: colors.patternEnvelope,
 			patternNoise: colors.patternNoise,
-			patternHeader: colors.patternHeader,
 			patternSelected: colors.patternSelected,
 			patternCellSelected: colors.patternCellSelected,
 			patternRowNum: colors.patternRowNum,
@@ -95,9 +105,8 @@
 			patternAlternateEmpty: colors.patternAlternateEmpty,
 			patternTable: colors.patternTable,
 			patternRowNumAlternate: colors.patternRowNumAlternate,
-			patternEditing: colors.patternEditing,
-			patternNoteOff: darkenColor(patternNote, 60),
-			patternTableOff: darkenColor(patternTable, 60),
+			patternNoteOff: colors.patternNoteOff,
+			patternTableOff: colors.patternTableOff,
 			orderBg: colors.orderBg,
 			orderText: colors.orderText,
 			orderEmpty: colors.orderEmpty,
@@ -140,11 +149,7 @@
 	});
 
 	function handleSave() {
-		editedTheme.colors = {
-			...editedColors,
-			patternNoteOff: darkenColor(editedColors.patternNote, 60),
-			patternTableOff: darkenColor(editedColors.patternTable, 60)
-		};
+		editedTheme.colors = { ...editedColors };
 		themeStore.addCustomTheme(editedTheme);
 		themeStore.setActiveTheme(editedTheme.id);
 		themeService.applyTheme(editedTheme);

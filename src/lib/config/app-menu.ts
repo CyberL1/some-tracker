@@ -84,7 +84,8 @@ export const menuItems: MenuItem[] = [
 		items: [
 			{
 				label: 'Appearance',
-				type: 'normal'
+				type: 'normal',
+				action: 'appearance'
 			}
 		]
 	},
