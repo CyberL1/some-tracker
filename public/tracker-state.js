@@ -12,6 +12,8 @@ class TrackerState {
 		this.intFrequency = DEFAULT_SONG_HZ;
 		this.samplesPerTick = 0;
 		this.sampleCounter = 0;
+		this.tickAccumulator = 0.0;
+		this.tickStep = 0.0;
 		this.currentRow = 0;
 		this.currentTick = 0;
 		this.currentSpeed = DEFAULT_SPEED;
@@ -46,6 +48,7 @@ class TrackerState {
 
 	reset() {
 		this.sampleCounter = 0;
+		this.tickAccumulator = 0.0;
 		this.currentRow = 0;
 		this.currentTick = 0;
 		this.channelPatternVolumes.fill(15);
@@ -80,6 +83,7 @@ class TrackerState {
 
 	updateSamplesPerTick(sampleRate) {
 		this.samplesPerTick = Math.floor(sampleRate / this.intFrequency);
+		this.tickStep = this.intFrequency / sampleRate;
 	}
 
 	setPattern(pattern, orderIndex) {

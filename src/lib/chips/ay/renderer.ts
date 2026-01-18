@@ -81,8 +81,10 @@ export class AYChipRenderer implements ChipRenderer {
 		wasmBuffer: ArrayBuffer
 	): void {
 		const chipFrequency = song.chipFrequency || DEFAULT_AYM_FREQUENCY;
+		const interruptFrequency = song.interruptFrequency || 50;
 		state.setWasmModule(wasm, ayumiPtr, wasmBuffer);
 		state.setAymFrequency(chipFrequency);
+		state.setIntFrequency(interruptFrequency, SAMPLE_RATE);
 		state.setTuningTable(song.tuningTable);
 		state.setInstruments(song.instruments);
 		state.setTables(project.tables);
@@ -170,7 +172,9 @@ export class AYChipRenderer implements ChipRenderer {
 				await new Promise((resolve) => setTimeout(resolve, 0));
 			}
 
-			if (state.sampleCounter >= state.samplesPerTick) {
+			state.tickAccumulator += state.tickStep;
+
+			if (state.tickAccumulator >= 1.0) {
 				if (state.currentTick === 0 && state.currentPattern) {
 					patternProcessor.parsePatternRow(state.currentPattern, state.currentRow, registerState);
 				}
@@ -202,7 +206,7 @@ export class AYChipRenderer implements ChipRenderer {
 					}
 				}
 
-				state.sampleCounter = 0;
+				state.tickAccumulator -= 1.0;
 			}
 
 			ayumiEngine.process();
@@ -217,7 +221,6 @@ export class AYChipRenderer implements ChipRenderer {
 			leftSamples.push(leftValue);
 			rightSamples.push(rightValue);
 			totalSamples++;
-			state.sampleCounter++;
 		}
 
 		return [new Float32Array(leftSamples), new Float32Array(rightSamples)];

@@ -160,7 +160,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		if (this.pendingRowAfterPatternChange !== null) {
 			this.state.currentRow = this.pendingRowAfterPatternChange;
 			this.state.currentTick = 0;
-			this.state.sampleCounter = this.state.samplesPerTick;
+			this.state.tickAccumulator = 1.0;
 			this.pendingRowAfterPatternChange = null;
 		}
 	}
@@ -230,7 +230,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		if (row !== undefined && (patternChanged || this.state.currentPattern)) {
 			this.state.currentRow = row;
 			this.state.currentTick = 0;
-			this.state.sampleCounter = this.state.samplesPerTick;
+			this.state.tickAccumulator = 1.0;
 		} else if (row !== undefined && !patternChanged) {
 			// If we're changing pattern order but don't have the pattern yet,
 			// store the row to be applied when the pattern arrives
@@ -457,7 +457,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			}
 
 			for (let i = 0; i < numSamples; i++) {
-				this.state.sampleCounter++;
+				this.state.tickAccumulator += this.state.tickStep;
 
 				if (this.previewActiveChannels.size > 0) {
 					for (const channel of this.previewActiveChannels) {
@@ -476,11 +476,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 						}
 					}
 					this.ayumiEngine.applyRegisterState(this.registerState);
-				} else if (
-					this.state.currentPattern &&
-					this.state.currentPattern.length > 0 &&
-					this.state.sampleCounter >= this.state.samplesPerTick
-				) {
+				} else if (this.state.currentPattern && this.state.currentPattern.length > 0 && this.state.tickAccumulator >= 1.0) {
 					if (this.state.currentTick === 0) {
 						this.patternProcessor.parsePatternRow(
 							this.state.currentPattern,
@@ -527,7 +523,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 						});
 					}
 
-					this.state.sampleCounter -= this.state.samplesPerTick;
+					this.state.tickAccumulator -= 1.0;
 				}
 
 				this.ayumiEngine.process();

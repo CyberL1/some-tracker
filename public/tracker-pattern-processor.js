@@ -182,24 +182,12 @@ class TrackerPatternProcessor {
 			this.state.channelSlideDelay[channelIndex] = slideState.delay;
 			this.state.channelSlideCount[channelIndex] = slideState.counter;
 			this.state.channelOnOffCounter[channelIndex] = 0;
-			if (row.note.name !== 0 && row.note.name !== 1) {
-				this.state.channelToneSliding[channelIndex] = slideState.current;
-				this.state.channelSlideAlreadyApplied[channelIndex] = true;
-			} else {
-				this.state.channelSlideAlreadyApplied[channelIndex] = false;
-			}
 		} else if (effect.effect === SLIDE_DOWN) {
 			const slideState = EffectAlgorithms.initSlide(-effect.parameter, effect.delay);
 			this.state.channelSlideStep[channelIndex] = slideState.step;
 			this.state.channelSlideDelay[channelIndex] = slideState.delay;
 			this.state.channelSlideCount[channelIndex] = slideState.counter;
 			this.state.channelOnOffCounter[channelIndex] = 0;
-			if (row.note.name !== 0 && row.note.name !== 1) {
-				this.state.channelToneSliding[channelIndex] = slideState.step;
-				this.state.channelSlideAlreadyApplied[channelIndex] = true;
-			} else {
-				this.state.channelSlideAlreadyApplied[channelIndex] = false;
-			}
 		} else if (effect.effect === PORTAMENTO) {
 			if (row.note.name !== 0 && row.note.name !== 1) {
 				const currentNote = this.state.channelBaseNotes[channelIndex];
@@ -255,9 +243,6 @@ class TrackerPatternProcessor {
 	}
 
 	processSlides() {
-		if (!this.state.channelSlideAlreadyApplied) {
-			this.state.channelSlideAlreadyApplied = [];
-		}
 		for (
 			let channelIndex = 0;
 			channelIndex < this.state.channelSlideStep.length;
@@ -295,12 +280,10 @@ class TrackerPatternProcessor {
 							this.state.channelSlideCount[channelIndex],
 							this.state.channelSlideDelay[channelIndex],
 							slideStep,
-							this.state.channelToneSliding[channelIndex],
-							this.state.channelSlideAlreadyApplied[channelIndex]
+							this.state.channelToneSliding[channelIndex]
 						);
 						this.state.channelSlideCount[channelIndex] = result.counter;
 						this.state.channelToneSliding[channelIndex] = result.current;
-						this.state.channelSlideAlreadyApplied[channelIndex] = result.applied;
 					}
 				}
 			}

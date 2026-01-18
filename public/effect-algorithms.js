@@ -1,33 +1,31 @@
 class EffectAlgorithms {
 	static initSlide(parameter, delay) {
-		const normalizedDelay = delay || 1;
-		const effectiveDelay = normalizedDelay === 0 ? 1 : normalizedDelay;
+		// VT2: if delay is 0 initial counter is 1, but delay stays 0 (effect applied only for first tick)
+		const storedDelay = delay || 0;
+		const initialCounter = storedDelay === 0 ? 1 : storedDelay;
 		return {
 			step: parameter,
-			delay: effectiveDelay,
-			counter: effectiveDelay,
+			delay: storedDelay,
+			counter: initialCounter,
 			current: parameter
 		};
 	}
 
-	static processSlideCounter(counter, delay, step, current, alreadyApplied) {
+	static processSlideCounter(counter, delay, step, current) {
 		if (counter > 0) {
 			const newCounter = counter - 1;
 			if (newCounter === 0) {
-				const newCurrent = alreadyApplied ? current : current + step;
 				return {
 					counter: delay,
-					current: newCurrent,
-					applied: false
+					current: current + step
 				};
 			}
 			return {
 				counter: newCounter,
-				current,
-				applied: alreadyApplied
+				current
 			};
 		}
-		return { counter, current, applied: alreadyApplied };
+		return { counter, current };
 	}
 
 	static initPortamento(currentValue, targetValue, parameter, delay) {
