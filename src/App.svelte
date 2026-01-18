@@ -16,6 +16,7 @@
 	import { ProjectService } from './lib/services/project/project-service';
 	import { AY_CHIP } from './lib/chips/ay';
 	import { applySchemaDefaults } from './lib/chips/base/schema';
+	import { getChipByType } from './lib/chips/registry';
 	import SongView from './lib/components/Song/SongView.svelte';
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
@@ -130,6 +131,37 @@
 
 	$effect(() => {
 		container.audioService.updateTables(tables);
+	});
+
+	$effect(() => {
+		if (songs.length === 0) return;
+
+		const grouped = new Map<string, Song[]>();
+		for (const song of songs) {
+			if (!song.chipType) continue;
+			if (!grouped.has(song.chipType)) {
+				grouped.set(song.chipType, []);
+			}
+			grouped.get(song.chipType)!.push(song);
+		}
+
+		grouped.forEach((songsOfType, chipType) => {
+			if (songsOfType.length === 0) return;
+
+			const firstSong = songsOfType[0] as unknown as Record<string, unknown>;
+			const chip = getChipByType(chipType);
+			if (!chip) return;
+
+			const settings = chip.schema.settings || [];
+			settings
+				.filter((s) => s.group === 'chip' && s.notifyAudioService)
+				.forEach((s) => {
+					const value = firstSong[s.key];
+					if (value !== undefined) {
+						container.audioService.chipSettings.set(s.key, value);
+					}
+				});
+		});
 	});
 
 	let patternEditor: PatternEditor | null = $state(null);
