@@ -37,6 +37,7 @@
 	import {
 		PatternFieldEditAction,
 		BulkPatternEditAction,
+		PatternLengthChangeAction,
 		type PatternEditContext,
 		type CursorPosition
 	} from '../../models/actions';
@@ -230,6 +231,8 @@
 			patterns,
 			updatePatterns: (newPatterns: Pattern[]) => {
 				patterns = newPatterns;
+				lastDrawnPatternLength = -1;
+				lastVisibleRowsCache = null;
 				clearAllCaches();
 				draw();
 			},
@@ -285,11 +288,51 @@
 		}
 	}
 
+	export function getCurrentPatternLength(): number | null {
+		if (patternOrder.length === 0) return null;
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const pattern = patterns.find((p) => p.id === patternId);
+		return pattern?.length ?? null;
+	}
+
+	export function getCurrentPatternOrderIndex(): number {
+		return currentPatternOrderIndex;
+	}
+
 	export function setSelectedRow(row: number) {
 		const pattern = currentPattern || ensurePatternExists();
 		if (pattern && row >= 0 && row < pattern.length) {
 			selectedRow = row;
 		}
+	}
+
+	export function resizePatternTo(newLength: number): void {
+		const pattern = currentPattern || ensurePatternExists();
+		if (!pattern) return;
+
+		if (newLength < 1 || newLength > 256) {
+			return;
+		}
+
+		if (newLength === pattern.length) {
+			return;
+		}
+
+		const oldPattern = pattern;
+		const resizedPattern = PatternService.resizePattern(pattern, newLength, schema);
+		const oldCursorPosition = getCursorPosition();
+
+		const action = new PatternLengthChangeAction(
+			createEditContext(),
+			oldPattern,
+			resizedPattern,
+			oldCursorPosition
+		);
+		action.execute();
+		undoRedoStore.pushAction(action);
+		
+		lastDrawnPatternLength = -1;
+		lastVisibleRowsCache = null;
 	}
 
 	export function playFromCursor() {
@@ -468,7 +511,11 @@
 
 		renderer.drawBackground(canvasHeight);
 
-		const visibleRows = getVisibleRows(currentPattern);
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const patternToDraw = patterns.find((p) => p.id === patternId) || ensurePatternExists();
+		if (!patternToDraw) return;
+
+		const visibleRows = getVisibleRows(patternToDraw);
 
 		for (const row of visibleRows) {
 			const y = row.displayIndex * lineHeight;
@@ -521,19 +568,18 @@
 
 		ctx.globalAlpha = 1.0;
 
-		if (currentPattern) {
-			const patternToRender = findOrCreatePattern(currentPattern.id);
+		if (patternToDraw) {
 			const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
 			if (
 				firstVisibleRow &&
 				firstVisibleRow.rowIndex >= 0 &&
-				firstVisibleRow.rowIndex < patternToRender.length
+				firstVisibleRow.rowIndex < patternToDraw.length
 			) {
-				const rowString = getPatternRowData(patternToRender, firstVisibleRow.rowIndex);
+				const rowString = getPatternRowData(patternToDraw, firstVisibleRow.rowIndex);
 
 				const channelLabels =
-					schema.channelLabels || patternToRender.channels.map((ch) => ch.label);
-				const channelMuted = getChannelMutedState(patternToRender);
+					schema.channelLabels || patternToDraw.channels.map((ch) => ch.label);
+				const channelMuted = getChannelMutedState(patternToDraw);
 
 				renderer.drawChannelLabels({
 					rowString,
@@ -1549,12 +1595,15 @@
 	let lastDrawnOrderIndex = -1;
 	let lastPatternOrderLength = -1;
 	let lastPatternsLength = -1;
+	let lastDrawnPatternLength = -1;
 	let lastCanvasWidth = -1;
 	let lastCanvasHeight = -1;
 	let needsSetup = true;
 
 	$effect(() => {
 		if (!canvas) return;
+
+		const currentPatternLength = currentPattern?.length ?? -1;
 
 		if (needsSetup || !ctx) {
 			ctx = canvas.getContext('2d')!;
@@ -1565,12 +1614,14 @@
 			lastDrawnOrderIndex = currentPatternOrderIndex;
 			lastPatternOrderLength = patternOrder.length;
 			lastPatternsLength = patterns.length;
+			lastDrawnPatternLength = currentPatternLength;
 			lastCanvasWidth = canvasWidth;
 			lastCanvasHeight = canvasHeight;
 			return;
 		}
 
 		const patternChanged = currentPattern !== undefined;
+		const patternLengthChanged = currentPatternLength !== lastDrawnPatternLength;
 		const sizeChanged = canvasWidth !== lastCanvasWidth || canvasHeight !== lastCanvasHeight;
 		const rowChanged = selectedRow !== lastDrawnRow;
 		const orderChanged =
@@ -1585,12 +1636,13 @@
 			lastCanvasHeight = canvasHeight;
 		}
 
-		if (rowChanged || orderChanged || patternChanged || sizeChanged) {
+		if (rowChanged || orderChanged || patternChanged || patternLengthChanged || sizeChanged) {
 			draw();
 			lastDrawnRow = selectedRow;
 			lastDrawnOrderIndex = currentPatternOrderIndex;
 			lastPatternOrderLength = patternOrder.length;
 			lastPatternsLength = patterns.length;
+			lastDrawnPatternLength = currentPatternLength;
 		}
 	});
 

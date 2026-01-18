@@ -14,6 +14,7 @@
 			onClick: () => void;
 			class?: ClassValue;
 		}[];
+		headerContent?: Snippet;
 	} = $props();
 </script>
 
@@ -28,20 +29,25 @@
 				<props.icon />
 			{/if}
 		</div>
-		{#if props.actions}
-			<div class="flex items-center gap-1">
-				{#each props.actions as action}
-					<button
-						class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-app-text-muted)] transition-colors duration-200 hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-secondary)] active:bg-[var(--color-app-surface-active)] {action.class ||
-							''}"
-						onclick={action.onClick}
-						title={action.label}>
-						<action.icon class="h-3 w-3" />
-						<span class="font-medium">{action.label}</span>
-					</button>
-				{/each}
-			</div>
-		{/if}
+		<div class="flex items-center gap-2">
+			{#if props.actions}
+				<div class="flex items-center gap-1">
+					{#each props.actions as action}
+						<button
+							class="flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-app-text-muted)] transition-colors duration-200 hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-secondary)] active:bg-[var(--color-app-surface-active)] {action.class ||
+								''}"
+							onclick={action.onClick}
+							title={action.label}>
+							<action.icon class="h-3 w-3" />
+							<span class="font-medium">{action.label}</span>
+						</button>
+					{/each}
+				</div>
+			{/if}
+			{#if props.headerContent}
+				{@render props.headerContent()}
+			{/if}
+		</div>
 	</h2>
 	<div class="{props.fullHeight ? 'flex-1 overflow-hidden' : ''} rounded-b-sm bg-[var(--color-app-surface)]">
 		<div class="{props.fullHeight ? 'h-full' : ''} {props.class}">

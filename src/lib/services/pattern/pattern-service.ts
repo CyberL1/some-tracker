@@ -284,4 +284,44 @@ export class PatternService {
 		}
 		return patterns;
 	}
+
+	/**
+	 * Resize a pattern to a new length, preserving existing data
+	 */
+	static resizePattern(pattern: Pattern, newLength: number, schema?: ChipSchema): Pattern {
+		if (newLength < 1 || newLength > 256) {
+			throw new Error('Pattern length must be between 1 and 256');
+		}
+
+		if (pattern.length === newLength) {
+			return pattern;
+		}
+
+		const resizedPattern = new Pattern(pattern.id, newLength, schema);
+		const copyLength = Math.min(pattern.length, newLength);
+
+		for (let channelIndex = 0; channelIndex < pattern.channels.length; channelIndex++) {
+			const sourceChannel = pattern.channels[channelIndex];
+			const targetChannel = resizedPattern.channels[channelIndex];
+
+			for (let rowIndex = 0; rowIndex < copyLength; rowIndex++) {
+				const sourceRow = sourceChannel.rows[rowIndex];
+				const targetRow = targetChannel.rows[rowIndex];
+
+				targetRow.note = new Note(sourceRow.note.name, sourceRow.note.octave);
+				targetRow.effects = sourceRow.effects.map((effect) =>
+					effect ? new Effect(effect.effect, effect.delay, effect.parameter) : null
+				);
+				this.copyRowFields(sourceRow, targetRow);
+			}
+		}
+
+		for (let rowIndex = 0; rowIndex < copyLength; rowIndex++) {
+			const sourcePatternRow = pattern.patternRows[rowIndex];
+			const targetPatternRow = resizedPattern.patternRows[rowIndex];
+			this.copyPatternRowFields(sourcePatternRow, targetPatternRow);
+		}
+
+		return resizedPattern;
+	}
 }

@@ -11,6 +11,7 @@ export interface VisibleRow {
 
 export interface VisibleRowsCache {
 	patternId: number;
+	patternLength: number;
 	selectedRow: number;
 	canvasHeight: number;
 	result: VisibleRow[];
@@ -35,6 +36,7 @@ export class PatternVisibleRowsService {
 		if (
 			cache &&
 			cache.patternId === pattern.id &&
+			cache.patternLength === pattern.length &&
 			cache.selectedRow === context.selectedRow &&
 			cache.canvasHeight === context.canvasHeight
 		) {
@@ -122,6 +124,7 @@ export class PatternVisibleRowsService {
 
 		const newCache: VisibleRowsCache = {
 			patternId: pattern.id,
+			patternLength: pattern.length,
 			selectedRow: context.selectedRow,
 			canvasHeight: context.canvasHeight,
 			result: rows

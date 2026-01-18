@@ -47,6 +47,7 @@
 		envelopeAsNote = editorState.envelopeAsNote;
 	});
 
+
 	function handleMenuOpen(data: { label: string }) {
 		activeMenu = data.label;
 	}
@@ -104,6 +105,7 @@
 		const current = editorStateStore.get().step;
 		editorStateStore.setStep(current - 1);
 	}
+
 </script>
 
 <div class="flex w-full items-center border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-hover)] px-2 text-center">

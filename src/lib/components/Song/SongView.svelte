@@ -21,8 +21,12 @@
 	import IconCarbonInformationSquare from '~icons/carbon/information-square';
 	import IconCarbonMaximize from '~icons/carbon/maximize';
 	import IconCarbonMinimize from '~icons/carbon/minimize';
+	import IconCarbonChevronUp from '~icons/carbon/chevron-up';
+	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { getContext } from 'svelte';
+	import Input from '../Input/Input.svelte';
+	import { playbackStore } from '../../stores/playback.svelte';
 
 	let {
 		songs = $bindable(),
@@ -47,6 +51,10 @@
 	let patternEditors: PatternEditor[] = $state([]);
 	let rightPanelActiveTabId = $state('tables');
 	let isRightPanelExpanded = $state(false);
+	
+	let patternLengthValue = $state('');
+	let isPatternLengthInputFocused = $state(false);
+	let isPatternLengthButtonAction = $state(false);
 
 	const blurredContentClass = $derived(
 		isRightPanelExpanded ? 'pointer-events-none opacity-50 blur-sm' : ''
@@ -190,6 +198,92 @@
 			resizeObserver.disconnect();
 		};
 	});
+
+	const currentPatternLength = $derived.by(() => {
+		if (patternEditors.length === 0) return null;
+		const activeEditor = patternEditors[activeEditorIndex];
+		if (!activeEditor) return null;
+		return activeEditor.getCurrentPatternLength?.() ?? null;
+	});
+
+	$effect(() => {
+		if (!isPatternLengthInputFocused && !isPatternLengthButtonAction) {
+			const activeEditor = patternEditors[activeEditorIndex];
+			if (activeEditor) {
+				const length = activeEditor.getCurrentPatternLength?.();
+				if (length !== null && patternLengthValue !== length.toString()) {
+					patternLengthValue = length.toString();
+				}
+			}
+		}
+	});
+
+	function commitPatternLength() {
+		const length = parseInt(patternLengthValue, 10);
+		const activeEditor = patternEditors[activeEditorIndex];
+		if (!isNaN(length) && length >= 1 && length <= 256 && activeEditor) {
+			try {
+				activeEditor.resizePatternTo?.(length);
+			} catch (error) {
+				console.error('Failed to resize pattern:', error);
+				const current = currentPatternLength;
+				if (current !== null) {
+					patternLengthValue = current.toString();
+				}
+			}
+		} else {
+			const current = currentPatternLength;
+			if (current !== null) {
+				patternLengthValue = current.toString();
+			}
+		}
+	}
+
+	function incrementPatternLength() {
+		const current = parseInt(patternLengthValue, 10);
+		const activeEditor = patternEditors[activeEditorIndex];
+		if (isNaN(current) || current < 1 || current >= 256 || !activeEditor) {
+			return;
+		}
+		isPatternLengthButtonAction = true;
+		const newLength = current + 1;
+		try {
+			activeEditor.resizePatternTo?.(newLength);
+			patternLengthValue = newLength.toString();
+		} catch (error) {
+			console.error('Failed to increment pattern length:', error);
+			const actual = currentPatternLength;
+			if (actual !== null) {
+				patternLengthValue = actual.toString();
+			}
+		}
+		setTimeout(() => {
+			isPatternLengthButtonAction = false;
+		}, 100);
+	}
+
+	function decrementPatternLength() {
+		const current = parseInt(patternLengthValue, 10);
+		const activeEditor = patternEditors[activeEditorIndex];
+		if (isNaN(current) || current <= 1 || current > 256 || !activeEditor) {
+			return;
+		}
+		isPatternLengthButtonAction = true;
+		const newLength = current - 1;
+		try {
+			activeEditor.resizePatternTo?.(newLength);
+			patternLengthValue = newLength.toString();
+		} catch (error) {
+			console.error('Failed to decrement pattern length:', error);
+			const actual = currentPatternLength;
+			if (actual !== null) {
+				patternLengthValue = actual.toString();
+			}
+		}
+		setTimeout(() => {
+			isPatternLengthButtonAction = false;
+		}, 100);
+	}
 </script>
 
 <div bind:this={songViewContainer} class="relative flex h-full overflow-hidden">
@@ -219,6 +313,71 @@
 				fullHeight={true}
 				icon={IconCarbonChip}
 				class="p-0">
+				{#snippet headerContent()}
+					{#if currentPatternLength !== null && activeEditorIndex === i}
+						<div class="flex items-center gap-1">
+							<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {playbackStore.isPlaying ? 'opacity-50' : ''}">
+								<Input
+									bind:value={patternLengthValue}
+									id="pattern-length-input-{i}"
+									type="number"
+									min="1"
+									max="256"
+									step="1"
+									disabled={playbackStore.isPlaying}
+									class="h-5 w-10 border-0 bg-transparent text-center font-mono text-xs leading-none focus:ring-0 py-0 px-1 disabled:cursor-not-allowed"
+									onfocus={() => {
+										if (!playbackStore.isPlaying) {
+											isPatternLengthInputFocused = true;
+										}
+									}}
+									onblur={() => {
+										isPatternLengthInputFocused = false;
+										if (!playbackStore.isPlaying) {
+											commitPatternLength();
+										}
+									}}
+									onkeydown={(e: KeyboardEvent) => {
+										if (playbackStore.isPlaying) {
+											e.preventDefault();
+											return;
+										}
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											commitPatternLength();
+											(e.target as HTMLInputElement)?.blur();
+										}
+									}} />
+								<div class="flex flex-col border-l border-[var(--color-app-border)]">
+									<button
+										type="button"
+										disabled={playbackStore.isPlaying}
+										class="flex h-2.5 w-3.5 cursor-pointer items-center justify-center border-b border-[var(--color-app-border)] transition-colors hover:bg-[var(--color-app-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+										onclick={() => {
+											if (!playbackStore.isPlaying) {
+												incrementPatternLength();
+											}
+										}}
+										title="Increment pattern length">
+										<IconCarbonChevronUp class="h-2 w-2 text-[var(--color-app-text-muted)]" />
+									</button>
+									<button
+										type="button"
+										disabled={playbackStore.isPlaying}
+										class="flex h-2.5 w-3.5 cursor-pointer items-center justify-center transition-colors hover:bg-[var(--color-app-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+										onclick={() => {
+											if (!playbackStore.isPlaying) {
+												decrementPatternLength();
+											}
+										}}
+										title="Decrement pattern length">
+										<IconCarbonChevronDown class="h-2 w-2 text-[var(--color-app-text-muted)]" />
+									</button>
+								</div>
+							</div>
+						</div>
+					{/if}
+				{/snippet}
 				<PatternEditor
 					bind:this={patternEditors[i]}
 					bind:patterns={song.patterns}
