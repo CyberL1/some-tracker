@@ -4,43 +4,42 @@ globs:
 alwaysApply: true
 ---
 
-# Project Structure Overview and General Rules
+Bitphase is a chiptune tracker for creating music on retro sound chips. Built with Svelte 5, TypeScript, Vite, and Tailwind 4.
 
-This project is a Svelte 5 + TypeScript + Vite + Tailwind 4 application.
-It's a chiptune tracker made especially for creating AY-8910 tracks for ZX Spectrum. In future it will support other chips as well.
+## Architecture
 
-• The application is bootstrapped in [src/main.ts](mdc:src/main.ts), which mounts the root component [src/App.svelte](mdc:src/App.svelte) onto the `#app` element.
+### Directory Structure
 
-• UI components live under [src/lib/components](mdc:src/lib/components). Notable sub-groups:
-– Menu system: [MenuBar.svelte](mdc:src/lib/components/Menu/MenuBar.svelte) plus helper components in the same folder.
-– Song editing: [PatternEditor.svelte](mdc:src/lib/components/Song/PatternEditor.svelte) and related song-specific UI.
-– Layout helpers: [AppLayout](mdc:src/lib/components/AppLayout) contains cards such as `ProjectCard` and `OrnamentsCard`.
+- `src/lib/chips/` - Chip implementations (currently AY-8910). Each chip has: `schema.ts` (channel/field definitions), `adapter.ts` (data manipulation), `renderer.ts` (pattern display), `types.ts`
+- `src/lib/models/` - Domain models: `project.ts`, `song.ts`, `project-fields.ts`
+- `src/lib/services/` - Business logic: `audio/`, `file/` (import/export), `pattern/` (editing, navigation, clipboard), `project/`, `modal/`
+- `src/lib/stores/` - Reactive state using `.svelte.ts` files with `$state` rune
+- `src/lib/ui-rendering/` - Canvas-based renderers for pattern editor and order list
+- `src/lib/components/` - UI components organized by feature (Menu, Song, Tables, Instruments, Modal, etc.)
+- `src/lib/config/` - App configuration (menu definitions, settings)
+- `tests/` - Test files mirroring src structure
 
-• Core domain models are in [src/lib/models](mdc:src/lib/models):
-– [project.ts](mdc:src/lib/models/project.ts) defines a `Project` consisting of songs and chip settings.
-– [song.ts](mdc:src/lib/models/song.ts) holds `Song`, `Pattern`, `Instrument`, etc.
-– [chips.ts](mdc:src/lib/models/chips.ts) lists supported audio chips.
+### Key Patterns
 
-• Audio processing lives in [src/lib/core](mdc:src/lib/core):
-– [ay-processor.ts](mdc:src/lib/core/ay-processor.ts) implements a Web Audio Worklet processor for the AY/YM chip.
-– [chip-processor.ts](mdc:src/lib/core/chip-processor.ts) is the common interface.
+- **Chip abstraction**: Never hardcode chip-specific features. Use `src/lib/chips/base/schema.ts` for generic definitions. Chips implement adapters and renderers extending base classes.
+- **State management**: Use Svelte 5 runes (`$state`, `$derived`, `$effect`) in `.svelte.ts` files. Do not use writable stores.
+- **Pattern editing**: Field-based editing system in `src/lib/services/pattern/editing/` with strategies per field type.
 
-• High-level services are under [src/lib/services](mdc:src/lib/services):
-– [audio-service.ts](mdc:src/lib/services/audio-service.ts) manages the `AudioContext` and chip processors.
-– [file-import.ts](mdc:src/lib/services/file-import.ts) & [vt-converter.ts](mdc:src/lib/services/vt-converter.ts) handle external file conversion/import.
+### External Dependencies
 
-• Reactive application state (writable stores) is placed in [src/lib/stores](mdc:src/lib/stores), e.g. [playback.svelte.ts](mdc:src/lib/stores/playback.svelte.ts).
+- `external/ayumi/` - AY-8910 emulator C code, compiled to WASM via Emscripten
+- WASM output goes to `public/ayumi.wasm`
 
-• Application-wide configuration such as the top menu is defined in [src/lib/config/app-menu.ts](mdc:src/lib/config/app-menu.ts).
+### Path Alias
 
-• Global styles are kept in [src/app.css](mdc:src/app.css).
+`@` maps to `./src` (configured in vite and vitest)
 
-Since this project uses Svelte 5, please always use runes and Svelte 5 features. Don't use writable stores, create .svelte.ts with $state instead.
-Don't write comments in code. Instead, write code which is already understandable enough without additional comments. In order to achieve this, follow
-all the good practices like a senior TypeScript developer would do. Follow KISS, DRY, SOLID principles. Focus on writing testable and reusable code.
+- Svelte 5 syntax only (runes, `onclick` not `on:click`)
+- No comments in code - write self-documenting code
+- Tailwind 4 for styling
+- Follow KISS, DRY, SOLID principles. Keep very good OOP practices.
+- Tests go in `tests/` directory mirroring `src/` structure
 
-For styles, prefer using Tailwind 4 unless its impossible to achieve something with it.
+Currently bitphase supports only AY-8910/YM2149F chip, but architecture needs to support other chips in the future. Therefore, it is important to keep the code modular and easy to extend. Using AY specific code in generic parts is not allowed, because when we get to the point of adding another chip, we will have to rewrite a lot of code.
 
-Good OOP practices, DRY and testability are your prorities.
-
-Never, never ever hardcode specific chip features. You need to use generic stuff or schemas.
+Please never allow lint errors. If you see any, fix them. We had lots of production bugs because of lint errors.

@@ -1,4 +1,4 @@
-function darkenColor(hex: string, amount: number): string {
+export function darkenColor(hex: string, amount: number): string {
 	const num = parseInt(hex.replace('#', ''), 16);
 	const r = Math.max(0, ((num >> 16) & 0xff) - amount);
 	const g = Math.max(0, ((num >> 8) & 0xff) - amount);

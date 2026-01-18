@@ -16,10 +16,10 @@
 
 	const variantClasses = $derived(
 		variant === 'primary'
-			? 'border-blue-600 bg-blue-600 text-neutral-100 hover:bg-blue-700'
+			? 'border-[var(--color-app-primary)] bg-[var(--color-app-primary)] text-[var(--color-app-text-primary)] hover:bg-[var(--color-app-primary-hover)]'
 			: variant === 'secondary'
-				? 'border-neutral-600 bg-neutral-800 text-neutral-200 hover:bg-neutral-700'
-				: 'border-neutral-600 bg-[var(--pattern-bg)] hover:bg-[var(--pattern-selected)]'
+				? 'border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] text-[var(--color-app-text-secondary)] hover:bg-[var(--color-app-surface-hover)]'
+				: 'border-[var(--color-app-border)] bg-[var(--color-pattern-bg)] hover:bg-[var(--color-pattern-selected)]'
 	);
 </script>
 

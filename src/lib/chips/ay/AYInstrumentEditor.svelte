@@ -29,8 +29,8 @@
 
 	function getGridButtonClass(isActive: boolean): string {
 		const baseClass =
-			'flex cursor-pointer items-center gap-1.5 rounded border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100';
-		return isActive ? `${baseClass} border-blue-500 bg-blue-900/30 text-blue-200` : baseClass;
+			'flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]';
+		return isActive ? `${baseClass} border-[var(--color-app-primary)] bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]` : baseClass;
 	}
 
 	function formatNum(value: number): string {
@@ -287,7 +287,7 @@
 
 {#snippet volumeCell(index: number, value: number, isSelected: boolean)}
 	<td
-		class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${isSelected ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
+		class={`group h-8 w-6 min-w-6 cursor-pointer border border-[var(--color-app-border)] text-center text-[0.7rem] leading-none ${isSelected ? 'bg-[var(--color-app-surface-active)]' : 'bg-[var(--color-app-surface)] hover:bg-[var(--color-app-surface-secondary)]'}`}
 		tabindex="0"
 		title={String(value)}
 		onmousedown={() => beginDragVolume(index, value)}
@@ -296,7 +296,7 @@
 		{#if isSelected}
 			{formatNum(value)}
 		{:else}
-			<span class="text-neutral-300 opacity-0 group-hover:opacity-100"
+			<span class="text-[var(--color-app-text-tertiary)] opacity-0 group-hover:opacity-100"
 				>{formatNum(value)}</span>
 		{/if}
 	</td>
@@ -304,7 +304,7 @@
 
 <div class="w-full overflow-x-auto">
 	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
-		<span class="text-xs text-neutral-400">Name:</span>
+		<span class="text-xs text-[var(--color-app-text-muted)]">Name:</span>
 		<Input class="w-48 text-xs" bind:value={name} />
 		{#if isExpanded}
 			<button
@@ -334,20 +334,20 @@
 							loopRow});">
 						<div class="relative h-full">
 							<div
-								class="absolute top-0 left-0 h-full w-0.5 border-l-2 border-blue-200">
+								class="absolute top-0 left-0 h-full w-0.5 border-l-2 border-[var(--color-app-primary)]">
 							</div>
 							<div
-								class="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-blue-200">
+								class="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-[var(--color-app-primary)]">
 							</div>
 							<div
-								class="absolute bottom-0 left-0 h-2 w-2 border-b-2 border-l-2 border-blue-200">
+								class="absolute bottom-0 left-0 h-2 w-2 border-b-2 border-l-2 border-[var(--color-app-primary)]">
 							</div>
 						</div>
 					</div>
 				{/if}
 				<table
 					bind:this={tableRef}
-					class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+					class="table-fixed border-collapse bg-[var(--color-app-surface)] font-mono text-xs select-none">
 					<thead>
 						<tr>
 							<th class={isExpanded ? 'px-2 py-1.5' : 'px-1 py-1'}>row</th>
@@ -440,11 +440,11 @@
 						{#each rows as row, index}
 							<tr class={isExpanded ? 'h-8' : 'h-7'}>
 								<td
-									class="border border-neutral-700 bg-neutral-800 {isExpanded
+									class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] {isExpanded
 										? 'px-2 py-1.5'
 										: 'px-1 py-1 text-[0.65rem]'} text-right">{index}</td>
 								<td
-									class="border border-neutral-700 bg-neutral-800 {isExpanded
+									class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] {isExpanded
 										? 'px-1.5'
 										: 'px-0.5'}">
 									<div
@@ -452,7 +452,7 @@
 											? 'gap-1'
 											: 'gap-0.5'}">
 										<button
-											class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-400"
+											class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-red-400"
 											onclick={(e) => {
 												e.stopPropagation();
 												removeRow(index);
@@ -465,7 +465,7 @@
 										</button>
 										{#if index < rows.length - 1}
 											<button
-												class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-500"
+												class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-red-500"
 												onclick={(e) => {
 													e.stopPropagation();
 													removeRowsFromBottom(index);
@@ -487,25 +487,25 @@
 								</td>
 								<!-- Tone -->
 								<td
-									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.tone
+									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.tone
 										? 'bg-green-900/30 text-green-400'
-										: 'text-neutral-600'}"
+										: 'text-[var(--color-app-text-muted)]'}"
 									onclick={() => toggleBoolean(index, 'tone')}>
 									{row.tone ? '✓' : ''}
 								</td>
 								<!-- Noise -->
 								<td
-									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.noise
+									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noise
 										? 'bg-green-900/30 text-green-400'
-										: 'text-neutral-600'}"
+										: 'text-[var(--color-app-text-muted)]'}"
 									onclick={() => toggleBoolean(index, 'noise')}>
 									{row.noise ? '✓' : ''}
 								</td>
 								<!-- Envelope -->
 								<td
-									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.envelope
+									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.envelope
 										? 'bg-green-900/30 text-green-400'
-										: 'text-neutral-600'}"
+										: 'text-[var(--color-app-text-muted)]'}"
 									onclick={() => toggleBoolean(index, 'envelope')}>
 									{row.envelope ? '✓' : ''}
 								</td>
@@ -513,9 +513,9 @@
 								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
 									<input
 										type="text"
-										class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 {isExpanded
+										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
 											? 'px-2 py-1 text-xs'
-											: 'px-1 py-0.5 text-[0.65rem]'} text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+											: 'px-1 py-0.5 text-[0.65rem]'} text-[var(--color-app-text-secondary)] placeholder-[var(--color-app-text-muted)] focus:border-[var(--color-app-primary)] focus:outline-none"
 										value={formatNum(row.toneAdd)}
 										onkeydown={(e) => handleNumericKeyDown(index, e)}
 										onfocus={(e) => (e.target as HTMLInputElement).select()}
@@ -523,9 +523,9 @@
 								</td>
 								<!-- Tone Accumulation -->
 								<td
-									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.toneAccumulation
-										? 'bg-blue-900/30 text-blue-400'
-										: 'text-neutral-600'}"
+									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.toneAccumulation
+										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
+										: 'text-[var(--color-app-text-muted)]'}"
 									onclick={() => toggleBoolean(index, 'toneAccumulation')}>
 									{row.toneAccumulation ? '↑' : ''}
 								</td>
@@ -533,9 +533,9 @@
 								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
 									<input
 										type="text"
-										class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 {isExpanded
+										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
 											? 'px-2 py-1 text-xs'
-											: 'px-1 py-0.5 text-[0.65rem]'} text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+											: 'px-1 py-0.5 text-[0.65rem]'} text-[var(--color-app-text-secondary)] placeholder-[var(--color-app-text-muted)] focus:border-[var(--color-app-primary)] focus:outline-none"
 										value={formatNum(row.noiseAdd)}
 										onkeydown={(e) => handleNumericKeyDown(index, e)}
 										onfocus={(e) => (e.target as HTMLInputElement).select()}
@@ -543,9 +543,9 @@
 								</td>
 								<!-- Noise Accumulation -->
 								<td
-									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.noiseAccumulation
-										? 'bg-blue-900/30 text-blue-400'
-										: 'text-neutral-600'}"
+									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noiseAccumulation
+										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
+										: 'text-[var(--color-app-text-muted)]'}"
 									onclick={() => toggleBoolean(index, 'noiseAccumulation')}>
 									{row.noiseAccumulation ? '↑' : ''}
 								</td>
@@ -553,9 +553,9 @@
 								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
 									<input
 										type="text"
-										class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 {isExpanded
+										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
 											? 'px-2 py-1 text-xs'
-											: 'px-1 py-0.5 text-[0.65rem]'} text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+											: 'px-1 py-0.5 text-[0.65rem]'} text-[var(--color-app-text-secondary)] placeholder-[var(--color-app-text-muted)] focus:border-[var(--color-app-primary)] focus:outline-none"
 										value={formatNum(row.volume)}
 										onkeydown={(e) => handleNumericKeyDown(index, e)}
 										onfocus={(e) => (e.target as HTMLInputElement).select()}
@@ -563,12 +563,12 @@
 								</td>
 								<!-- Amplitude Slide (merged: off/up/down) -->
 								<td
-									class="cursor-pointer border border-neutral-700 bg-neutral-900 px-1.5 text-center {row.amplitudeSliding &&
+									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.amplitudeSliding &&
 									row.amplitudeSlideUp
 										? 'bg-green-900/30 text-green-400'
 										: row.amplitudeSliding
 											? 'bg-red-900/30 text-red-400'
-											: 'text-neutral-600'}"
+											: 'text-[var(--color-app-text-muted)]'}"
 									onclick={() => cycleAmplitudeSlide(index)}
 									title={row.amplitudeSliding
 										? row.amplitudeSlideUp
@@ -585,7 +585,7 @@
 							<td colspan="12" class="px-2 py-1">
 								<div class="flex items-center justify-center">
 									<button
-										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-green-400"
 										onclick={addRow}
 										title="Add new row">
 										<IconCarbonAdd class="mr-1 h-3.5 w-3.5" />
@@ -600,13 +600,13 @@
 
 			{#if showVolumeGrid}
 				<table
-					class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+					class="table-fixed border-collapse bg-[var(--color-app-surface)] font-mono text-xs select-none">
 					<thead>
 						<tr>
 							<th class="px-2 py-1.5">row</th>
 							{#each VOLUME_VALUES as v}
 								<th
-									class="w-6 min-w-6 bg-neutral-800 text-center"
+									class="w-6 min-w-6 bg-[var(--color-app-surface-secondary)] text-center"
 									title={String(v)}>
 									{formatNum(v)}
 								</th>
@@ -622,7 +622,7 @@
 					<tbody>
 						{#each rows as row, index}
 							<tr class="h-8">
-								<td class="border border-neutral-700 bg-neutral-800 px-2 text-right"
+								<td class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 text-right"
 									>{index}</td>
 								{#each VOLUME_VALUES as v}
 									{@render volumeCell(index, v, v === row.volume)}

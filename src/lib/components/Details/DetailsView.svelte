@@ -166,7 +166,7 @@
 	{#if chipsByType.length === 0 || chipsByType.every((g) => (g.chip.schema.settings?.filter((s) => s.group === 'chip') || []).length === 0)}
 		{#if projectSettings.length === PROJECT_FIELDS.length}
 			<div class="flex h-full items-center justify-center">
-				<p class="text-sm text-neutral-500">No chip-specific settings available</p>
+				<p class="text-sm text-[var(--color-app-text-muted)]">No chip-specific settings available</p>
 			</div>
 		{/if}
 	{/if}

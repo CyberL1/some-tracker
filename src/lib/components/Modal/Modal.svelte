@@ -38,7 +38,7 @@
 		onkeydown={handleKeyDown}>
 		<div
 			bind:this={modalElement}
-			class="max-h-[90vh] max-w-[90vw] overflow-auto rounded-sm border border-neutral-600 bg-neutral-900 shadow-xl transition-transform duration-200"
+			class="max-h-[90vh] max-w-[90vw] overflow-auto rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface)] shadow-xl transition-transform duration-200"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}
 			role="presentation"

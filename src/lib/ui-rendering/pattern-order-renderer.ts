@@ -1,9 +1,10 @@
 import type { Pattern } from '../models/song';
-import type { getColors } from '../utils/colors';
+import type { getPatternOrderColors } from '../utils/pattern-order-colors';
 import type { getFonts } from '../utils/fonts';
 import { BaseCanvasRenderer, type BaseRenderOptions } from './base-canvas-renderer';
 
-export interface PatternOrderRenderOptions extends BaseRenderOptions {
+export interface PatternOrderRenderOptions extends Omit<BaseRenderOptions, 'colors'> {
+	colors: ReturnType<typeof getPatternOrderColors>;
 	fonts: ReturnType<typeof getFonts>;
 	canvasHeight: number;
 	fontSize: number;
@@ -32,9 +33,11 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 	private cellHeight: number;
 	private padding: number;
 	private fadeHeight: number;
+	private orderColors: ReturnType<typeof getPatternOrderColors>;
 
 	constructor(options: PatternOrderRenderOptions) {
 		super(options);
+		
 		this.fonts = options.fonts;
 		this.canvasHeight = options.canvasHeight;
 		this.fontSize = options.fontSize;
@@ -42,6 +45,11 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		this.cellHeight = options.cellHeight;
 		this.padding = options.padding;
 		this.fadeHeight = options.fadeHeight;
+		this.orderColors = options.colors;
+	}
+
+	drawBackground(canvasHeight: number): void {
+		this.fillRect(0, 0, this.canvasWidth, canvasHeight, this.orderColors.orderBg);
 	}
 
 	drawPatternCell(cell: PatternCell): void {
@@ -61,14 +69,14 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 				cellY,
 				this.cellWidth,
 				this.cellHeight,
-				this.colors.patternNoise
+				this.orderColors.orderSelected
 			);
 			this.strokeRectPixelPerfect(
 				this.padding,
 				cellY,
 				this.cellWidth,
 				this.cellHeight,
-				this.colors.patternInstrument
+				this.orderColors.orderBorder
 			);
 		} else if (cell.isHovered) {
 			this.fillRect(
@@ -76,25 +84,27 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 				cellY,
 				this.cellWidth,
 				this.cellHeight,
-				this.colors.patternHeader
+				this.orderColors.orderHovered
 			);
 			this.strokeRectPixelPerfect(
 				this.padding,
 				cellY,
 				this.cellWidth,
 				this.cellHeight,
-				this.colors.patternInstrument
+				this.orderColors.orderBorder
 			);
 		} else {
 			const bgColor =
-				cell.index % 2 === 0 ? this.colors.patternBg : this.colors.patternAlternate;
+				cell.index % 2 === 0
+					? this.orderColors.orderBg
+					: this.orderColors.orderAlternate;
 			this.fillRect(this.padding, cellY, this.cellWidth, this.cellHeight, bgColor);
 			this.strokeRectPixelPerfect(
 				this.padding,
 				cellY,
 				this.cellWidth,
 				this.cellHeight,
-				this.colors.patternEmpty
+				this.orderColors.orderBorder
 			);
 		}
 	}
@@ -110,17 +120,9 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 			patternText = cell.patternId.toString().padStart(2, '0');
 		}
 
-		const editingColor = cell.isEditing
-			? cell.editingValue === ''
-				? this.colors.patternEnvelope
-				: this.colors.patternEditing
-			: null;
-
 		const textColor = isEmpty
-			? this.colors.patternEmpty
-			: cell.isEditing
-				? editingColor!
-				: this.colors.patternText;
+			? this.orderColors.orderEmpty
+			: this.orderColors.orderText;
 
 		this.setTextAlign('center');
 		this.setTextBaseline('middle');
@@ -131,8 +133,7 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		if (!cell.isEditing) return;
 
 		this.save();
-		const borderColor =
-			cell.editingValue === '' ? this.colors.patternEnvelope : this.colors.patternEditing;
+		const borderColor = this.orderColors.orderBorder;
 		this.strokeRect(
 			this.padding + 1,
 			cellY + 1,
@@ -152,8 +153,7 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		const centerX = this.padding + this.cellWidth / 2;
 		const underlineX = centerX - charWidth;
 
-		const underlineColor =
-			cell.editingValue === '' ? this.colors.patternEnvelope : this.colors.patternEditing;
+		const underlineColor = this.orderColors.orderText;
 		this.beginPath();
 		this.moveTo(underlineX, underlineY);
 		this.lineTo(underlineX + charWidth * 2, underlineY);
@@ -169,7 +169,7 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		this.save();
 		this.setTextAlign('left');
 		this.setTextBaseline('middle');
-		this.fillText('►', 2, cell.y, this.colors.patternEnvelope);
+		this.fillText('►', 2, cell.y, this.orderColors.orderText);
 		this.restore();
 		this.setTextAlign('center');
 		this.setTextBaseline('middle');
@@ -189,7 +189,7 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 
 	private drawTopFade(): void {
 		const topGradient = this.createLinearGradient(0, 0, 0, this.fadeHeight);
-		topGradient.addColorStop(0, this.colors.patternBg);
+		topGradient.addColorStop(0, this.orderColors.orderBg);
 		topGradient.addColorStop(1, 'rgba(0,0,0,0)');
 		this.ctx.fillStyle = topGradient;
 		this.fillRect(0, 0, this.canvasWidth, this.fadeHeight);
@@ -203,7 +203,7 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 			this.canvasHeight
 		);
 		bottomGradient.addColorStop(0, 'rgba(0,0,0,0)');
-		bottomGradient.addColorStop(1, this.colors.patternBg);
+		bottomGradient.addColorStop(1, this.orderColors.orderBg);
 		this.ctx.fillStyle = bottomGradient;
 		this.fillRect(0, this.canvasHeight - this.fadeHeight, this.canvasWidth, this.fadeHeight);
 	}
@@ -215,16 +215,11 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 
 		if (hasMoreAbove) {
 			this.setTextBaseline('top');
-			this.fillText('▲', this.canvasWidth / 2, 2, this.colors.patternEnvelope);
+			this.fillText('▲', this.canvasWidth / 2, 2, this.orderColors.orderText);
 		}
 		if (hasMoreBelow) {
 			this.setTextBaseline('bottom');
-			this.fillText(
-				'▼',
-				this.canvasWidth / 2,
-				this.canvasHeight - 2,
-				this.colors.patternEnvelope
-			);
+			this.fillText('▼', this.canvasWidth / 2, this.canvasHeight - 2, this.orderColors.orderText);
 		}
 		this.restore();
 	}

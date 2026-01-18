@@ -1,0 +1,52 @@
+import type { Theme } from '../types/theme';
+
+export const BUILTIN_THEMES: Theme[] = [
+	{
+		id: 'catppuccin-mocha',
+		name: 'Catppuccin Mocha',
+		colors: {
+			patternBg: '#1e1e2e',
+			patternText: '#cdd6f4',
+			patternEmpty: '#313244',
+			patternEmptySelected: '#45475a',
+			patternNote: '#89b4fa',
+			patternInstrument: '#b4befe',
+			patternEffect: '#f9e2af',
+			patternEnvelope: '#a6e3a1',
+			patternNoise: '#45475a',
+			patternHeader: '#181825',
+			patternSelected: '#313244',
+			patternCellSelected: '#45475a',
+			patternRowNum: '#89b4fa',
+			patternAlternate: '#181825',
+			patternAlternateEmpty: '#1e1e2e',
+			patternTable: '#a6e3a1',
+			patternRowNumAlternate: '#a5c9ff',
+			patternEditing: '#a6e3a1',
+			patternNoteOff: '#f38ba8',
+			patternTableOff: '#6ebd5a',
+			orderBg: '#1e1e2e',
+			orderText: '#cdd6f4',
+			orderEmpty: '#313244',
+			orderSelected: '#45475a',
+			orderHovered: '#313244',
+			orderAlternate: '#181825',
+			orderBorder: '#45475a',
+			appBackground: '#1e1e2e',
+			appSurface: '#181825',
+			appSurfaceSecondary: '#11111b',
+			appSurfaceHover: '#313244',
+			appSurfaceActive: '#45475a',
+			appTextPrimary: '#cdd6f4',
+			appTextSecondary: '#bac2de',
+			appTextTertiary: '#a6adc8',
+			appTextMuted: '#6c7086',
+			appBorder: '#313244',
+			appBorderHover: '#45475a',
+			appPrimary: '#89b4fa',
+			appPrimaryHover: '#74c7ec',
+			appSecondary: '#b4befe',
+			appSecondaryHover: '#cba6f7'
+		}
+	}
+];

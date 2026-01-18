@@ -49,8 +49,8 @@
 
 	function getGridButtonClass(isActive: boolean): string {
 		const baseClass =
-			'flex cursor-pointer items-center gap-1.5 rounded border border-neutral-600 bg-neutral-800 px-2 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100';
-		return isActive ? `${baseClass} border-blue-500 bg-blue-900/30 text-blue-200` : baseClass;
+			'flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]';
+		return isActive ? `${baseClass} border-[var(--color-app-primary)] bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]` : baseClass;
 	}
 
 	function initRowRepresentations() {
@@ -293,7 +293,7 @@
 
 {#snippet valueCell(mode: 'pitch' | 'shift', index: number, value: number, isSelected: boolean)}
 	<td
-		class={`group h-8 w-6 min-w-6 cursor-pointer border border-neutral-700 text-center text-[0.7rem] leading-none ${isSelected ? 'bg-neutral-600' : 'bg-neutral-900 hover:bg-neutral-800'}`}
+		class={`group h-8 w-6 min-w-6 cursor-pointer border border-[var(--color-app-border)] text-center text-[0.7rem] leading-none ${isSelected ? 'bg-[var(--color-app-surface-active)]' : 'bg-[var(--color-app-surface)] hover:bg-[var(--color-app-surface-secondary)]'}`}
 		tabindex="0"
 		title={String(value)}
 		onmousedown={() => beginDrag(mode, index, value)}
@@ -302,7 +302,7 @@
 		{#if isSelected}
 			{formatNum(value)}
 		{:else}
-			<span class="text-neutral-300 opacity-0 group-hover:opacity-100"
+			<span class="text-[var(--color-app-text-tertiary)] opacity-0 group-hover:opacity-100"
 				>{formatNum(value)}</span>
 		{/if}
 	</td>
@@ -310,7 +310,7 @@
 
 <div class="w-full overflow-x-auto">
 	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
-		<span class="text-xs text-neutral-400">Name:</span>
+		<span class="text-xs text-[var(--color-app-text-muted)]">Name:</span>
 		<Input class="w-48 text-xs" bind:value={name} />
 		{#if isExpanded}
 			<button
@@ -336,20 +336,20 @@
 					style="left: calc({loopColumnRef.offsetLeft}px + 1rem); margin-top: calc({rowTop}px + 2rem * {loopRow}); height: calc(2rem * {rows.length -
 						loopRow});">
 					<div class="relative h-full">
-						<div class="absolute top-0 left-0 h-full w-0.5 border-l-2 border-blue-200">
+						<div class="absolute top-0 left-0 h-full w-0.5 border-l-2 border-[var(--color-app-primary)]">
 						</div>
 						<div
-							class="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-blue-200">
+							class="absolute top-0 left-0 h-2 w-2 border-t-2 border-l-2 border-[var(--color-app-primary)]">
 						</div>
 						<div
-							class="absolute bottom-0 left-0 h-2 w-2 border-b-2 border-l-2 border-blue-200">
+							class="absolute bottom-0 left-0 h-2 w-2 border-b-2 border-l-2 border-[var(--color-app-primary)]">
 						</div>
 					</div>
 				</div>
 			{/if}
 			<table
 				bind:this={tableRef}
-				class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+				class="table-fixed border-collapse bg-[var(--color-app-surface)] font-mono text-xs select-none">
 				<thead>
 					<tr>
 						<th class="px-2 py-1.5">row</th>
@@ -367,7 +367,7 @@
 							<th></th>
 							<th></th>
 							{#each PITCH_VALUES as p}
-								<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(p)}
+								<th class="w-6 min-w-6 bg-[var(--color-app-surface-secondary)] text-center" title={String(p)}
 								></th>
 							{/each}
 						</tr>
@@ -377,12 +377,12 @@
 					{#each rows as offset, index}
 						<tr class="h-8">
 							<td
-								class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
+								class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1.5 text-right"
 								>{index}</td>
-							<td class="border border-neutral-700 bg-neutral-800 px-1.5">
+							<td class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-1.5">
 								<div class="flex items-center justify-center gap-1">
 									<button
-										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-400"
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-red-400"
 										onclick={(e) => {
 											e.stopPropagation();
 											removeRow(index);
@@ -392,7 +392,7 @@
 									</button>
 									{#if index < rows.length - 1}
 										<button
-											class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-red-500"
+											class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-red-500"
 											onclick={(e) => {
 												e.stopPropagation();
 												removeRowsFromBottom(index);
@@ -411,7 +411,7 @@
 								<input
 									type="text"
 									bind:this={offsetInputRefs[index]}
-									class="w-full min-w-0 overflow-x-auto rounded border border-neutral-600 bg-neutral-900 px-2 py-1 text-xs text-neutral-200 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+									class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-2 py-1 text-xs text-[var(--color-app-text-secondary)] placeholder-[var(--color-app-text-muted)] focus:border-[var(--color-app-primary)] focus:outline-none"
 									value={formatOffset(offset)}
 									onkeydown={(e) => handleOffsetKeyDown(index, e)}
 									onfocus={(e) => (e.target as HTMLInputElement).select()}
@@ -432,7 +432,7 @@
 							<td colspan="25" class="px-2 py-1">
 								<div class="flex items-center justify-center">
 									<button
-										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-green-400"
 										onclick={addRow}
 										title="Add new row">
 										<IconCarbonAdd class="mr-1 h-3.5 w-3.5" />
@@ -444,7 +444,7 @@
 							<td colspan="4" class="px-2 py-1">
 								<div class="flex items-center justify-center">
 									<button
-										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-green-400"
+										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-green-400"
 										onclick={addRow}
 										title="Add new row">
 										<IconCarbonAdd class="mr-1 h-3.5 w-3.5" />
@@ -459,7 +459,7 @@
 		</div>
 
 		{#if showOctaveGrid}
-			<table class="table-fixed border-collapse bg-neutral-900 font-mono text-xs select-none">
+			<table class="table-fixed border-collapse bg-[var(--color-app-surface)] font-mono text-xs select-none">
 				<thead>
 					<tr>
 						<th class="px-2 py-1.5">row</th>
@@ -468,7 +468,7 @@
 					<tr>
 						<th></th>
 						{#each SHIFT_VALUES as s}
-							<th class="w-6 min-w-6 bg-neutral-800 text-center" title={String(s)}
+							<th class="w-6 min-w-6 bg-[var(--color-app-surface-secondary)] text-center" title={String(s)}
 							></th>
 						{/each}
 					</tr>
@@ -477,7 +477,7 @@
 					{#each rows as _, index}
 						<tr class="h-8">
 							<td
-								class="border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-right"
+								class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1.5 text-right"
 								>{index}</td>
 							{#each SHIFT_VALUES as s}
 								{@render valueCell('shift', index, s, s === shifts[index])}

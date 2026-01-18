@@ -135,7 +135,7 @@
 </script>
 
 <div
-	class="menu-panel-button relative flex cursor-pointer items-center justify-between gap-4 px-2 py-1.5 text-xs hover:bg-neutral-700"
+	class="menu-panel-button relative flex cursor-pointer items-center justify-between gap-4 px-2 py-1.5 text-xs hover:bg-[var(--color-app-surface-hover)]"
 	class:cursor-not-allowed={isDisabled}
 	class:opacity-50={isDisabled}
 	class:hover:bg-transparent={isDisabled}
@@ -145,7 +145,7 @@
 	onmouseleave={handleMouseLeave}
 	tabindex="0"
 	role="menuitem"
-	class:bg-neutral-700={isActive}>
+	class:bg-[var(--color-app-surface-hover)]={isActive}>
 	<div class="flex items-center gap-2">
 		{#if icon}
 			<span>{icon}</span>
@@ -155,7 +155,7 @@
 
 	<div class="flex items-center gap-2">
 		{#if shortcut}
-			<span class="text-xs text-neutral-400">{shortcut}</span>
+			<span class="text-xs text-[var(--color-app-text-muted)]">{shortcut}</span>
 		{/if}
 		{#if type === 'expandable'}
 			<span class="text-xs">▶</span>

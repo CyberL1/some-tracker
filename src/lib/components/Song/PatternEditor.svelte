@@ -52,6 +52,7 @@
 	import { PatternRowDataService } from '../../services/pattern/pattern-row-data-service';
 	import { SelectionBoundsService } from '../../services/pattern/selection-bounds-service';
 	import { envelopePeriodToNote, noteToEnvelopePeriod } from '../../utils/envelope-note-conversion';
+	import { themeService } from '../../services/theme/theme-service';
 
 	let {
 		patterns = $bindable(),
@@ -141,7 +142,7 @@
 	let ctx: CanvasRenderingContext2D;
 	let containerDiv: HTMLDivElement;
 
-	let COLORS = getColors();
+	let COLORS = $state(getColors());
 	let FONTS = getFonts();
 
 	let canvasWidth = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH);
@@ -426,6 +427,17 @@
 			console.error('Error during canvas setup:', error);
 		}
 	}
+
+	$effect(() => {
+		const unsubscribe = themeService.onColorChange(() => {
+			COLORS = getColors();
+			if (ctx && canvas && renderer && textParser) {
+				setupCanvas();
+				draw();
+			}
+		});
+		return unsubscribe;
+	});
 
 	function getChipIndex(): number {
 		return services.audioService.chipProcessors.findIndex((p) => p === chipProcessor);

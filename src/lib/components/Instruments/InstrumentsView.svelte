@@ -50,7 +50,7 @@
 			label: 'Hex',
 			icon: hexIcon,
 			onClick: () => (asHex = !asHex),
-			class: asHex ? 'text-blue-400' : ''
+			class: asHex ? 'text-[var(--color-app-primary)]' : ''
 		}
 	]);
 
@@ -168,7 +168,7 @@
 		class="flex flex-col"
 		actions={cardActions}>
 		{#snippet children()}
-			<div class="border-b border-neutral-700 bg-neutral-800">
+			<div class="border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)]">
 				<div class="flex items-center overflow-x-auto">
 					{#each instruments || [] as instrument, index}
 						{@const isUsed = isInstrumentUsed(instrument)}
@@ -176,11 +176,11 @@
 						{@const isEditing = editingInstrumentId === index}
 						{#if isEditing}
 							<div
-								class="group relative flex shrink-0 flex-col items-center border-r border-neutral-700 p-3 {isSelected
-									? 'bg-blue-900/30'
+								class="group relative flex shrink-0 flex-col items-center border-r border-[var(--color-app-border)] p-3 {isSelected
+									? 'bg-[var(--color-app-primary)]/30'
 									: isUsed
-										? 'bg-neutral-800/40 hover:bg-neutral-800/70'
-										: 'bg-neutral-950/60 hover:bg-neutral-950/80'}">
+										? 'bg-[var(--color-app-surface-secondary)]/40 hover:bg-[var(--color-app-surface-secondary)]/70'
+										: 'bg-[var(--color-app-background)]/60 hover:bg-[var(--color-app-background)]/80'}">
 								<div class="flex flex-col items-center gap-1">
 									<Input
 										class="w-12 text-center font-mono text-xs"
@@ -215,35 +215,35 @@
 							</div>
 						{:else}
 							<div
-								class="group relative flex shrink-0 flex-col items-center border-r border-neutral-700">
+								class="group relative flex shrink-0 flex-col items-center border-r border-[var(--color-app-border)]">
 								<button
 									class="flex w-full shrink-0 cursor-pointer flex-col items-center p-3 {isSelected
-										? 'bg-blue-900/30'
+										? 'bg-[var(--color-app-primary)]/30'
 										: isUsed
-											? 'bg-neutral-800/40 hover:bg-neutral-800/70'
-											: 'bg-neutral-950/60 hover:bg-neutral-950/80'}"
+											? 'bg-[var(--color-app-surface-secondary)]/40 hover:bg-[var(--color-app-surface-secondary)]/70'
+											: 'bg-[var(--color-app-background)]/60 hover:bg-[var(--color-app-background)]/80'}"
 									onclick={() => (selectedInstrumentIndex = index)}
 									ondblclick={() => startEditingInstrumentId(index)}>
 									<span
 										class="font-mono text-xs font-semibold {isSelected
-											? 'text-blue-200'
+											? 'text-[var(--color-app-primary)]'
 											: isUsed
-												? 'text-neutral-300 group-hover:text-neutral-100'
-												: 'text-neutral-700 group-hover:text-neutral-600'}">
+												? 'text-[var(--color-app-text-tertiary)] group-hover:text-[var(--color-app-text-primary)]'
+												: 'text-[var(--color-app-text-muted)] group-hover:text-[var(--color-app-text-tertiary)]'}">
 										{instrument.id}
 									</span>
 									<span
 										class="text-xs {isSelected
-											? 'text-blue-300/90'
+											? 'text-[var(--color-app-primary)]/90'
 											: isUsed
-												? 'text-neutral-400 group-hover:text-neutral-300'
-												: 'text-neutral-800 group-hover:text-neutral-700'}">
+												? 'text-[var(--color-app-text-muted)] group-hover:text-[var(--color-app-text-tertiary)]'
+												: 'text-[var(--color-app-text-muted)] group-hover:text-[var(--color-app-text-muted)]'}">
 										{instrument.name}
 									</span>
 								</button>
 								{#if instruments.length > 1}
 									<button
-										class="absolute top-1 right-1 cursor-pointer rounded p-0.5 text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+										class="absolute top-1 right-1 cursor-pointer rounded p-0.5 text-[var(--color-app-text-muted)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
 										onclick={(e) => {
 											e.stopPropagation();
 											removeInstrument(index);
@@ -256,7 +256,7 @@
 						{/if}
 					{/each}
 					<button
-						class="ml-2 flex shrink-0 items-center gap-1 rounded border border-neutral-600 bg-neutral-800 px-3 py-2 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100"
+						class="ml-2 flex shrink-0 items-center gap-1 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-3 py-2 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]"
 						onclick={addInstrument}
 						title="Add new instrument">
 						<IconCarbonAdd class="h-4 w-4" />

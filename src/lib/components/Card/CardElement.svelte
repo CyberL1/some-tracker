@@ -5,6 +5,6 @@
 </script>
 
 <div class="flex flex-col gap-0.5">
-	<span class="text-[10px] text-neutral-300">{label}:</span>
+	<span class="text-[10px] text-[var(--color-app-text-tertiary)]">{label}:</span>
 	{@render children()}
 </div>

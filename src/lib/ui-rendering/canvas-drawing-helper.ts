@@ -1,13 +1,14 @@
 import type { getColors } from '../utils/colors';
+import type { getPatternOrderColors } from '../utils/pattern-order-colors';
 
 export interface DrawingContext {
 	ctx: CanvasRenderingContext2D;
-	colors: ReturnType<typeof getColors>;
+	colors: ReturnType<typeof getColors> | ReturnType<typeof getPatternOrderColors>;
 }
 
 export class CanvasDrawingHelper {
 	protected ctx: CanvasRenderingContext2D;
-	protected colors: ReturnType<typeof getColors>;
+	protected colors: ReturnType<typeof getColors> | ReturnType<typeof getPatternOrderColors>;
 
 	constructor(context: DrawingContext) {
 		this.ctx = context.ctx;

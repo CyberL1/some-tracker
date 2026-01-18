@@ -5,6 +5,8 @@
 	--font-sans: 'Fira Code', sans-serif;
 	--font-mono: 'Fira Code', monospace;
 
+	/* Default theme colors - must match BUILTIN_THEMES[0] in src/lib/config/themes.ts
+	   These are needed for initial render before JavaScript applies the theme */
 	--color-pattern-bg: #1e1e2e;
 	--color-pattern-text: #cdd6f4;
 	--color-pattern-empty: #313244;
@@ -24,6 +26,29 @@
 	--color-pattern-table: #a6e3a1;
 	--color-pattern-editing: #a6e3a1;
 	--color-pattern-note-off: #f38ba8;
+	--color-pattern-table-off: #6ebd5a;
+	--color-order-bg: #1e1e2e;
+	--color-order-text: #cdd6f4;
+	--color-order-empty: #313244;
+	--color-order-selected: #45475a;
+	--color-order-hovered: #313244;
+	--color-order-alternate: #181825;
+	--color-order-border: #45475a;
+	--color-app-background: #1e1e2e;
+	--color-app-surface: #181825;
+	--color-app-surface-secondary: #11111b;
+	--color-app-surface-hover: #313244;
+	--color-app-surface-active: #45475a;
+	--color-app-text-primary: #cdd6f4;
+	--color-app-text-secondary: #bac2de;
+	--color-app-text-tertiary: #a6adc8;
+	--color-app-text-muted: #6c7086;
+	--color-app-border: #313244;
+	--color-app-border-hover: #45475a;
+	--color-app-primary: #89b4fa;
+	--color-app-primary-hover: #74c7ec;
+	--color-app-secondary: #b4befe;
+	--color-app-secondary-hover: #cba6f7;
 }
 
 /* Hide number input spinners/steppers */
@@ -49,17 +74,18 @@ select {
 }
 
 ::-webkit-scrollbar-track {
-	@apply !bg-[#1e1e2e];
+	background: var(--color-app-background);
 }
 ::-webkit-scrollbar-thumb {
-	@apply rounded-sm !bg-[#45475a];
+	@apply rounded-sm;
+	background: var(--color-app-border);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	@apply !bg-[#585b70];
+	background: var(--color-app-border-hover);
 }
 
 html {
-	scrollbar-color: #45475a #1e1e2e;
-	background: #1e1e2e;
+	scrollbar-color: var(--color-app-border) var(--color-app-background);
+	background: var(--color-app-background);
 }

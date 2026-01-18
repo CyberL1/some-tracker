@@ -25,14 +25,14 @@
 </script>
 
 <div class="flex h-full flex-col">
-	<div class="flex items-center justify-between border-b border-neutral-700 bg-neutral-800/50">
+	<div class="flex items-center justify-between border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)]">
 		<div class="flex">
 			{#each tabs as tab}
 				<button
 					class="group relative flex cursor-pointer items-center gap-2 px-4 py-1 transition-colors {activeTabId ===
 					tab.id
-						? 'text-neutral-100'
-						: 'text-neutral-400 hover:text-neutral-200'}"
+						? 'text-[var(--color-app-text-primary)]'
+						: 'text-[var(--color-app-text-muted)] hover:text-[var(--color-app-text-secondary)]'}"
 					onclick={() => selectTab(tab.id)}>
 					{#if tab.icon}
 						{@const Icon = tab.icon}
@@ -40,7 +40,7 @@
 					{/if}
 					<span>{tab.label}</span>
 					{#if activeTabId === tab.id}
-						<div class="absolute right-0 bottom-0 left-0 h-0.5 bg-blue-500"></div>
+						<div class="absolute right-0 bottom-0 left-0 h-0.5 bg-[var(--color-app-primary)]"></div>
 					{/if}
 				</button>
 			{/each}

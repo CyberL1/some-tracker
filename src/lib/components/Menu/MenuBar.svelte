@@ -106,7 +106,7 @@
 	}
 </script>
 
-<div class="flex w-full items-center border-b border-neutral-600 bg-neutral-700 px-2 text-center">
+<div class="flex w-full items-center border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-hover)] px-2 text-center">
 	{#each menuItems as item}
 		<MenuButton
 			label={item.label}
@@ -119,9 +119,9 @@
 
 	<div class="ml-auto flex items-center gap-3">
 		<div class="flex items-center gap-1.5">
-			<IconCarbonLayers class="h-3.5 w-3.5 text-neutral-400" />
-			<label for="octave-input" class="text-xs font-medium text-neutral-300">Octave:</label>
-			<div class="flex items-center rounded border border-neutral-600 bg-neutral-900">
+			<IconCarbonLayers class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+			<label for="octave-input" class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Octave:</label>
+			<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
 					bind:value={octaveValue}
 					id="octave-input"
@@ -137,28 +137,28 @@
 							(e.target as HTMLInputElement)?.blur();
 						}
 					}} />
-				<div class="flex flex-col border-l border-neutral-600">
+				<div class="flex flex-col border-l border-[var(--color-app-border)]">
 					<button
 						type="button"
-						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-neutral-600 transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-[var(--color-app-border)] transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={incrementOctave}
 						title="Increment octave">
-						<IconCarbonChevronUp class="h-2.5 w-2.5 text-neutral-400" />
+						<IconCarbonChevronUp class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 					<button
 						type="button"
-						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={decrementOctave}
 						title="Decrement octave">
-						<IconCarbonChevronDown class="h-2.5 w-2.5 text-neutral-400" />
+						<IconCarbonChevronDown class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 				</div>
 			</div>
 		</div>
 		<div class="flex items-center gap-1.5">
-			<IconCarbonArrowDown class="h-3.5 w-3.5 text-neutral-400" />
-			<label for="step-input" class="text-xs font-medium text-neutral-300">Step:</label>
-			<div class="flex items-center rounded border border-neutral-600 bg-neutral-900">
+			<IconCarbonArrowDown class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+			<label for="step-input" class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Step:</label>
+			<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
 					bind:value={stepValue}
 					id="step-input"
@@ -180,20 +180,20 @@
 							commitStep();
 						}
 					}} />
-				<div class="flex flex-col border-l border-neutral-600">
+				<div class="flex flex-col border-l border-[var(--color-app-border)]">
 					<button
 						type="button"
-						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-neutral-600 transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-[var(--color-app-border)] transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={incrementStep}
 						title="Increment step">
-						<IconCarbonChevronUp class="h-2.5 w-2.5 text-neutral-400" />
+						<IconCarbonChevronUp class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 					<button
 						type="button"
-						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-neutral-700"
+						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={decrementStep}
 						title="Decrement step">
-						<IconCarbonChevronDown class="h-2.5 w-2.5 text-neutral-400" />
+						<IconCarbonChevronDown class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 				</div>
 			</div>
@@ -208,7 +208,7 @@
 							editorStateStore.setEnvelopeAsNote(envelopeAsNote);
 						}}
 						title="Envelope as Note" />
-					<span class="text-xs font-medium text-neutral-300">Env as Note</span>
+					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Env as Note</span>
 				</label>
 			</div>
 		{/if}
@@ -216,7 +216,7 @@
 
 	<div class="absolute top-3.5 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1">
 		<button
-			class="rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
+			class="rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-active)] p-2 transition-colors hover:cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
 			title="Play from beginning"
 			onclick={() => {
 				onAction?.({ action: 'playFromBeginning' });
@@ -225,7 +225,7 @@
 		</button>
 
 		<button
-			class="rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
+			class="rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-active)] p-2 transition-colors hover:cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
 			title={playbackStore.isPlaying ? 'Pause' : 'Play/Resume'}
 			onclick={() => {
 				onAction?.({ action: 'togglePlayback' });
@@ -238,7 +238,7 @@
 		</button>
 
 		<button
-			class="rounded-sm border border-neutral-400 bg-neutral-600 p-2 transition-colors hover:cursor-pointer hover:bg-neutral-500"
+			class="rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-active)] p-2 transition-colors hover:cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
 			title="Play from cursor position"
 			onclick={() => {
 				onAction?.({ action: 'playFromCursor' });

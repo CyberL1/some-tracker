@@ -23,9 +23,28 @@
 	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
 	import { convertVT2String } from './lib/services/file/vt-converter';
 	import { editorStateStore } from './lib/stores/editor-state.svelte';
+	import { themeStore } from './lib/stores/theme.svelte';
+	import { themeService } from './lib/services/theme/theme-service';
+	import { themeEditorStore } from './lib/stores/theme-editor.svelte';
+	import ThemeEditorModal from './lib/components/Theme/ThemeEditorModal.svelte';
+	import { tick } from 'svelte';
 
 	settingsStore.init();
 	editorStateStore.init();
+	themeStore.init(themeService);
+
+	let lastAppliedThemeId = $state<string | null>(null);
+
+	$effect(() => {
+		const activeThemeId = themeStore.state.activeThemeId;
+		if (activeThemeId === lastAppliedThemeId) return;
+
+		const activeTheme = themeStore.getActiveTheme();
+		if (activeTheme) {
+			lastAppliedThemeId = activeThemeId;
+			themeService.applyTheme(activeTheme);
+		}
+	});
 
 	let container: { audioService: AudioService } = $state({
 		audioService: new AudioService()
@@ -301,7 +320,7 @@
 </script>
 
 <main
-	class="flex h-screen flex-col gap-1 overflow-hidden bg-neutral-800 font-sans text-xs text-neutral-100">
+	class="flex h-screen flex-col gap-1 overflow-hidden bg-[var(--color-app-surface-secondary)] font-sans text-xs text-[var(--color-app-text-primary)]">
 	<MenuBar {menuItems} onAction={handleMenuAction} {songs} />
 	<div class="flex-1 overflow-hidden">
 		<SongView
@@ -313,4 +332,19 @@
 			chipProcessors={container.audioService.chipProcessors} />
 	</div>
 	<ModalContainer />
+
+	{#if themeEditorStore.editingTheme}
+		<ThemeEditorModal
+			theme={themeEditorStore.editingTheme.theme}
+			isNew={themeEditorStore.editingTheme.isNew}
+			resolve={async () => {
+				const callback = themeEditorStore.onSaveCallback;
+				themeEditorStore.setEditingTheme(null, false);
+				await tick();
+				callback?.();
+			}}
+			dismiss={() => {
+				themeEditorStore.setEditingTheme(null, false);
+			}} />
+	{/if}
 </main>

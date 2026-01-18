@@ -24,7 +24,7 @@
 
 <div class="flex items-center gap-3 {className}">
 	{#if label}
-		<label for={id} class="text-xs font-medium text-neutral-200">{label}</label>
+		<label for={id} class="text-xs font-medium text-[var(--color-app-text-secondary)]">{label}</label>
 	{/if}
 	<input
 		{id}
@@ -35,7 +35,7 @@
 		bind:value
 		class="flex-1 cursor-pointer" />
 	{#if showValue}
-		<span class="w-12 text-right text-xs text-neutral-300">{value}</span>
+		<span class="w-12 text-right text-xs text-[var(--color-app-text-tertiary)]">{value}</span>
 	{/if}
 </div>
 

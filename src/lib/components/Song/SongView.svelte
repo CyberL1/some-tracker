@@ -242,13 +242,13 @@
 		{/each}
 	</div>
 	<div
-		class="relative z-10 h-full shrink-0 border-l border-neutral-700 bg-neutral-800 transition-all duration-300 {isRightPanelExpanded
+		class="relative z-10 h-full shrink-0 border-l border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] transition-all duration-300 {isRightPanelExpanded
 			? 'w-[1200px]'
 			: 'w-96'}">
 		<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
 			{#snippet headerActions()}
 				<button
-					class="flex cursor-pointer items-center justify-center rounded px-2 py-1 text-neutral-300 transition-colors hover:bg-neutral-700 hover:text-neutral-100"
+					class="flex cursor-pointer items-center justify-center rounded px-2 py-1 text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]"
 					onclick={() => (isRightPanelExpanded = !isRightPanelExpanded)}
 					title={isRightPanelExpanded ? 'Collapse panel' : 'Expand panel'}>
 					{#if isRightPanelExpanded}

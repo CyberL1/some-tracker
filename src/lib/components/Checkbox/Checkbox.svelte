@@ -14,9 +14,9 @@
 		type="checkbox"
 		{...rest}
 		bind:checked
-		class="h-4 w-4 cursor-pointer rounded border-neutral-600 bg-neutral-800 text-blue-500 focus:ring-2 focus:ring-blue-500" />
+		class="h-4 w-4 cursor-pointer rounded border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] text-[var(--color-app-primary)] focus:ring-2 focus:ring-[var(--color-app-primary)]" />
 	{#if showStatus}
-		<span class="text-xs text-neutral-300">
+		<span class="text-xs text-[var(--color-app-text-tertiary)]">
 			{checked ? 'Enabled' : 'Disabled'}
 		</span>
 	{/if}

@@ -54,8 +54,8 @@
 	<button
 		onclick={handleClick}
 		onmouseenter={handleMouseEnter}
-		class="menu-button px-2 pt-2 pb-1 text-xs hover:cursor-pointer hover:bg-neutral-600"
-		class:bg-neutral-600={showPanel}>
+		class="menu-button px-2 pt-2 pb-1 text-xs text-[var(--color-app-text-primary)] hover:cursor-pointer hover:bg-[var(--color-app-surface-active)] transition-colors"
+		class:bg-[var(--color-app-surface-active)]={showPanel}>
 		{label}
 	</button>
 

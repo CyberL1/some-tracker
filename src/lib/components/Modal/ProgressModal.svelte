@@ -63,24 +63,24 @@
 	});
 </script>
 
-<div class="flex items-center gap-2 border-b border-neutral-600 bg-neutral-900 px-2 py-1">
-	<h2 id="progress-modal-title" class="text-xs font-bold text-neutral-100">
+<div class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-2 py-1">
+	<h2 id="progress-modal-title" class="text-xs font-bold text-[var(--color-app-text-primary)]">
 		Exporting {exportLabel}
 	</h2>
-	<IconCarbonDownload class="h-3 w-3 text-blue-400" />
+	<IconCarbonDownload class="h-3 w-3 text-[var(--color-app-primary)]" />
 </div>
 
 <div class="p-3">
 	{#if message}
-		<p class="mb-3 text-xs text-neutral-400">{message}</p>
+		<p class="mb-3 text-xs text-[var(--color-app-text-muted)]">{message}</p>
 	{/if}
 
-	<div class="relative h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+	<div class="relative h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-app-surface-secondary)]">
 		<div
-			class="h-full bg-blue-500 transition-all duration-300 ease-out"
+			class="h-full bg-[var(--color-app-primary)] transition-all duration-300 ease-out"
 			style="width: {progressPercent}%">
 			<div
-				class="absolute inset-0 bg-blue-400 opacity-30"
+				class="absolute inset-0 bg-[var(--color-app-primary)] opacity-30"
 				style="width: 100%; animation: shimmer 1.5s ease-in-out infinite;">
 			</div>
 		</div>

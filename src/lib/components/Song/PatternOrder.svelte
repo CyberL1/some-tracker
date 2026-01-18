@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { Pattern } from '../../models/song';
-	import { getColors } from '../../utils/colors';
+	import { getPatternOrderColors } from '../../utils/pattern-order-colors';
 	import { getFonts } from '../../utils/fonts';
 	import { setupCanvas as setupCanvasUtil } from '../../utils/canvas-utils';
 	import { PatternService } from '../../services/pattern/pattern-service';
 	import { PatternOrderRenderer } from '../../ui-rendering/pattern-order-renderer';
 	import { playbackStore } from '../../stores/playback.svelte';
+	import { themeService } from '../../services/theme/theme-service';
 	import IconCarbonUnlink from '~icons/carbon/unlink';
 	import IconCarbonCopy from '~icons/carbon/copy';
 	import IconCarbonSubtract from '~icons/carbon/subtract';
@@ -48,7 +49,7 @@
 	let ctx: CanvasRenderingContext2D;
 	const canvasWidth = CELL_WIDTH + PADDING * 2 + BUTTON_COLUMN_WIDTH + BUTTON_SPACING;
 
-	let COLORS = getColors();
+	let COLORS = $state(getPatternOrderColors());
 	let FONTS = getFonts();
 	let renderer: PatternOrderRenderer | null = null;
 
@@ -119,6 +120,17 @@
 			fadeHeight: FADE_HEIGHT
 		});
 	}
+
+	$effect(() => {
+		const unsubscribe = themeService.onColorChange(() => {
+			COLORS = getPatternOrderColors();
+			if (ctx && canvas) {
+				setupCanvas();
+				draw();
+			}
+		});
+		return unsubscribe;
+	});
 
 	function getVisibleRange() {
 		const visibleCount = Math.floor(canvasHeight / CELL_HEIGHT);

@@ -9,16 +9,18 @@
 	import ConfirmModal from '../Modal/ConfirmModal.svelte';
 	import { open } from '../../services/modal/modal-service';
 	import { TabView } from '../TabView';
+	import AppearanceSettings from './AppearanceSettings.svelte';
 
-	let { resolve, dismiss, onCloseRef } = $props<{
+	let { resolve, dismiss, onCloseRef, initialTabId } = $props<{
 		resolve?: (value?: any) => void;
 		dismiss?: (error?: any) => void;
 		onCloseRef?: { current: (() => void) | null };
+		initialTabId?: string;
 	}>();
 
 	const currentSettings = settingsStore.get();
 	let tempSettings = $state<Settings>({ ...currentSettings });
-	let activeTabId = $state('general');
+	let activeTabId = $state(initialTabId || 'general');
 
 	const hasUnsavedChanges = $derived(
 		settingsItems.some((item) => tempSettings[item.setting] !== currentSettings[item.setting])
@@ -26,7 +28,8 @@
 
 	const tabs = [
 		{ id: 'general', label: 'General' },
-		{ id: 'keyboard', label: 'Keyboard' }
+		{ id: 'keyboard', label: 'Keyboard' },
+		{ id: 'appearance', label: 'Appearance' }
 	];
 
 	function handleSave() {
@@ -57,8 +60,8 @@
 </script>
 
 <div class="flex h-[600px] w-[600px] flex-col">
-	<div class="flex items-center gap-2 border-b border-neutral-600 bg-neutral-900 px-4 py-3">
-		<h2 class="text-sm font-bold text-neutral-100">Settings</h2>
+	<div class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">Settings</h2>
 	</div>
 
 	<TabView {tabs} bind:activeTabId>
@@ -99,14 +102,16 @@
 						</FormField>
 					{/each}
 					{#if keyboardSettings.length === 0}
-						<p class="text-sm text-neutral-400">No keyboard settings available yet.</p>
+						<p class="text-sm text-[var(--color-app-text-muted)]">No keyboard settings available yet.</p>
 					{/if}
+				{:else if tabId === 'appearance'}
+					<AppearanceSettings onCloseSettings={dismiss} />
 				{/if}
 			</div>
 		{/snippet}
 	</TabView>
 
-	<div class="flex justify-end gap-2 border-t border-neutral-600 bg-neutral-900 px-4 py-3">
+	<div class="flex justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<Button variant="secondary" onclick={handleDismiss}>Dismiss</Button>
 		<Button variant="primary" onclick={handleSave}>Save</Button>
 	</div>
