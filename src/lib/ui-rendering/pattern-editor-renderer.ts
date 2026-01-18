@@ -2,8 +2,10 @@ import type { PatternEditorTextParser, FieldSegment } from './pattern-editor-tex
 import type { Chip } from '../chips/types';
 import { BaseCanvasRenderer, type BaseRenderOptions } from './base-canvas-renderer';
 import { PatternTemplateParser } from '../services/pattern/editing/pattern-template-parsing';
+import type { getColors } from '../utils/colors';
 
-export interface PatternEditorRenderOptions extends BaseRenderOptions {
+export interface PatternEditorRenderOptions extends Omit<BaseRenderOptions, 'colors'> {
+	colors: ReturnType<typeof getColors>;
 	lineHeight: number;
 	schema: Chip['schema'];
 }
@@ -30,11 +32,13 @@ export interface ChannelLabelData {
 export class PatternEditorRenderer extends BaseCanvasRenderer {
 	private lineHeight: number;
 	private schema: Chip['schema'];
+	private patternColors: ReturnType<typeof getColors>;
 
 	constructor(options: PatternEditorRenderOptions) {
 		super(options);
 		this.lineHeight = options.lineHeight;
 		this.schema = options.schema;
+		this.patternColors = options.colors;
 	}
 
 	drawRow(data: RowRenderData): void {
@@ -46,13 +50,13 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 		const channelPositions = this.calculateChannelPositions(data.rowString);
 		const labelY = this.lineHeight / 2;
 
-		this.fillRect(0, 0, this.canvasWidth, this.lineHeight, this.colors.patternBg);
+		this.fillRect(0, 0, this.canvasWidth, this.lineHeight, this.patternColors.patternBg);
 
 		for (let i = 0; i < data.channelLabels.length && i < channelPositions.length; i++) {
 			const label = `Channel ${data.channelLabels[i]}`;
 			const x = channelPositions[i];
 			const isMuted = data.channelMuted[i] ?? false;
-			const color = isMuted ? this.colors.patternEmpty : this.colors.patternText;
+			const color = isMuted ? this.patternColors.patternEmpty : this.patternColors.patternText;
 
 			this.fillText(label, x, labelY, color);
 		}
@@ -150,7 +154,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 				data.y,
 				this.canvasWidth,
 				this.lineHeight,
-				this.colors.patternAlternate
+				this.patternColors.patternAlternate
 			);
 		}
 
@@ -174,7 +178,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 					data.y,
 					selectionWidth,
 					this.lineHeight,
-					this.colors.patternCellSelected,
+					this.patternColors.patternCellSelected,
 					0.25
 				);
 			}
@@ -184,7 +188,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 				data.y,
 				this.canvasWidth,
 				this.lineHeight,
-				this.colors.patternSelected
+				this.patternColors.patternSelected
 			);
 		}
 
@@ -199,7 +203,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 				data.y,
 				cellPos.width + 2,
 				this.lineHeight,
-				this.colors.patternCellSelected
+				this.patternColors.patternCellSelected
 			);
 		}
 	}
@@ -296,11 +300,11 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 
 	private getEmptyFieldColor(data: RowRenderData): string {
 		if (data.isSelected) {
-			return this.colors.patternEmptySelected;
+			return this.patternColors.patternEmptySelected;
 		}
 		return this.isAlternateRow(data.rowIndex)
-			? this.colors.patternAlternateEmpty
-			: this.colors.patternEmpty;
+			? this.patternColors.patternAlternateEmpty
+			: this.patternColors.patternEmpty;
 	}
 
 	private determineCharColor(
@@ -309,7 +313,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 		currentSegment: FieldSegment | undefined,
 		index: number
 	): string {
-		let color = this.colors.patternText;
+		let color = this.patternColors.patternText;
 		if (currentSegment) {
 			color = currentSegment.color;
 		}
@@ -350,7 +354,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 
 			if (isNoteField) {
 				if (fieldText === 'OFF') {
-					return this.colors.patternNoteOff;
+					return this.patternColors.patternNoteOff;
 				}
 
 				const validNotePattern = /^[A-G][#-]\d$/;
@@ -363,7 +367,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 
 			const isTableField = currentSegment?.fieldKey === 'table';
 			if (isTableField && fieldText === '00') {
-				return this.colors.patternTableOff;
+				return this.patternColors.patternTableOff;
 			}
 		}
 

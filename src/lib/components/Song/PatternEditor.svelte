@@ -431,6 +431,7 @@
 	$effect(() => {
 		const unsubscribe = themeService.onColorChange(() => {
 			COLORS = getColors();
+			clearAllCaches();
 			if (ctx && canvas && renderer && textParser) {
 				setupCanvas();
 				draw();
