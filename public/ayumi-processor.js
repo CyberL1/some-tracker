@@ -28,6 +28,9 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.previewActiveChannels = new Set();
 		this.previewSampleCounters = new Map();
 		this.pendingRowAfterPatternChange = null;
+		this.lastPositionUpdateTime = 0;
+		this.positionUpdateThrottleMs = 16;
+		this.pendingPositionUpdate = null;
 	}
 
 	async handleMessage(event) {
@@ -154,7 +157,6 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	handleSetPatternData(data) {
 		this.state.setPattern(data.pattern, data.patternOrderIndex);
 
-		// If we have a pending row from a pattern change, apply it now (clamping handled by setPattern)
 		if (this.pendingRowAfterPatternChange !== null) {
 			this.state.currentRow = this.pendingRowAfterPatternChange;
 			this.state.currentTick = 0;
@@ -455,6 +457,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			}
 
 			for (let i = 0; i < numSamples; i++) {
+				this.state.sampleCounter++;
+
 				if (this.previewActiveChannels.size > 0) {
 					for (const channel of this.previewActiveChannels) {
 						const counter = this.previewSampleCounters.get(channel);
@@ -484,12 +488,23 @@ class AyumiProcessor extends AudioWorkletProcessor {
 							this.registerState
 						);
 
-						this.port.postMessage({
-							type: 'position_update',
-							currentRow: this.state.currentRow,
-							currentTick: this.state.currentTick,
-							currentPatternOrderIndex: this.state.currentPatternOrderIndex
-						});
+						const now = currentTime * 1000;
+						if (now - this.lastPositionUpdateTime >= this.positionUpdateThrottleMs) {
+							this.port.postMessage({
+								type: 'position_update',
+								currentRow: this.state.currentRow,
+								currentTick: this.state.currentTick,
+								currentPatternOrderIndex: this.state.currentPatternOrderIndex
+							});
+							this.lastPositionUpdateTime = now;
+							this.pendingPositionUpdate = null;
+						} else {
+							this.pendingPositionUpdate = {
+								currentRow: this.state.currentRow,
+								currentTick: this.state.currentTick,
+								currentPatternOrderIndex: this.state.currentPatternOrderIndex
+							};
+						}
 					}
 
 					this.enforceMuteState();
@@ -505,13 +520,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 					const needsPatternChange = this.state.advancePosition();
 					if (needsPatternChange) {
+						this.state.currentPattern = null;
 						this.port.postMessage({
 							type: 'request_pattern',
 							patternOrderIndex: this.state.currentPatternOrderIndex
 						});
 					}
 
-					this.state.sampleCounter = 0;
+					this.state.sampleCounter -= this.state.samplesPerTick;
 				}
 
 				this.ayumiEngine.process();
@@ -535,8 +551,18 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					leftChannel[i] = leftValue;
 					rightChannel[i] = rightValue;
 				}
+			}
 
-				this.state.sampleCounter++;
+			if (this.pendingPositionUpdate && !this.paused) {
+				const now = currentTime * 1000;
+				if (now - this.lastPositionUpdateTime >= this.positionUpdateThrottleMs) {
+					this.port.postMessage({
+						type: 'position_update',
+						...this.pendingPositionUpdate
+					});
+					this.lastPositionUpdateTime = now;
+					this.pendingPositionUpdate = null;
+				}
 			}
 		} else {
 			console.error('Invalid output configuration');
