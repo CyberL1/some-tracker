@@ -29,7 +29,7 @@
 		<div class="flex">
 			{#each tabs as tab}
 				<button
-					class="group relative flex cursor-pointer items-center gap-2 px-4 py-1 transition-colors {activeTabId ===
+					class="group relative flex cursor-pointer text-sm items-center gap-2 px-4 py-1 transition-colors {activeTabId ===
 					tab.id
 						? 'text-[var(--color-app-text-primary)]'
 						: 'text-[var(--color-app-text-muted)] hover:text-[var(--color-app-text-secondary)]'}"

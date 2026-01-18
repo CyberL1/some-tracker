@@ -9,7 +9,7 @@
 		class: className
 	}: {
 		children: Snippet;
-		onclick: () => void;
+		onclick: (e: MouseEvent) => void;
 		variant?: 'default' | 'primary' | 'secondary';
 		class?: ClassValue;
 	} = $props();

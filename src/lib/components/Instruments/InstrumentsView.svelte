@@ -177,7 +177,7 @@
 						{#if isEditing}
 							<div
 								class="group relative flex shrink-0 flex-col items-center border-r border-[var(--color-app-border)] p-3 {isSelected
-									? 'bg-[var(--color-app-primary)]/30'
+									? 'bg-[var(--color-app-primary)]'
 									: isUsed
 										? 'bg-[var(--color-app-surface-secondary)]/40 hover:bg-[var(--color-app-surface-secondary)]/70'
 										: 'bg-[var(--color-app-background)]/60 hover:bg-[var(--color-app-background)]/80'}">
@@ -218,7 +218,7 @@
 								class="group relative flex shrink-0 flex-col items-center border-r border-[var(--color-app-border)]">
 								<button
 									class="flex w-full shrink-0 cursor-pointer flex-col items-center p-3 {isSelected
-										? 'bg-[var(--color-app-primary)]/30'
+										? 'bg-[var(--color-app-primary)]'
 										: isUsed
 											? 'bg-[var(--color-app-surface-secondary)]/40 hover:bg-[var(--color-app-surface-secondary)]/70'
 											: 'bg-[var(--color-app-background)]/60 hover:bg-[var(--color-app-background)]/80'}"
@@ -226,7 +226,7 @@
 									ondblclick={() => startEditingInstrumentId(index)}>
 									<span
 										class="font-mono text-xs font-semibold {isSelected
-											? 'text-[var(--color-app-primary)]'
+											? 'text-[var(--color-app-text-secondary)]'
 											: isUsed
 												? 'text-[var(--color-app-text-tertiary)] group-hover:text-[var(--color-app-text-primary)]'
 												: 'text-[var(--color-app-text-muted)] group-hover:text-[var(--color-app-text-tertiary)]'}">
@@ -234,7 +234,7 @@
 									</span>
 									<span
 										class="text-xs {isSelected
-											? 'text-[var(--color-app-primary)]/90'
+											? 'text-[var(--color-app-text-secondary)]'
 											: isUsed
 												? 'text-[var(--color-app-text-muted)] group-hover:text-[var(--color-app-text-tertiary)]'
 												: 'text-[var(--color-app-text-muted)] group-hover:text-[var(--color-app-text-muted)]'}">
