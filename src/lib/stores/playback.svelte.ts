@@ -1,10 +1,15 @@
-let isPlaying = $state(false);
+class PlaybackStore {
+	private _state = $state({
+		isPlaying: false
+	});
 
-export const playbackStore = {
-	get isPlaying() {
-		return isPlaying;
-	},
-	set isPlaying(value: boolean) {
-		isPlaying = value;
+	get isPlaying(): boolean {
+		return this._state.isPlaying;
 	}
-};
+
+	set isPlaying(value: boolean) {
+		this._state.isPlaying = value;
+	}
+}
+
+export const playbackStore = new PlaybackStore();

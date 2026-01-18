@@ -208,6 +208,17 @@
 				return;
 			}
 
+			if (data.action === 'paste-without-erasing') {
+				const event = new KeyboardEvent('keydown', {
+					key: 'v',
+					ctrlKey: true,
+					shiftKey: true,
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
 			if (data.action === 'playFromBeginning') {
 				if (playbackStore.isPlaying) {
 					playbackStore.isPlaying = false;

@@ -635,6 +635,7 @@
 			onCopy: copySelection,
 			onCut: cutSelection,
 			onPaste: pasteSelection,
+			onPasteWithoutErasing: pasteSelectionWithoutErasing,
 			onDelete: deleteSelection,
 			onSelectAll: (column: number, startRow: number, endRow: number) => {
 				selectionStartRow = startRow;
@@ -1131,6 +1132,18 @@
 		const originalPattern = findOrCreatePattern(patternId);
 
 		ClipboardService.pasteSelection(createClipboardContext(), (updatedPattern) => {
+			recordBulkPatternEdit(originalPattern, updatedPattern);
+			updatePatternInArray(updatedPattern);
+			clearAllCaches();
+			draw();
+		});
+	}
+
+	function pasteSelectionWithoutErasing(): void {
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const originalPattern = findOrCreatePattern(patternId);
+
+		ClipboardService.pasteSelectionWithoutErasing(createClipboardContext(), (updatedPattern) => {
 			recordBulkPatternEdit(originalPattern, updatedPattern);
 			updatePatternInArray(updatedPattern);
 			clearAllCaches();

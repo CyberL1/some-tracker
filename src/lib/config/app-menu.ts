@@ -76,6 +76,13 @@ export const menuItems: MenuItem[] = [
 				action: 'paste',
 				shortcut: `${modKey}+V`,
 				disabled: () => !clipboardStore.hasData
+			},
+			{
+				label: 'Magic paste',
+				type: 'normal',
+				action: 'paste-without-erasing',
+				shortcut: `${modKey}+Shift+V`,
+				disabled: () => !clipboardStore.hasData
 			}
 		]
 	},

@@ -159,4 +159,85 @@ export class ClipboardService {
 			onPatternUpdate(pattern);
 		}
 	}
+
+	private static isEmptyValue(value: unknown, fieldType: string, fieldKey: string): boolean {
+		if (value === null || value === undefined) return true;
+
+		if (fieldType === 'note') {
+			if (typeof value === 'string' && value === '---') return true;
+			return false;
+		}
+
+		if (fieldKey === 'effect' || fieldKey === 'envelopeEffect') {
+			if (typeof value === 'object' && value !== null) {
+				const effect = value as { effect?: number; delay?: number; parameter?: number };
+				return (
+					(effect.effect === 0 || effect.effect === undefined) &&
+					(effect.delay === 0 || effect.delay === undefined) &&
+					(effect.parameter === 0 || effect.parameter === undefined)
+				);
+			}
+			return false;
+		}
+
+		if (fieldType === 'hex' || fieldType === 'dec' || fieldType === 'symbol') {
+			return value === 0;
+		}
+
+		if (fieldType === 'text') {
+			return value === '';
+		}
+
+		return false;
+	}
+
+	static pasteSelectionWithoutErasing(
+		context: ClipboardContext,
+		onPatternUpdate: (pattern: Pattern) => void
+	): void {
+		const clipboardData = clipboardStore.clipboardData;
+		if (!clipboardData) return;
+
+		const {
+			pattern: originalPattern,
+			selectedRow,
+			selectedColumn,
+			getCellPositions,
+			getPatternRowData,
+			createEditingContext
+		} = context;
+		let pattern = originalPattern;
+
+		for (const clipCell of clipboardData.cells) {
+			if (this.isEmptyValue(clipCell.value, clipCell.fieldType, clipCell.fieldKey)) {
+				continue;
+			}
+
+			const targetRow = selectedRow + clipCell.row;
+			const targetCol = selectedColumn + clipCell.column;
+
+			if (targetRow < 0 || targetRow >= pattern.length) continue;
+
+			const rowString = getPatternRowData(pattern, targetRow);
+			const cellPositions = getCellPositions(rowString, targetRow);
+			if (targetCol < 0 || targetCol >= cellPositions.length) continue;
+
+			const cell = cellPositions[targetCol];
+			if (!cell.fieldKey || cell.fieldKey !== clipCell.fieldKey) continue;
+
+			const editingContext = createEditingContext(pattern, targetRow, targetCol);
+			const fieldInfo = PatternFieldDetection.detectFieldAtCursor(editingContext);
+			if (!fieldInfo) continue;
+
+			pattern = PatternValueUpdates.updateFieldValue(
+				{ ...editingContext, pattern },
+				fieldInfo,
+				clipCell.value as string | number
+			);
+		}
+
+		if (pattern !== originalPattern) {
+			onPatternUpdate(pattern);
+		}
+	}
 }

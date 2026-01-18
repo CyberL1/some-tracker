@@ -5,7 +5,6 @@
 		TuningTableSupport,
 		InstrumentSupport
 	} from '../../chips/base/processor';
-	import type { Chip } from '../../chips/types';
 	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Table } from '../../models/project';
 	import Card from '../Card/Card.svelte';
@@ -133,6 +132,7 @@
 			chipProcessor.sendInitPattern(currentPattern, sharedPatternOrderIndex);
 			chipProcessor.sendInitSpeed(song.initialSpeed);
 
+			//TODO: this should be generic
 			if (chipProcessor.chip.type === 'ay') {
 				const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
 				const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;

@@ -14,6 +14,7 @@ export interface PatternKeyboardShortcutsContext {
 	onCopy: () => void;
 	onCut: () => void;
 	onPaste: () => void;
+	onPasteWithoutErasing: () => void;
 	onDelete: () => void;
 	onSelectAll: (column: number, startRow: number, endRow: number) => void;
 	onTogglePlayback: () => void;
@@ -60,6 +61,11 @@ export class PatternKeyboardShortcutsService {
 
 		if ((event.ctrlKey || event.metaKey) && key === 'x') {
 			shortcutsContext.onCut();
+			return { handled: true, shouldPreventDefault: true };
+		}
+
+		if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'v') {
+			shortcutsContext.onPasteWithoutErasing();
 			return { handled: true, shouldPreventDefault: true };
 		}
 
