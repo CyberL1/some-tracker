@@ -37,7 +37,6 @@
 	import {
 		PatternFieldEditAction,
 		BulkPatternEditAction,
-		PatternLengthChangeAction,
 		type PatternEditContext,
 		type CursorPosition
 	} from '../../models/actions';
@@ -318,21 +317,18 @@
 			return;
 		}
 
-		const oldPattern = pattern;
 		const resizedPattern = PatternService.resizePattern(pattern, newLength, schema);
-		const oldCursorPosition = getCursorPosition();
+		const newPatterns = PatternService.updatePatternInArray(patterns, resizedPattern);
+		patterns = newPatterns;
 
-		const action = new PatternLengthChangeAction(
-			createEditContext(),
-			oldPattern,
-			resizedPattern,
-			oldCursorPosition
-		);
-		action.execute();
-		undoRedoStore.pushAction(action);
-		
+		if (selectedRow >= resizedPattern.length) {
+			selectedRow = resizedPattern.length - 1;
+		}
+
 		lastDrawnPatternLength = -1;
 		lastVisibleRowsCache = null;
+		clearAllCaches();
+		draw();
 	}
 
 	export function playFromCursor() {
