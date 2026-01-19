@@ -52,6 +52,12 @@
 	let rightPanelActiveTabId = $state('tables');
 	let isRightPanelExpanded = $state(false);
 	
+	$effect(() => {
+		if (rightPanelActiveTabId === 'details') {
+			isRightPanelExpanded = false;
+		}
+	});
+	
 	let patternLengthValue = $state('');
 	let isPatternLengthInputFocused = $state(false);
 	let isPatternLengthButtonAction = $state(false);
@@ -405,23 +411,11 @@
 			? 'w-[1200px]'
 			: 'w-96'}">
 		<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
-			{#snippet headerActions()}
-				<button
-					class="flex cursor-pointer items-center justify-center rounded px-2 py-1 text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]"
-					onclick={() => (isRightPanelExpanded = !isRightPanelExpanded)}
-					title={isRightPanelExpanded ? 'Collapse panel' : 'Expand panel'}>
-					{#if isRightPanelExpanded}
-						<IconCarbonMinimize class="h-4 w-4" />
-					{:else}
-						<IconCarbonMaximize class="h-4 w-4" />
-					{/if}
-				</button>
-			{/snippet}
 			{#snippet children(tabId)}
 				{#if tabId === 'tables'}
-					<TablesView bind:tables isExpanded={isRightPanelExpanded} />
+					<TablesView bind:tables bind:isExpanded={isRightPanelExpanded} />
 				{:else if tabId === 'instruments'}
-					<InstrumentsView {songs} isExpanded={isRightPanelExpanded} chip={chipProcessors[0].chip} />
+					<InstrumentsView {songs} bind:isExpanded={isRightPanelExpanded} chip={chipProcessors[0].chip} />
 				{:else if tabId === 'details'}
 					<DetailsView {chipProcessors} bind:values={projectSettings} {songs} />
 				{/if}

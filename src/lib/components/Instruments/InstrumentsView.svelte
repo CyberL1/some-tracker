@@ -7,6 +7,8 @@
 	import IconCarbonHexagonOutline from '~icons/carbon/hexagon-outline';
 	import IconCarbonAdd from '~icons/carbon/add';
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
+	import IconCarbonMaximize from '~icons/carbon/maximize';
+	import IconCarbonMinimize from '~icons/carbon/minimize';
 	import Card from '../Card/Card.svelte';
 	import Input from '../Input/Input.svelte';
 	import { getContext } from 'svelte';
@@ -23,7 +25,7 @@
 
 	let {
 		songs = [],
-		isExpanded = false,
+		isExpanded = $bindable(false),
 		chip
 	}: {
 		songs: Song[];
@@ -44,6 +46,7 @@
 	const InstrumentEditor = $derived(chip.instrumentEditor);
 
 	const hexIcon = $derived(asHex ? IconCarbonHexagonSolid : IconCarbonHexagonOutline);
+	const expandIcon = $derived(isExpanded ? IconCarbonMinimize : IconCarbonMaximize);
 
 	const cardActions = $derived([
 		{
@@ -51,6 +54,12 @@
 			icon: hexIcon,
 			onClick: () => (asHex = !asHex),
 			class: asHex ? 'text-[var(--color-app-primary)]' : ''
+		},
+		{
+			label: isExpanded ? 'Collapse panel' : 'Expand panel',
+			icon: expandIcon,
+			onClick: () => (isExpanded = !isExpanded),
+			class: ''
 		}
 	]);
 

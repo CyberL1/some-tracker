@@ -4,6 +4,8 @@
 	import IconCarbonHexagonSolid from '~icons/carbon/hexagon-solid';
 	import IconCarbonHexagonOutline from '~icons/carbon/hexagon-outline';
 	import IconCarbonDataTable from '~icons/carbon/data-table';
+	import IconCarbonMaximize from '~icons/carbon/maximize';
+	import IconCarbonMinimize from '~icons/carbon/minimize';
 	import TableEditor from './TableEditor.svelte';
 	import Card from '../Card/Card.svelte';
 	import { getContext } from 'svelte';
@@ -14,7 +16,7 @@
 
 	let {
 		tables = $bindable(),
-		isExpanded = false
+		isExpanded = $bindable(false)
 	}: {
 		tables: Table[];
 		isExpanded: boolean;
@@ -55,6 +57,7 @@
 	});
 
 	const hexIcon = $derived(asHex ? IconCarbonHexagonSolid : IconCarbonHexagonOutline);
+	const expandIcon = $derived(isExpanded ? IconCarbonMinimize : IconCarbonMaximize);
 
 	const cardActions = $derived([
 		{
@@ -62,6 +65,12 @@
 			icon: hexIcon,
 			onClick: () => (asHex = !asHex),
 			class: asHex ? 'text-[var(--color-app-primary)]' : ''
+		},
+		{
+			label: isExpanded ? 'Collapse panel' : 'Expand panel',
+			icon: expandIcon,
+			onClick: () => (isExpanded = !isExpanded),
+			class: ''
 		}
 	]);
 </script>
