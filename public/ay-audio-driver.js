@@ -286,6 +286,7 @@ class AYAudioDriver {
 	}
 
 	processInstruments(state, registerState) {
+		state.envelopeAddValue = 0;
 		this.processEnvelopeSlide(state);
 		this.processEnvelopePortamento(state);
 		this.processEnvelopeOnOff(state);
@@ -381,14 +382,16 @@ class AYAudioDriver {
 				}
 				state.noiseAddValue = noiseValue & 31;
 			}
-			if (instrumentRow.envelope) {
+
+			//not sure about this "if" condition logic from vt2, for now lets leave it there
+			if (!instrumentRow.noise) {
 				const envelopeAddValue = instrumentRow.envelopeAdd || 0;
 				const envelopeValue =
 					state.channelEnvelopeAccumulator[channelIndex] + envelopeAddValue;
 				if (instrumentRow.envelopeAccumulation) {
 					state.channelEnvelopeAccumulator[channelIndex] = envelopeValue & 0xffff;
 				}
-				state.envelopeAddValue = envelopeValue;
+				state.envelopeAddValue += envelopeValue;
 			}
 
 
@@ -575,9 +578,7 @@ class AYAudioDriver {
 
 	updateEnvelopeWithSlide(state, registerState) {
 		if (state.envelopeBaseValue > 0) {
-			const hasActiveEnvelopeEffect = state.envelopeSlideDelta !== 0 || state.envelopePortamentoActive || state.envelopeArpeggioCounter > 0;
-			const envelopeAddToApply = hasActiveEnvelopeEffect ? 0 : state.envelopeAddValue;
-			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent + envelopeAddToApply;
+			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent + state.envelopeAddValue;
 			const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
 			registerState.envelopePeriod = wrappedValue;
 		}
