@@ -48,7 +48,12 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		this.orderColors = options.colors;
 	}
 
+	updateCanvasHeight(canvasHeight: number): void {
+		this.canvasHeight = canvasHeight;
+	}
+
 	drawBackground(canvasHeight: number): void {
+		this.canvasHeight = canvasHeight;
 		this.fillRect(0, 0, this.canvasWidth, canvasHeight, this.orderColors.orderBg);
 	}
 
@@ -178,13 +183,13 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 	drawScrollIndicators(hasMoreAbove: boolean, hasMoreBelow: boolean): void {
 		if (hasMoreAbove) {
 			this.drawTopFade();
+			this.drawTopArrow();
 		}
 
 		if (hasMoreBelow) {
 			this.drawBottomFade();
+			this.drawBottomArrow();
 		}
-
-		this.drawScrollArrows(hasMoreAbove, hasMoreBelow);
 	}
 
 	private drawTopFade(): void {
@@ -196,31 +201,36 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 	}
 
 	private drawBottomFade(): void {
+		const offset = 10;
+		const fadeStart = this.canvasHeight - this.fadeHeight - offset;
+		const fadeEnd = this.canvasHeight - offset;
 		const bottomGradient = this.createLinearGradient(
 			0,
-			this.canvasHeight - this.fadeHeight,
+			fadeStart,
 			0,
-			this.canvasHeight
+			fadeEnd
 		);
 		bottomGradient.addColorStop(0, 'rgba(0,0,0,0)');
 		bottomGradient.addColorStop(1, this.orderColors.orderBg);
 		this.ctx.fillStyle = bottomGradient;
-		this.fillRect(0, this.canvasHeight - this.fadeHeight, this.canvasWidth, this.fadeHeight);
+		this.fillRect(0, fadeStart, this.canvasWidth, this.fadeHeight);
 	}
 
-	private drawScrollArrows(hasMoreAbove: boolean, hasMoreBelow: boolean): void {
+	private drawTopArrow(): void {
 		this.save();
 		this.setFont(`${this.fontSize}px ${this.fonts.mono}`);
 		this.setTextAlign('center');
+		this.setTextBaseline('top');
+		this.fillText('▲', this.canvasWidth / 2, 2, this.orderColors.orderText);
+		this.restore();
+	}
 
-		if (hasMoreAbove) {
-			this.setTextBaseline('top');
-			this.fillText('▲', this.canvasWidth / 2, 2, this.orderColors.orderText);
-		}
-		if (hasMoreBelow) {
-			this.setTextBaseline('bottom');
-			this.fillText('▼', this.canvasWidth / 2, this.canvasHeight - 2, this.orderColors.orderText);
-		}
+	private drawBottomArrow(): void {
+		this.save();
+		this.setFont(`${this.fontSize}px ${this.fonts.mono}`);
+		this.setTextAlign('center');
+		this.setTextBaseline('top');
+		this.fillText('▼', this.canvasWidth / 2, this.canvasHeight - this.fadeHeight + 2, this.orderColors.orderText);
 		this.restore();
 	}
 }

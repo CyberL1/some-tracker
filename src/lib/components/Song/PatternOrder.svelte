@@ -184,11 +184,8 @@
 			});
 		}
 
-		const visibleCount = Math.floor(canvasHeight / CELL_HEIGHT);
-		const halfVisible = Math.floor(visibleCount / 2);
-		const maxVisibleEndIndex = currentPatternOrderIndex + halfVisible;
 		const hasMoreAbove = startIndex > 0;
-		const hasMoreBelow = maxVisibleEndIndex < patternOrder.length - 1;
+		const hasMoreBelow = endIndex < patternOrder.length - 1;
 
 		renderer.drawScrollIndicators(hasMoreAbove, hasMoreBelow);
 	}
