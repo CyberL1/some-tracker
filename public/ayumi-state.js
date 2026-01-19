@@ -44,6 +44,7 @@ class AyumiState extends TrackerState {
 		this.envelopeArpeggioPosition = 0;
 		this.noiseBaseValue = 0;
 		this.noiseAddValue = 0;
+		this.envelopeAddValue = 0;
 	}
 
 	setWasmModule(module, ptr, wasmBuffer) {
@@ -105,6 +106,7 @@ class AyumiState extends TrackerState {
 		this.envelopeArpeggioCounter = 0;
 		this.envelopeArpeggioPosition = 0;
 		this.noiseBaseValue = 0;
+		this.envelopeAddValue = 0;
 		this.noiseAddValue = 0;
 	}
 }

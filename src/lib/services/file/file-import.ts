@@ -147,6 +147,8 @@ function reconstructInstrumentRow(data: any): InstrumentRow {
 		envelope: data.envelope ?? false,
 		toneAdd: data.toneAdd ?? 0,
 		noiseAdd: data.noiseAdd ?? 0,
+		envelopeAdd: data.envelopeAdd ?? 0,
+		envelopeAccumulation: data.envelopeAccumulation ?? false,
 		volume: data.volume ?? 0,
 		loop: data.loop ?? false,
 		amplitudeSliding: data.amplitudeSliding ?? false,

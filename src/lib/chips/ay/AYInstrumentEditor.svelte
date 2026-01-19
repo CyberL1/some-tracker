@@ -26,6 +26,16 @@
 	const showVolumeGrid = $derived(isExpanded && userPrefersVisualGrid);
 
 	let isDragging = $state(false);
+	let dragType:
+		| 'volume'
+		| 'tone'
+		| 'noise'
+		| 'envelope'
+		| 'toneAccumulation'
+		| 'noiseAccumulation'
+		| 'envelopeAccumulation'
+		| null = $state(null);
+	let dragValue: boolean | null = $state(null);
 
 	function getGridButtonClass(isActive: boolean): string {
 		const baseClass =
@@ -43,12 +53,33 @@
 
 	function beginDragVolume(index: number, value: number) {
 		isDragging = true;
+		dragType = 'volume';
 		updateRow(index, 'volume', value);
 	}
 
 	function dragOverVolume(index: number, value: number) {
-		if (isDragging) {
+		if (isDragging && dragType === 'volume') {
 			updateRow(index, 'volume', value);
+		}
+	}
+
+	function beginDragBoolean(
+		index: number,
+		field: 'tone' | 'noise' | 'envelope' | 'toneAccumulation' | 'noiseAccumulation' | 'envelopeAccumulation'
+	) {
+		isDragging = true;
+		dragType = field;
+		const currentValue = rows[index][field];
+		dragValue = !currentValue;
+		updateRow(index, field, dragValue);
+	}
+
+	function dragOverBoolean(
+		index: number,
+		field: 'tone' | 'noise' | 'envelope' | 'toneAccumulation' | 'noiseAccumulation' | 'envelopeAccumulation'
+	) {
+		if (isDragging && dragValue !== null) {
+			updateRow(index, field, dragValue);
 		}
 	}
 
@@ -61,12 +92,14 @@
 						envelope: false,
 						toneAdd: 0,
 						noiseAdd: 0,
+						envelopeAdd: 0,
 						volume: 0,
 						loop: false,
 						amplitudeSliding: false,
 						amplitudeSlideUp: false,
 						toneAccumulation: false,
-						noiseAccumulation: false
+						noiseAccumulation: false,
+						envelopeAccumulation: false
 					}
 				]
 			: rowsArray;
@@ -197,12 +230,14 @@
 				envelope: false,
 				toneAdd: 0,
 				noiseAdd: 0,
+				envelopeAdd: 0,
 				volume: 0,
 				loop: false,
 				amplitudeSliding: false,
 				amplitudeSlideUp: false,
 				toneAccumulation: false,
-				noiseAccumulation: false
+				noiseAccumulation: false,
+				envelopeAccumulation: false
 			}
 		]);
 	}
@@ -279,6 +314,8 @@
 	$effect(() => {
 		const stop = () => {
 			isDragging = false;
+			dragType = null;
+			dragValue = null;
 		};
 		window.addEventListener('mouseup', stop);
 		return () => window.removeEventListener('mouseup', stop);
@@ -396,6 +433,21 @@
 							</th>
 							<th
 								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
+								title="Envelope Offset">{isExpanded ? 'Env+' : 'E+'}</th>
+							<th
+								class={isExpanded ? 'w-16 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
+								title="Envelope Accumulation">
+								{#if isExpanded}
+									<div class="flex items-center justify-center gap-0.5">
+										<span>Env</span>
+										<span class="text-[0.6rem]">↑</span>
+									</div>
+								{:else}
+									E↑
+								{/if}
+							</th>
+							<th
+								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
 								title="Volume Level">
 								<div
 									class="flex items-center justify-center {isExpanded
@@ -421,6 +473,8 @@
 						</tr>
 						{#if showVolumeGrid}
 							<tr>
+								<th></th>
+								<th></th>
 								<th></th>
 								<th></th>
 								<th></th>
@@ -490,7 +544,10 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.tone
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
-									onclick={() => toggleBoolean(index, 'tone')}>
+									tabindex="0"
+									onmousedown={() => beginDragBoolean(index, 'tone')}
+									onmouseover={() => dragOverBoolean(index, 'tone')}
+									onfocus={() => dragOverBoolean(index, 'tone')}>
 									{row.tone ? '✓' : ''}
 								</td>
 								<!-- Noise -->
@@ -498,7 +555,10 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noise
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
-									onclick={() => toggleBoolean(index, 'noise')}>
+									tabindex="0"
+									onmousedown={() => beginDragBoolean(index, 'noise')}
+									onmouseover={() => dragOverBoolean(index, 'noise')}
+									onfocus={() => dragOverBoolean(index, 'noise')}>
 									{row.noise ? '✓' : ''}
 								</td>
 								<!-- Envelope -->
@@ -506,7 +566,10 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.envelope
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
-									onclick={() => toggleBoolean(index, 'envelope')}>
+									tabindex="0"
+									onmousedown={() => beginDragBoolean(index, 'envelope')}
+									onmouseover={() => dragOverBoolean(index, 'envelope')}
+									onfocus={() => dragOverBoolean(index, 'envelope')}>
 									{row.envelope ? '✓' : ''}
 								</td>
 								<!-- ToneAdd -->
@@ -526,7 +589,10 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.toneAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
-									onclick={() => toggleBoolean(index, 'toneAccumulation')}>
+									tabindex="0"
+									onmousedown={() => beginDragBoolean(index, 'toneAccumulation')}
+									onmouseover={() => dragOverBoolean(index, 'toneAccumulation')}
+									onfocus={() => dragOverBoolean(index, 'toneAccumulation')}>
 									{row.toneAccumulation ? '↑' : ''}
 								</td>
 								<!-- NoiseAdd -->
@@ -546,8 +612,34 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noiseAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
-									onclick={() => toggleBoolean(index, 'noiseAccumulation')}>
+									tabindex="0"
+									onmousedown={() => beginDragBoolean(index, 'noiseAccumulation')}
+									onmouseover={() => dragOverBoolean(index, 'noiseAccumulation')}
+									onfocus={() => dragOverBoolean(index, 'noiseAccumulation')}>
 									{row.noiseAccumulation ? '↑' : ''}
+								</td>
+								<!-- EnvelopeAdd -->
+								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+									<input
+										type="text"
+										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
+											? 'px-2 py-1 text-xs'
+											: 'px-1 py-0.5 text-[0.65rem]'} text-[var(--color-app-text-secondary)] placeholder-[var(--color-app-text-muted)] focus:border-[var(--color-app-primary)] focus:outline-none"
+										value={formatNum(row.envelopeAdd ?? 0)}
+										onkeydown={(e) => handleNumericKeyDown(index, e)}
+										onfocus={(e) => (e.target as HTMLInputElement).select()}
+										oninput={(e) => updateNumericField(index, 'envelopeAdd', e)} />
+								</td>
+								<!-- Envelope Accumulation -->
+								<td
+									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.envelopeAccumulation
+										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
+										: 'text-[var(--color-app-text-muted)]'}"
+									tabindex="0"
+									onmousedown={() => beginDragBoolean(index, 'envelopeAccumulation')}
+									onmouseover={() => dragOverBoolean(index, 'envelopeAccumulation')}
+									onfocus={() => dragOverBoolean(index, 'envelopeAccumulation')}>
+									{row.envelopeAccumulation ? '↑' : ''}
 								</td>
 								<!-- Volume -->
 								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>

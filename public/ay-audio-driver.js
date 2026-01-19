@@ -119,6 +119,7 @@ class AYAudioDriver {
 	processPatternRow(state, pattern, rowIndex, patternRow, registerState) {
 		state.noiseBaseValue = patternRow.noiseValue || 0;
 		state.noiseAddValue = 0;
+		state.envelopeAddValue = 0;
 
 		for (let channelIndex = 0; channelIndex < pattern.channels.length; channelIndex++) {
 			const channel = pattern.channels[channelIndex];
@@ -288,7 +289,6 @@ class AYAudioDriver {
 		this.processEnvelopeSlide(state);
 		this.processEnvelopePortamento(state);
 		this.processEnvelopeOnOff(state);
-		this.updateEnvelopeWithSlide(state, registerState);
 		this.processEnvelopeArpeggio(state, registerState);
 
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
@@ -381,6 +381,16 @@ class AYAudioDriver {
 				}
 				state.noiseAddValue = noiseValue & 31;
 			}
+			if (instrumentRow.envelope) {
+				const envelopeAddValue = instrumentRow.envelopeAdd || 0;
+				const envelopeValue =
+					state.channelEnvelopeAccumulator[channelIndex] + envelopeAddValue;
+				if (instrumentRow.envelopeAccumulation) {
+					state.channelEnvelopeAccumulator[channelIndex] = envelopeValue & 0xffff;
+				}
+				state.envelopeAddValue = envelopeValue;
+			}
+
 
 			if (instrumentRow.volume >= 0) {
 				state.channelInstrumentVolumes[channelIndex] = instrumentRow.volume;
@@ -457,6 +467,7 @@ class AYAudioDriver {
 		}
 
 		registerState.noise = (state.noiseBaseValue + state.noiseAddValue) & 0x1f;
+		this.updateEnvelopeWithSlide(state, registerState);
 	}
 
 	processEnvelopeSlide(state) {
@@ -564,7 +575,9 @@ class AYAudioDriver {
 
 	updateEnvelopeWithSlide(state, registerState) {
 		if (state.envelopeBaseValue > 0) {
-			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent;
+			const hasActiveEnvelopeEffect = state.envelopeSlideDelta !== 0 || state.envelopePortamentoActive || state.envelopeArpeggioCounter > 0;
+			const envelopeAddToApply = hasActiveEnvelopeEffect ? 0 : state.envelopeAddValue;
+			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent + envelopeAddToApply;
 			const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
 			registerState.envelopePeriod = wrappedValue;
 		}

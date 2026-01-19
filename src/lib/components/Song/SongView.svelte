@@ -51,13 +51,13 @@
 	let patternEditors: PatternEditor[] = $state([]);
 	let rightPanelActiveTabId = $state('tables');
 	let isRightPanelExpanded = $state(false);
-	
+
 	$effect(() => {
 		if (rightPanelActiveTabId === 'details') {
 			isRightPanelExpanded = false;
 		}
 	});
-	
+
 	let patternLengthValue = $state('');
 	let isPatternLengthInputFocused = $state(false);
 	let isPatternLengthButtonAction = $state(false);
@@ -409,7 +409,7 @@
 	<div
 		class="relative z-10 h-full shrink-0 border-l border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] transition-all duration-300 {isRightPanelExpanded
 			? 'w-[1200px]'
-			: 'w-96'}">
+			: 'w-[28rem]'}">
 		<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
 			{#snippet children(tabId)}
 				{#if tabId === 'tables'}
