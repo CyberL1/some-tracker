@@ -37,8 +37,7 @@ export const menuItems: MenuItem[] = [
 					{ label: 'PSG', type: 'normal', action: 'export-psg' }
 				]
 			},
-			{ label: 'Settings', type: 'normal', action: 'settings' },
-			{ label: 'Exit', type: 'normal' }
+			{ label: 'Settings', type: 'normal', action: 'settings' }
 		]
 	},
 	{
@@ -100,7 +99,7 @@ export const menuItems: MenuItem[] = [
 		label: 'Help',
 		items: [
 			{ label: 'Documentation', type: 'normal' },
-			{ label: 'About', type: 'normal' },
+			{ label: 'About', type: 'normal', action: 'about' },
 			{
 				label: 'Support',
 				type: 'expandable',

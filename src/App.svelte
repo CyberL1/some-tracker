@@ -21,6 +21,7 @@
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
 	import SettingsModal from './lib/components/Settings/SettingsModal.svelte';
+	import AboutModal from './lib/components/Modal/AboutModal.svelte';
 	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
 	import { convertVT2String } from './lib/services/file/vt-converter';
 	import { editorStateStore } from './lib/stores/editor-state.svelte';
@@ -294,6 +295,11 @@
 
 			if (data.action === 'appearance') {
 				await open(SettingsModal, { initialTabId: 'appearance' });
+				return;
+			}
+
+			if (data.action === 'about') {
+				await open(AboutModal, {});
 				return;
 			}
 
