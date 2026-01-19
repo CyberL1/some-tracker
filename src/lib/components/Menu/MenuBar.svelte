@@ -31,18 +31,14 @@
 	} = $props();
 
 	const hasAYSong = $derived(songs.some((song) => song.chipType === 'ay'));
-
 	const editorState = $derived(editorStateStore.get());
 	const settings = $derived(settingsStore.get());
-
-
 
 	function handleVolumeChange(event: Event) {
 		const target = event.target as HTMLInputElement;
 		settings.volume = Number(target.value);
 		settingsStore.set('volume', settings.volume);
 	}
-
 
 	function handleMenuOpen(data: { label: string }) {
 		activeMenu = data.label;
@@ -65,16 +61,16 @@
 		if (!isNaN(octave) && octave >= 0 && octave <= 8) {
 			editorStateStore.setOctave(octave);
 		} else {
-			editorStateStore.setOctave(editorState.octave);
+			editorStateStore.setOctave(0);
 		}
 	}
 
 	function commitStep() {
 		const step = parseInt(editorState.step.toString(), 10);
-		if (!isNaN(step)) {
+		if (!isNaN(step) && step >= 0 && step <= 255) {
 			editorStateStore.setStep(step);
 		} else {
-			editorStateStore.setStep(editorState.step);
+			editorStateStore.setStep(0);
 		}
 	}
 
@@ -229,7 +225,7 @@
 				oninput={handleVolumeChange}
 				class="w-32 cursor-pointer"
 				title="Volume: {settings.volume}%" />
-			<span class="w-4 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]">{settings.volume}</span>
+			<span class="w-4 mr-1 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]">{settings.volume}</span>
 		</div>
 	</div>
 
