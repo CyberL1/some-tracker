@@ -10,6 +10,9 @@
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
 	import IconCarbonLayers from '~icons/carbon/layers';
 	import IconCarbonArrowDown from '~icons/carbon/arrow-down';
+	import IconCarbonVolumeMute from '~icons/carbon/volume-mute';
+	import IconCarbonVolumeDown from '~icons/carbon/volume-down';
+	import IconCarbonVolumeUp from '~icons/carbon/volume-up';
 	import { settingsStore } from '../../stores/settings.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import Input from '../Input/Input.svelte';
@@ -30,22 +33,15 @@
 	const hasAYSong = $derived(songs.some((song) => song.chipType === 'ay'));
 
 	const editorState = $derived(editorStateStore.get());
+	const settings = $derived(settingsStore.get());
 
-	let octaveValue = $state(editorStateStore.get().octave.toString());
-	let stepValue = $state(editorStateStore.get().step.toString());
-	let envelopeAsNote = $state(editorStateStore.get().envelopeAsNote);
 
-	$effect(() => {
-		octaveValue = editorState.octave.toString();
-	});
 
-	$effect(() => {
-		stepValue = editorState.step.toString();
-	});
-
-	$effect(() => {
-		envelopeAsNote = editorState.envelopeAsNote;
-	});
+	function handleVolumeChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		settings.volume = Number(target.value);
+		settingsStore.set('volume', settings.volume);
+	}
 
 
 	function handleMenuOpen(data: { label: string }) {
@@ -65,45 +61,47 @@
 	}
 
 	function commitOctave() {
-		const octave = parseInt(octaveValue, 10);
+		const octave = parseInt(editorState.octave.toString(), 10);
 		if (!isNaN(octave) && octave >= 0 && octave <= 8) {
 			editorStateStore.setOctave(octave);
 		} else {
-			octaveValue = editorState.octave.toString();
+			editorStateStore.setOctave(editorState.octave);
 		}
 	}
 
 	function commitStep() {
-		const step = parseInt(stepValue, 10);
+		const step = parseInt(editorState.step.toString(), 10);
 		if (!isNaN(step)) {
 			editorStateStore.setStep(step);
 		} else {
-			stepValue = editorState.step.toString();
+			editorStateStore.setStep(editorState.step);
 		}
 	}
 
 	function incrementOctave() {
-		const current = editorStateStore.get().octave;
+		const current = editorState.octave;
 		if (current < 8) {
 			editorStateStore.setOctave(current + 1);
 		}
 	}
 
 	function decrementOctave() {
-		const current = editorStateStore.get().octave;
+		const current = editorState.octave;
 		if (current > 0) {
 			editorStateStore.setOctave(current - 1);
 		}
 	}
 
 	function incrementStep() {
-		const current = editorStateStore.get().step;
-		editorStateStore.setStep(current + 1);
+		const current = editorState.step;
+			editorStateStore.setStep(current + 1);
 	}
 
 	function decrementStep() {
-		const current = editorStateStore.get().step;
-		editorStateStore.setStep(current - 1);
+		const current = editorState.step;
+		if( current > 0 ) {
+			editorStateStore.setStep(current - 1);
+		}
 	}
 
 </script>
@@ -125,7 +123,7 @@
 			<label for="octave-input" class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Octave:</label>
 			<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
-					bind:value={octaveValue}
+					bind:value={editorState.octave}
 					id="octave-input"
 					type="number"
 					min={0}
@@ -162,7 +160,7 @@
 			<label for="step-input" class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Step:</label>
 			<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
-					bind:value={stepValue}
+					bind:value={editorState.step}
 					id="step-input"
 					type="number"
 					class="h-6 w-10 border-0 bg-transparent text-center font-mono text-xs focus:ring-0"
@@ -205,15 +203,34 @@
 				<label class="flex cursor-pointer items-center gap-1.5">
 					<Checkbox
 						showStatus={false}
-						bind:checked={envelopeAsNote}
+						bind:checked={editorState.envelopeAsNote}
 						onchange={() => {
-							editorStateStore.setEnvelopeAsNote(envelopeAsNote);
+							editorStateStore.setEnvelopeAsNote(editorState.envelopeAsNote);
 						}}
 						title="Envelope as Note" />
 					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Env as Note</span>
 				</label>
 			</div>
 		{/if}
+		<div class="flex items-center border-l gap-1 border-[var(--color-app-border)] ">
+			{#if settings.volume === 0}
+				<IconCarbonVolumeMute class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+			{:else if settings.volume < 50}
+				<IconCarbonVolumeDown class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+			{:else}
+				<IconCarbonVolumeUp class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+			{/if}
+			<input
+				type="range"
+				min={0}
+				max={100}
+				step={1}
+				value={settings.volume}
+				oninput={handleVolumeChange}
+				class="w-32 cursor-pointer"
+				title="Volume: {settings.volume}%" />
+			<span class="w-7 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]">{settings.volume}</span>
+		</div>
 	</div>
 
 	<div class="absolute top-3.5 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1">
