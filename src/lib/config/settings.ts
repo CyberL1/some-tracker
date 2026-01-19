@@ -3,9 +3,9 @@ import type { SettingsItem } from '../components/Settings/types';
 export const settingsItems: SettingsItem[] = [
 	{
 		label: 'Volume',
-		description: 'Changes the volume, duh',
+		description: 'Changes the master volume of the audio output',
 		type: 'range',
-		defaultValue: 100,
+		defaultValue: 60,
 		setting: 'volume',
 		category: 'general'
 	},

@@ -205,7 +205,7 @@
 						showStatus={false}
 						bind:checked={editorState.envelopeAsNote}
 						onchange={() => {
-							editorStateStore.setEnvelopeAsNote(editorState.envelopeAsNote);
+							editorStateStore.setEnvelopeAsNote(!editorState.envelopeAsNote);
 						}}
 						title="Envelope as Note" />
 					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Env as Note</span>
@@ -229,7 +229,7 @@
 				oninput={handleVolumeChange}
 				class="w-32 cursor-pointer"
 				title="Volume: {settings.volume}%" />
-			<span class="w-7 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]">{settings.volume}</span>
+			<span class="w-4 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]">{settings.volume}</span>
 		</div>
 	</div>
 
