@@ -55,7 +55,7 @@
 		onMenuClose?.({ all: true });
 	}
 
-	let menuHoverTimeout: number;
+	let menuHoverTimeout: ReturnType<typeof setTimeout>;
 
 	function handleMouseEnter(event: MouseEvent) {
 		event.stopPropagation();
