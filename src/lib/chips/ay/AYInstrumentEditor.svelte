@@ -148,6 +148,20 @@
 		let text = inputEl.value.trim();
 		const allowedPattern = asHex ? /[^0-9a-fA-F-]/g : /[^0-9-]/g;
 		text = text.replace(/\+/g, '').replace(allowedPattern, '');
+		
+		if (field === 'volume') {
+			if (asHex) {
+				if (text.length > 1) {
+					text = text.substring(0, 1);
+				}
+			} else {
+				const num = parseInt(text, 10);
+				if (!isNaN(num) && num > 15) {
+					text = '15';
+				}
+			}
+		}
+		
 		if (text !== inputEl.value) inputEl.value = text;
 
 		let parsed: number | null = null;
@@ -168,13 +182,33 @@
 		}
 
 		if (parsed !== null) {
+			if (field === 'volume') {
+				parsed = Math.max(0, Math.min(15, parsed));
+			}
 			updateRow(index, field, parsed);
 		}
 	}
 
-	function focusInputInRow(row: HTMLTableRowElement | null) {
+	function focusInputInRow(row: HTMLTableRowElement | null, currentInput?: HTMLInputElement) {
 		if (!row) return;
-		const input = row.querySelector('input[type="text"]') as HTMLInputElement | null;
+		
+		let input: HTMLInputElement | null = null;
+		
+		if (currentInput) {
+			const currentCell = currentInput.closest('td');
+			if (currentCell) {
+				const cellIndex = Array.from(currentCell.parentElement?.children || []).indexOf(currentCell);
+				const targetCell = row.children[cellIndex] as HTMLTableCellElement | undefined;
+				if (targetCell) {
+					input = targetCell.querySelector('input[type="text"]');
+				}
+			}
+		}
+		
+		if (!input) {
+			input = row.querySelector('input[type="text"]');
+		}
+		
 		if (input) {
 			input.focus();
 			input.select();
@@ -183,18 +217,19 @@
 
 	function handleNumericKeyDown(index: number, event: KeyboardEvent) {
 		const key = event.key;
+		const inputEl = event.target as HTMLInputElement;
 
 		if (key === 'ArrowDown') {
 			event.preventDefault();
 			const nextIndex = index + 1;
 			if (nextIndex < rows.length) {
-				const currentRow = (event.target as HTMLInputElement).closest('tr');
-				focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null);
+				const currentRow = inputEl.closest('tr');
+				focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null, inputEl);
 			} else if (nextIndex === rows.length) {
 				addRow();
 				setTimeout(() => {
-					const currentRow = (event.target as HTMLInputElement).closest('tr');
-					focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null);
+					const currentRow = inputEl.closest('tr');
+					focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null, inputEl);
 				}, 0);
 			}
 			return;
@@ -204,8 +239,8 @@
 			event.preventDefault();
 			const prevIndex = index - 1;
 			if (prevIndex >= 0) {
-				const currentRow = (event.target as HTMLInputElement).closest('tr');
-				focusInputInRow(currentRow?.previousElementSibling as HTMLTableRowElement | null);
+				const currentRow = inputEl.closest('tr');
+				focusInputInRow(currentRow?.previousElementSibling as HTMLTableRowElement | null, inputEl);
 			}
 			return;
 		}
@@ -325,7 +360,7 @@
 {#snippet volumeCell(index: number, value: number, isSelected: boolean)}
 	<td
 		class={`group h-8 w-6 min-w-6 cursor-pointer border border-[var(--color-app-border)] text-center text-[0.7rem] leading-none ${isSelected ? 'bg-[var(--color-app-surface-active)]' : 'bg-[var(--color-app-surface)] hover:bg-[var(--color-app-surface-secondary)]'}`}
-		tabindex="0"
+		tabindex="-1"
 		title={String(value)}
 		onmousedown={() => beginDragVolume(index, value)}
 		onmouseover={() => dragOverVolume(index, value)}
@@ -544,7 +579,7 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.tone
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
-									tabindex="0"
+									tabindex="-1"
 									onmousedown={() => beginDragBoolean(index, 'tone')}
 									onmouseover={() => dragOverBoolean(index, 'tone')}
 									onfocus={() => dragOverBoolean(index, 'tone')}>
@@ -555,7 +590,7 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noise
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
-									tabindex="0"
+									tabindex="-1"
 									onmousedown={() => beginDragBoolean(index, 'noise')}
 									onmouseover={() => dragOverBoolean(index, 'noise')}
 									onfocus={() => dragOverBoolean(index, 'noise')}>
@@ -566,7 +601,7 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.envelope
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
-									tabindex="0"
+									tabindex="-1"
 									onmousedown={() => beginDragBoolean(index, 'envelope')}
 									onmouseover={() => dragOverBoolean(index, 'envelope')}
 									onfocus={() => dragOverBoolean(index, 'envelope')}>
@@ -589,7 +624,7 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.toneAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
-									tabindex="0"
+									tabindex="-1"
 									onmousedown={() => beginDragBoolean(index, 'toneAccumulation')}
 									onmouseover={() => dragOverBoolean(index, 'toneAccumulation')}
 									onfocus={() => dragOverBoolean(index, 'toneAccumulation')}>
@@ -612,7 +647,7 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noiseAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
-									tabindex="0"
+									tabindex="-1"
 									onmousedown={() => beginDragBoolean(index, 'noiseAccumulation')}
 									onmouseover={() => dragOverBoolean(index, 'noiseAccumulation')}
 									onfocus={() => dragOverBoolean(index, 'noiseAccumulation')}>
@@ -635,7 +670,7 @@
 									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.envelopeAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
-									tabindex="0"
+									tabindex="-1"
 									onmousedown={() => beginDragBoolean(index, 'envelopeAccumulation')}
 									onmouseover={() => dragOverBoolean(index, 'envelopeAccumulation')}
 									onfocus={() => dragOverBoolean(index, 'envelopeAccumulation')}>
