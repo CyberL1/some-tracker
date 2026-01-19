@@ -99,18 +99,7 @@ export const menuItems: MenuItem[] = [
 		label: 'Help',
 		items: [
 			{ label: 'Documentation', type: 'normal' },
-			{ label: 'About', type: 'normal', action: 'about' },
-			{
-				label: 'Support',
-				type: 'expandable',
-				items: [
-					{ label: 'FAQ', type: 'normal' },
-					{
-						label: 'Contact',
-						type: 'normal'
-					}
-				]
-			}
+			{ label: 'About', type: 'normal', action: 'about' }
 		]
 	}
 ];
