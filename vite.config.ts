@@ -18,7 +18,7 @@ function getBuildDate() {
 
 // https://vite.dev/config/
 export default defineConfig({
-	base: '/bitphase/',
+	base: '/',
 	plugins: [
 		svelte(),
 		tailwindcss(),

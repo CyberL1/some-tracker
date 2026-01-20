@@ -31,7 +31,10 @@
 			(item) => item.setting === 'patternEditorFontSize'
 		);
 
-		const groups: Array<{ family: typeof patternEditorFontFamily; size: typeof patternEditorFontSize }> = [];
+		const groups: Array<{
+			family: typeof patternEditorFontFamily;
+			size: typeof patternEditorFontSize;
+		}> = [];
 
 		if (patternEditorFontFamily && patternEditorFontSize) {
 			groups.push({ family: patternEditorFontFamily, size: patternEditorFontSize });
@@ -81,7 +84,7 @@
 		themeEditorStore.setEditingTheme(newTheme, true, reopenSettings);
 	}
 
-	function handleEditTheme(theme: typeof allThemes[0]) {
+	function handleEditTheme(theme: (typeof allThemes)[0]) {
 		onCloseSettings?.();
 		if (theme.isCustom) {
 			themeEditorStore.setEditingTheme({ ...theme }, false, reopenSettings);
@@ -149,16 +152,16 @@
 				{#if group.family && group.size}
 					<div class="flex items-end gap-4">
 						<div class="flex-1">
-							<SettingField item={group.family} bind:tempSettings={tempSettings} />
+							<SettingField item={group.family} bind:tempSettings />
 						</div>
 						<div class="flex-1">
-							<SettingField item={group.size} bind:tempSettings={tempSettings} />
+							<SettingField item={group.size} bind:tempSettings />
 						</div>
 					</div>
 				{/if}
 			{/each}
 			{#each groupedSettings.otherSettings as item (item.setting)}
-				<SettingField {item} bind:tempSettings={tempSettings} />
+				<SettingField {item} bind:tempSettings />
 			{/each}
 		</div>
 	{/if}

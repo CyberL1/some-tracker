@@ -69,8 +69,14 @@
 	$effect(() => {
 		const uiFontFamily = settingsStore.state.uiFontFamily;
 		if (uiFontFamily) {
-			document.documentElement.style.setProperty('--font-sans', `"${uiFontFamily}", sans-serif`);
-			document.documentElement.style.setProperty('--font-mono', `"${uiFontFamily}", monospace`);
+			document.documentElement.style.setProperty(
+				'--font-sans',
+				`"${uiFontFamily}", sans-serif`
+			);
+			document.documentElement.style.setProperty(
+				'--font-mono',
+				`"${uiFontFamily}", monospace`
+			);
 		}
 	});
 
