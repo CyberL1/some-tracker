@@ -31,4 +31,7 @@ export function setupCanvas(options: CanvasSetupOptions): void {
 	ctx.font = `${fontSize}px ${fonts.mono}`;
 	ctx.textAlign = textAlign;
 	ctx.textBaseline = textBaseline;
+	
+	canvas.style.fontFeatureSettings = "'liga' 0, 'calt' 0";
+	canvas.style.fontVariantLigatures = 'none';
 }

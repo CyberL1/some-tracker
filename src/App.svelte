@@ -66,6 +66,14 @@
 		editorStateStore.setEnvelopeAsNote(envelopeAsNote);
 	});
 
+	$effect(() => {
+		const uiFontFamily = settingsStore.state.uiFontFamily;
+		if (uiFontFamily) {
+			document.documentElement.style.setProperty('--font-sans', `"${uiFontFamily}", sans-serif`);
+			document.documentElement.style.setProperty('--font-mono', `"${uiFontFamily}", monospace`);
+		}
+	});
+
 	let songs = $state<Song[]>([]);
 	let patternOrder = $state<number[]>([]);
 	let tables = $state<Table[]>([]);

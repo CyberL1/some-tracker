@@ -48,14 +48,22 @@ export const settingsItems: SettingsItem[] = [
 			{ value: 'JetBrains Mono', label: 'JetBrains Mono' },
 			{ value: 'IBM Plex Mono', label: 'IBM Plex Mono' },
 			{ value: 'Roboto Mono', label: 'Roboto Mono' },
-			{ value: 'Source Code Pro', label: 'Source Code Pro' },
-			{ value: 'Inconsolata', label: 'Inconsolata' },
-			{ value: 'Ubuntu Mono', label: 'Ubuntu Mono' },
-			{ value: 'Courier Prime', label: 'Courier Prime' },
-			{ value: 'Space Mono', label: 'Space Mono' },
-			{ value: 'Overpass Mono', label: 'Overpass Mono' },
-			{ value: 'Red Hat Mono', label: 'Red Hat Mono' },
-			{ value: 'Anonymous Pro', label: 'Anonymous Pro' }
+			{ value: 'Source Code Pro', label: 'Source Code Pro' }
+		]
+	},
+	{
+		label: 'UI Font Family',
+		description: 'Choose the font for the user interface',
+		type: 'select',
+		defaultValue: 'Fira Code',
+		setting: 'uiFontFamily',
+		category: 'appearance',
+		options: [
+			{ value: 'Fira Code', label: 'Fira Code (Monospace)' },
+			{ value: 'JetBrains Mono', label: 'JetBrains Mono (Monospace)' },
+			{ value: 'Inter', label: 'Inter (Sans-serif)' },
+			{ value: 'Roboto', label: 'Roboto (Sans-serif)' },
+			{ value: 'Open Sans', label: 'Open Sans (Sans-serif)' }
 		]
 	}
 ];

@@ -51,7 +51,10 @@
 	import { EnvelopeModeService } from '../../services/pattern/envelope-mode-service';
 	import { PatternRowDataService } from '../../services/pattern/pattern-row-data-service';
 	import { SelectionBoundsService } from '../../services/pattern/selection-bounds-service';
-	import { envelopePeriodToNote, noteToEnvelopePeriod } from '../../utils/envelope-note-conversion';
+	import {
+		envelopePeriodToNote,
+		noteToEnvelopePeriod
+	} from '../../utils/envelope-note-conversion';
 	import { themeService } from '../../services/theme/theme-service';
 	import { settingsStore } from '../../stores/settings.svelte';
 
@@ -436,21 +439,27 @@
 		ctx = canvas.getContext('2d')!;
 
 		try {
-			// Load font asynchronously if it's not the default
-			if (fontFamily && fontFamily !== 'Fira Code') {
-				document.fonts.load(`${fontSize}px "${fontFamily}"`).then(() => {
-					if (ctx && canvas) {
-						ctx.font = `${fontSize}px "${fontFamily}", ${FONTS.mono}`;
-						updateSize();
-						draw();
-					}
-				}).catch((e) => {
-					console.warn(`Failed to load font: ${fontFamily}`, e);
-				});
-			}
-			
 			ctx.font = `${fontSize}px "${fontFamily}", ${FONTS.mono}`;
-			
+			canvas.style.fontFeatureSettings = "'liga' 0, 'calt' 0";
+			canvas.style.fontVariantLigatures = 'none';
+
+			// Load font asynchronously and update when ready
+			if (fontFamily && fontFamily !== 'Fira Code') {
+				document.fonts
+					.load(`${fontSize}px "${fontFamily}"`)
+					.then(() => {
+						if (ctx && canvas) {
+							ctx.font = `${fontSize}px "${fontFamily}", ${FONTS.mono}`;
+							clearAllCaches();
+							updateSize();
+							draw();
+						}
+					})
+					.catch((e) => {
+						console.warn(`Failed to load font: ${fontFamily}`, e);
+					});
+			}
+
 			updateSize();
 
 			setupCanvasUtil({
@@ -495,7 +504,6 @@
 		});
 		return unsubscribe;
 	});
-
 
 	function getChipIndex(): number {
 		return services.audioService.chipProcessors.findIndex((p) => p === chipProcessor);
@@ -1203,12 +1211,15 @@
 		const patternId = patternOrder[currentPatternOrderIndex];
 		const originalPattern = findOrCreatePattern(patternId);
 
-		ClipboardService.pasteSelectionWithoutErasing(createClipboardContext(), (updatedPattern) => {
-			recordBulkPatternEdit(originalPattern, updatedPattern);
-			updatePatternInArray(updatedPattern);
-			clearAllCaches();
-			draw();
-		});
+		ClipboardService.pasteSelectionWithoutErasing(
+			createClipboardContext(),
+			(updatedPattern) => {
+				recordBulkPatternEdit(originalPattern, updatedPattern);
+				updatePatternInArray(updatedPattern);
+				clearAllCaches();
+				draw();
+			}
+		);
 	}
 
 	function deleteSelection(): void {
@@ -1348,12 +1359,19 @@
 				fieldInfo,
 				newValue
 			);
-		} else if (fieldInfo.fieldKey === 'envelopeValue' && editorStateStore.get().envelopeAsNote && tuningTable) {
+		} else if (
+			fieldInfo.fieldKey === 'envelopeValue' &&
+			editorStateStore.get().envelopeAsNote &&
+			tuningTable
+		) {
 			const currentPeriod = currentValue as number;
 			const noteIndex = envelopePeriodToNote(currentPeriod, tuningTable);
 			if (noteIndex !== null) {
 				const semitonesDelta = isOctaveIncrement ? delta * 12 : delta;
-				const newNoteIndex = Math.max(0, Math.min(tuningTable.length - 1, noteIndex + semitonesDelta));
+				const newNoteIndex = Math.max(
+					0,
+					Math.min(tuningTable.length - 1, noteIndex + semitonesDelta)
+				);
 				const newPeriod = noteToEnvelopePeriod(newNoteIndex, tuningTable);
 				return PatternValueUpdates.updateFieldValue(
 					{

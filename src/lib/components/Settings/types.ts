@@ -4,6 +4,7 @@ export interface Settings {
 	envelopeAsNote: boolean;
 	patternEditorFontSize: number;
 	patternEditorFontFamily: string;
+	uiFontFamily: string;
 }
 
 export interface SettingsItem {

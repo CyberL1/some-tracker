@@ -138,7 +138,8 @@ export class PatternEditorTextParser {
 	}
 
 	getCellPositions(rowString: string, rowIndex: number): CellPosition[] {
-		const cacheKey = `${rowString}:${rowIndex}`;
+		const fontInfo = this.ctx.font;
+		const cacheKey = `${rowString}:${rowIndex}:${fontInfo}`;
 		const cached = this.cellPositionsCache.get(cacheKey);
 		if (cached) return cached;
 

@@ -23,6 +23,29 @@
 	const activeThemeId = $derived(themeStore.state.activeThemeId);
 	const customThemes = $derived(themeStore.getCustomThemes());
 
+	const groupedSettings = $derived.by(() => {
+		const patternEditorFontFamily = appearanceSettings.find(
+			(item) => item.setting === 'patternEditorFontFamily'
+		);
+		const patternEditorFontSize = appearanceSettings.find(
+			(item) => item.setting === 'patternEditorFontSize'
+		);
+
+		const groups: Array<{ family: typeof patternEditorFontFamily; size: typeof patternEditorFontSize }> = [];
+
+		if (patternEditorFontFamily && patternEditorFontSize) {
+			groups.push({ family: patternEditorFontFamily, size: patternEditorFontSize });
+		}
+
+		const otherSettings = appearanceSettings.filter(
+			(item) =>
+				item.setting !== 'patternEditorFontFamily' &&
+				item.setting !== 'patternEditorFontSize'
+		);
+
+		return { groups, otherSettings };
+	});
+
 	let isReopening = $state(false);
 
 	const reopenSettings = async () => {
@@ -122,7 +145,19 @@
 <div class="flex flex-col gap-4">
 	{#if appearanceSettings.length > 0}
 		<div class="flex flex-col gap-4">
-			{#each appearanceSettings as item (item.setting)}
+			{#each groupedSettings.groups as group (group.family?.setting ?? '')}
+				{#if group.family && group.size}
+					<div class="flex items-end gap-4">
+						<div class="flex-1">
+							<SettingField item={group.family} bind:tempSettings={tempSettings} />
+						</div>
+						<div class="flex-1">
+							<SettingField item={group.size} bind:tempSettings={tempSettings} />
+						</div>
+					</div>
+				{/if}
+			{/each}
+			{#each groupedSettings.otherSettings as item (item.setting)}
 				<SettingField {item} bind:tempSettings={tempSettings} />
 			{/each}
 		</div>
