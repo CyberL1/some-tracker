@@ -24,8 +24,20 @@ export const settingsItems: SettingsItem[] = [
 		defaultValue: false,
 		setting: 'envelopeAsNote',
 		category: 'general'
+	},
+	{
+		label: 'Pattern Editor Font Size',
+		description: 'Adjust the font size in the pattern editor',
+		type: 'number',
+		defaultValue: 14,
+		setting: 'patternEditorFontSize',
+		category: 'appearance',
+		min: 8,
+		max: 30,
+		step: 1
 	}
 ];
 
 export const generalSettings = settingsItems.filter((item) => item.category === 'general');
 export const keyboardSettings = settingsItems.filter((item) => item.category === 'keyboard');
+export const appearanceSettings = settingsItems.filter((item) => item.category === 'appearance');

@@ -9,9 +9,17 @@
 	import IconCarbonAdd from '~icons/carbon/add';
 	import IconCarbonDocumentImport from '~icons/carbon/document-import';
 	import { downloadFile } from '../../utils/file-download';
+	import { appearanceSettings } from '../../config/settings';
+	import { settingsStore } from '../../stores/settings.svelte';
+	import type { Settings } from './types';
+	import { RangeInput } from '../RangeInput';
+	import { Checkbox } from '../Checkbox';
+	import { FormField } from '../FormField';
+	import Input from '../Input/Input.svelte';
 
-	let { onCloseSettings } = $props<{
+	let { onCloseSettings, tempSettings = $bindable() } = $props<{
 		onCloseSettings?: () => void;
+		tempSettings: Settings;
 	}>();
 
 	const allThemes = $derived(themeStore.getAllThemes());
@@ -115,6 +123,47 @@
 </script>
 
 <div class="flex flex-col gap-4">
+	{#if appearanceSettings.length > 0}
+		<div class="flex flex-col gap-4">
+			{#each appearanceSettings as item (item.setting)}
+				{@const settingId = `setting-${item.setting}`}
+				<FormField id={settingId} label={item.label} description={item.description}>
+					{#if item.type === 'range'}
+						<RangeInput
+							id={settingId}
+							bind:value={tempSettings[item.setting] as number}
+							min={item.min ?? 0}
+							max={item.max ?? 100}
+							step={item.step ?? 1} />
+					{:else if item.type === 'number'}
+						<Input
+							id={settingId}
+							type="number"
+							bind:value={tempSettings[item.setting]}
+							min={item.min}
+							max={item.max}
+							step={item.step ?? 1}
+							class="w-10 h-6 text-xs"
+							onblur={(e) => {
+								const value = Number(e.currentTarget.value);
+								const min = item.min ?? -Infinity;
+								const max = item.max ?? Infinity;
+								if (!isNaN(value)) {
+									(tempSettings as any)[item.setting] = Math.max(min, Math.min(max, value));
+								} else if (item.defaultValue !== undefined) {
+									(tempSettings as any)[item.setting] = item.defaultValue;
+								}
+							}} />
+					{:else if item.type === 'toggle'}
+						<Checkbox
+							id={settingId}
+							bind:checked={tempSettings[item.setting] as boolean} />
+					{/if}
+				</FormField>
+			{/each}
+		</div>
+	{/if}
+
 	<div class="flex items-center justify-between">
 		<h3 class="text-sm font-semibold text-[var(--color-app-text-primary)]">Themes</h3>
 		<div class="flex gap-2">

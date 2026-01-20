@@ -53,6 +53,7 @@
 	import { SelectionBoundsService } from '../../services/pattern/selection-bounds-service';
 	import { envelopePeriodToNote, noteToEnvelopePeriod } from '../../utils/envelope-note-conversion';
 	import { themeService } from '../../services/theme/theme-service';
+	import { settingsStore } from '../../stores/settings.svelte';
 
 	let {
 		patterns = $bindable(),
@@ -145,10 +146,10 @@
 	let COLORS = $state(getColors());
 	let FONTS = getFonts();
 
+	let fontSize = $derived(settingsStore.state.patternEditorFontSize);
 	let canvasWidth = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH);
 	let canvasHeight = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_HEIGHT);
-	let lineHeight =
-		PATTERN_EDITOR_CONSTANTS.FONT_SIZE * PATTERN_EDITOR_CONSTANTS.LINE_HEIGHT_MULTIPLIER;
+	let lineHeight = $derived(fontSize * PATTERN_EDITOR_CONSTANTS.LINE_HEIGHT_MULTIPLIER);
 
 	let selectedColumn = $state(0);
 
@@ -434,6 +435,8 @@
 		ctx = canvas.getContext('2d')!;
 
 		try {
+			ctx.font = `${fontSize}px ${FONTS.mono}`;
+			
 			updateSize();
 
 			setupCanvasUtil({
@@ -441,7 +444,7 @@
 				ctx,
 				width: canvasWidth,
 				height: canvasHeight,
-				fontSize: PATTERN_EDITOR_CONSTANTS.FONT_SIZE,
+				fontSize: fontSize,
 				fonts: FONTS,
 				textBaseline: 'middle'
 			});
@@ -478,6 +481,7 @@
 		});
 		return unsubscribe;
 	});
+
 
 	function getChipIndex(): number {
 		return services.audioService.chipProcessors.findIndex((p) => p === chipProcessor);
@@ -1594,12 +1598,14 @@
 	let lastDrawnPatternLength = -1;
 	let lastCanvasWidth = -1;
 	let lastCanvasHeight = -1;
+	let lastFontSize = -1;
 	let needsSetup = true;
 
 	$effect(() => {
 		if (!canvas) return;
 
 		const currentPatternLength = currentPattern?.length ?? -1;
+		const fontSizeChanged = fontSize !== lastFontSize;
 
 		if (needsSetup || !ctx) {
 			ctx = canvas.getContext('2d')!;
@@ -1611,6 +1617,17 @@
 			lastPatternOrderLength = patternOrder.length;
 			lastPatternsLength = patterns.length;
 			lastDrawnPatternLength = currentPatternLength;
+			lastCanvasWidth = canvasWidth;
+			lastCanvasHeight = canvasHeight;
+			lastFontSize = fontSize;
+			return;
+		}
+
+		if (fontSizeChanged) {
+			clearAllCaches();
+			setupCanvas();
+			draw();
+			lastFontSize = fontSize;
 			lastCanvasWidth = canvasWidth;
 			lastCanvasHeight = canvasHeight;
 			return;

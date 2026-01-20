@@ -10,6 +10,7 @@
 	import { open } from '../../services/modal/modal-service';
 	import { TabView } from '../TabView';
 	import AppearanceSettings from './AppearanceSettings.svelte';
+	import Input from '../Input/Input.svelte';
 
 	let { resolve, dismiss, onCloseRef, initialTabId } = $props<{
 		resolve?: (value?: any) => void;
@@ -75,8 +76,28 @@
 								<RangeInput
 									id={settingId}
 									bind:value={tempSettings[item.setting] as number}
-									min={0}
-									max={100} />
+									min={item.min ?? 0}
+									max={item.max ?? 100}
+									step={item.step ?? 1} />
+							{:else if item.type === 'number'}
+								<Input
+									id={settingId}
+									type="number"
+									bind:value={tempSettings[item.setting]}
+									min={item.min}
+									max={item.max}
+									step={item.step ?? 1}
+									class="w-20 h-14"
+									onblur={(e) => {
+										const value = Number(e.currentTarget.value);
+										const min = item.min ?? -Infinity;
+										const max = item.max ?? Infinity;
+										if (!isNaN(value)) {
+											(tempSettings as any)[item.setting] = Math.max(min, Math.min(max, value));
+										} else if (item.defaultValue !== undefined) {
+											(tempSettings as any)[item.setting] = item.defaultValue;
+										}
+									}} />
 							{:else if item.type === 'toggle'}
 								<Checkbox
 									id={settingId}
@@ -92,8 +113,28 @@
 								<RangeInput
 									id={settingId}
 									bind:value={tempSettings[item.setting] as number}
-									min={0}
-									max={100} />
+									min={item.min ?? 0}
+									max={item.max ?? 100}
+									step={item.step ?? 1} />
+							{:else if item.type === 'number'}
+								<Input
+									id={settingId}
+									type="number"
+									bind:value={tempSettings[item.setting]}
+									min={item.min}
+									max={item.max}
+									step={item.step ?? 1}
+									class="w-20 h-14"
+									onblur={(e) => {
+										const value = Number(e.currentTarget.value);
+										const min = item.min ?? -Infinity;
+										const max = item.max ?? Infinity;
+										if (!isNaN(value)) {
+											(tempSettings as any)[item.setting] = Math.max(min, Math.min(max, value));
+										} else if (item.defaultValue !== undefined) {
+											(tempSettings as any)[item.setting] = item.defaultValue;
+										}
+									}} />
 							{:else if item.type === 'toggle'}
 								<Checkbox
 									id={settingId}
@@ -105,7 +146,7 @@
 						<p class="text-sm text-[var(--color-app-text-muted)]">No keyboard settings available yet.</p>
 					{/if}
 				{:else if tabId === 'appearance'}
-					<AppearanceSettings onCloseSettings={dismiss} />
+					<AppearanceSettings onCloseSettings={dismiss} bind:tempSettings={tempSettings} />
 				{/if}
 			</div>
 		{/snippet}

@@ -8,14 +8,17 @@ export const settingsStore = {
 	init() {
 		const settings = localStorage.getItem(STORAGE_KEY);
 
+		const defaultSettings: Partial<Settings> = {};
+		for (const item of settingsItems) {
+			defaultSettings[item.setting] = item.defaultValue as never;
+		}
+
 		if (settings) {
-			settingsState = JSON.parse(settings) as Settings;
+			const parsedSettings = JSON.parse(settings) as Partial<Settings>;
+			settingsState = { ...defaultSettings, ...parsedSettings } as Settings;
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsState));
 		} else {
-			const initialSettings: Partial<Settings> = {};
-			for (const item of settingsItems) {
-				initialSettings[item.setting] = item.defaultValue as never;
-			}
-			settingsState = initialSettings as Settings;
+			settingsState = defaultSettings as Settings;
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsState));
 		}
 	},
