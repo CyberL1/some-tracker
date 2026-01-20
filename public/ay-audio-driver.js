@@ -287,10 +287,10 @@ class AYAudioDriver {
 
 	processInstruments(state, registerState) {
 		state.envelopeAddValue = 0;
+		this.processEnvelopeArpeggio(state);
 		this.processEnvelopeSlide(state);
 		this.processEnvelopePortamento(state);
 		this.processEnvelopeOnOff(state);
-		this.processEnvelopeArpeggio(state, registerState);
 
 		for (let channelIndex = 0; channelIndex < state.channelInstruments.length; channelIndex++) {
 			if (state.channelOnOffCounter[channelIndex] > 0) {
@@ -514,7 +514,7 @@ class AYAudioDriver {
 		}
 	}
 
-	processEnvelopeArpeggio(state, registerState) {
+	processEnvelopeArpeggio(state) {
 		if (state.envelopeArpeggioCounter > 0) {
 			const result = EffectAlgorithms.processArpeggioCounter(
 				state.envelopeArpeggioCounter,
@@ -546,9 +546,15 @@ class AYAudioDriver {
 					const arpeggioEnvelopePeriod = Math.round(
 						state.currentTuningTable[finalNoteIndex] / 16
 					);
-					registerState.envelopePeriod = arpeggioEnvelopePeriod;
+					state.envelopeArpeggioBaseValue = arpeggioEnvelopePeriod;
+				} else {
+					state.envelopeArpeggioBaseValue = baseEnvelopePeriod;
 				}
+			} else {
+				state.envelopeArpeggioBaseValue = 0;
 			}
+		} else {
+			state.envelopeArpeggioBaseValue = 0;
 		}
 	}
 
@@ -577,8 +583,12 @@ class AYAudioDriver {
 	}
 
 	updateEnvelopeWithSlide(state, registerState) {
-		if (state.envelopeBaseValue > 0) {
-			const finalEnvelopeValue = state.envelopeBaseValue + state.envelopeSlideCurrent + state.envelopeAddValue;
+		const baseValue = state.envelopeArpeggioCounter > 0 
+			? state.envelopeArpeggioBaseValue 
+			: state.envelopeBaseValue;
+		
+		if (baseValue > 0) {
+			const finalEnvelopeValue = baseValue + state.envelopeSlideCurrent + state.envelopeAddValue;
 			const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
 			registerState.envelopePeriod = wrappedValue;
 		}

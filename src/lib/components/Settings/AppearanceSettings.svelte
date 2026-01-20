@@ -10,7 +10,6 @@
 	import IconCarbonDocumentImport from '~icons/carbon/document-import';
 	import { downloadFile } from '../../utils/file-download';
 	import { appearanceSettings } from '../../config/settings';
-	import { settingsStore } from '../../stores/settings.svelte';
 	import type { Settings } from './types';
 	import SettingField from './SettingField.svelte';
 
