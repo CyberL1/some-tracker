@@ -147,6 +147,7 @@
 	let FONTS = getFonts();
 
 	let fontSize = $derived(settingsStore.state.patternEditorFontSize);
+	let fontFamily = $derived(settingsStore.state.patternEditorFontFamily);
 	let canvasWidth = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH);
 	let canvasHeight = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_HEIGHT);
 	let lineHeight = $derived(fontSize * PATTERN_EDITOR_CONSTANTS.LINE_HEIGHT_MULTIPLIER);
@@ -435,7 +436,20 @@
 		ctx = canvas.getContext('2d')!;
 
 		try {
-			ctx.font = `${fontSize}px ${FONTS.mono}`;
+			// Load font asynchronously if it's not the default
+			if (fontFamily && fontFamily !== 'Fira Code') {
+				document.fonts.load(`${fontSize}px "${fontFamily}"`).then(() => {
+					if (ctx && canvas) {
+						ctx.font = `${fontSize}px "${fontFamily}", ${FONTS.mono}`;
+						updateSize();
+						draw();
+					}
+				}).catch((e) => {
+					console.warn(`Failed to load font: ${fontFamily}`, e);
+				});
+			}
+			
+			ctx.font = `${fontSize}px "${fontFamily}", ${FONTS.mono}`;
 			
 			updateSize();
 
@@ -445,7 +459,7 @@
 				width: canvasWidth,
 				height: canvasHeight,
 				fontSize: fontSize,
-				fonts: FONTS,
+				fonts: { ...FONTS, mono: `"${fontFamily}", ${FONTS.mono}` },
 				textBaseline: 'middle'
 			});
 
@@ -1599,6 +1613,7 @@
 	let lastCanvasWidth = -1;
 	let lastCanvasHeight = -1;
 	let lastFontSize = -1;
+	let lastFontFamily = '';
 	let needsSetup = true;
 
 	$effect(() => {
@@ -1606,6 +1621,7 @@
 
 		const currentPatternLength = currentPattern?.length ?? -1;
 		const fontSizeChanged = fontSize !== lastFontSize;
+		const fontFamilyChanged = fontFamily !== lastFontFamily;
 
 		if (needsSetup || !ctx) {
 			ctx = canvas.getContext('2d')!;
@@ -1620,14 +1636,16 @@
 			lastCanvasWidth = canvasWidth;
 			lastCanvasHeight = canvasHeight;
 			lastFontSize = fontSize;
+			lastFontFamily = fontFamily;
 			return;
 		}
 
-		if (fontSizeChanged) {
+		if (fontSizeChanged || fontFamilyChanged) {
 			clearAllCaches();
 			setupCanvas();
 			draw();
 			lastFontSize = fontSize;
+			lastFontFamily = fontFamily;
 			lastCanvasWidth = canvasWidth;
 			lastCanvasHeight = canvasHeight;
 			return;

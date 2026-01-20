@@ -3,6 +3,7 @@ export interface Settings {
 	showVisualGrid: boolean;
 	envelopeAsNote: boolean;
 	patternEditorFontSize: number;
+	patternEditorFontFamily: string;
 }
 
 export interface SettingsItem {
@@ -15,4 +16,5 @@ export interface SettingsItem {
 	min?: number;
 	max?: number;
 	step?: number;
+	options?: { value: string; label: string }[];
 }

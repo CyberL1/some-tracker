@@ -12,10 +12,7 @@
 	import { appearanceSettings } from '../../config/settings';
 	import { settingsStore } from '../../stores/settings.svelte';
 	import type { Settings } from './types';
-	import { RangeInput } from '../RangeInput';
-	import { Checkbox } from '../Checkbox';
-	import { FormField } from '../FormField';
-	import Input from '../Input/Input.svelte';
+	import SettingField from './SettingField.svelte';
 
 	let { onCloseSettings, tempSettings = $bindable() } = $props<{
 		onCloseSettings?: () => void;
@@ -126,40 +123,7 @@
 	{#if appearanceSettings.length > 0}
 		<div class="flex flex-col gap-4">
 			{#each appearanceSettings as item (item.setting)}
-				{@const settingId = `setting-${item.setting}`}
-				<FormField id={settingId} label={item.label} description={item.description}>
-					{#if item.type === 'range'}
-						<RangeInput
-							id={settingId}
-							bind:value={tempSettings[item.setting] as number}
-							min={item.min ?? 0}
-							max={item.max ?? 100}
-							step={item.step ?? 1} />
-					{:else if item.type === 'number'}
-						<Input
-							id={settingId}
-							type="number"
-							bind:value={tempSettings[item.setting]}
-							min={item.min}
-							max={item.max}
-							step={item.step ?? 1}
-							class="w-10 h-6 text-xs"
-							onblur={(e) => {
-								const value = Number(e.currentTarget.value);
-								const min = item.min ?? -Infinity;
-								const max = item.max ?? Infinity;
-								if (!isNaN(value)) {
-									(tempSettings as any)[item.setting] = Math.max(min, Math.min(max, value));
-								} else if (item.defaultValue !== undefined) {
-									(tempSettings as any)[item.setting] = item.defaultValue;
-								}
-							}} />
-					{:else if item.type === 'toggle'}
-						<Checkbox
-							id={settingId}
-							bind:checked={tempSettings[item.setting] as boolean} />
-					{/if}
-				</FormField>
+				<SettingField {item} bind:tempSettings={tempSettings} />
 			{/each}
 		</div>
 	{/if}
