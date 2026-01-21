@@ -40,10 +40,11 @@ export const settingsItems: SettingsItem[] = [
 		label: 'Pattern Editor Font Family',
 		description: 'Choose the font for the pattern editor',
 		type: 'select',
-		defaultValue: 'Fira Code',
+		defaultValue: 'monospace',
 		setting: 'patternEditorFontFamily',
 		category: 'appearance',
 		options: [
+			{ value: 'monospace', label: 'System Default' },
 			{ value: 'Fira Code', label: 'Fira Code' },
 			{ value: 'JetBrains Mono', label: 'JetBrains Mono' },
 			{ value: 'IBM Plex Mono', label: 'IBM Plex Mono' },
