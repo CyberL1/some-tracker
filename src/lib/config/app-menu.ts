@@ -5,6 +5,56 @@ import { clipboardStore } from '../stores/clipboard.svelte';
 const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
 const modKey = isMac ? 'Cmd' : 'Ctrl';
 
+export const editMenuItems: MenuItem[] = [
+	{
+		label: 'Undo',
+		type: 'normal',
+		action: 'undo',
+		shortcut: `${modKey}+Z`,
+		disabled: () => !undoRedoStore.canUndo
+	},
+	{
+		label: 'Redo',
+		type: 'normal',
+		action: 'redo',
+		shortcut: `${modKey}+${isMac ? 'Shift+Z' : 'Y'}`,
+		disabled: () => !undoRedoStore.canRedo
+	},
+	{
+		label: 'Copy',
+		type: 'normal',
+		action: 'copy',
+		shortcut: `${modKey}+C`
+	},
+	{
+		label: 'Cut',
+		type: 'normal',
+		action: 'cut',
+		shortcut: `${modKey}+X`
+	},
+	{
+		label: 'Paste',
+		type: 'normal',
+		action: 'paste',
+		shortcut: `${modKey}+V`,
+		disabled: () => !clipboardStore.hasData
+	},
+	{
+		label: 'Magic paste',
+		type: 'normal',
+		action: 'paste-without-erasing',
+		shortcut: `${modKey}+Shift+V`,
+		disabled: () => !clipboardStore.hasData
+	},
+	{ label: 'divider', type: 'divider' },
+	{
+		label: 'Apply Script...',
+		type: 'normal',
+		action: 'apply-script',
+		shortcut: `${modKey}+Shift+S`
+	}
+];
+
 export const menuItems: MenuItem[] = [
 	{
 		label: 'File',
@@ -42,56 +92,8 @@ export const menuItems: MenuItem[] = [
 	},
 	{
 		label: 'Edit',
-		items: [
-			{
-				label: 'Undo',
-				type: 'normal',
-				action: 'undo',
-				shortcut: `${modKey}+Z`,
-				disabled: () => !undoRedoStore.canUndo
-			},
-			{
-				label: 'Redo',
-				type: 'normal',
-				action: 'redo',
-				shortcut: `${modKey}+${isMac ? 'Shift+Z' : 'Y'}`,
-				disabled: () => !undoRedoStore.canRedo
-			},
-			{
-				label: 'Copy',
-				type: 'normal',
-				action: 'copy',
-				shortcut: `${modKey}+C`
-			},
-			{
-				label: 'Cut',
-				type: 'normal',
-				action: 'cut',
-				shortcut: `${modKey}+X`
-			},
-			{
-				label: 'Paste',
-				type: 'normal',
-				action: 'paste',
-				shortcut: `${modKey}+V`,
-				disabled: () => !clipboardStore.hasData
-			},
-		{
-			label: 'Magic paste',
-			type: 'normal',
-			action: 'paste-without-erasing',
-			shortcut: `${modKey}+Shift+V`,
-			disabled: () => !clipboardStore.hasData
-		},
-		{ label: 'divider', type: 'divider' },
-		{
-			label: 'Apply Script...',
-			type: 'normal',
-			action: 'apply-script',
-			shortcut: `${modKey}+Shift+S`
-		}
-	]
-},
+		items: editMenuItems
+	},
 	{
 		label: 'View',
 		items: [

@@ -34,7 +34,8 @@
 		chipProcessors,
 		patternEditor = $bindable(),
 		tables = $bindable(),
-		projectSettings = $bindable()
+		projectSettings = $bindable(),
+		onaction
 	}: {
 		songs: Song[];
 		patternOrder: number[];
@@ -42,6 +43,7 @@
 		patternEditor?: PatternEditor | null;
 		tables: Table[];
 		projectSettings: Record<string, unknown>;
+		onaction?: (data: { action: string }) => void;
 	} = $props();
 
 	let sharedPatternOrderIndex = $state(0);
@@ -395,6 +397,7 @@
 						activeEditorIndex = i;
 						patternEditor = patternEditors[i];
 					}}
+					{onaction}
 					initAllChips={initAllChipsForPlayback}
 					{getSpeedForChip}
 					speed={song.initialSpeed}

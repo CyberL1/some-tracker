@@ -63,6 +63,8 @@
 	import { UserScriptsService } from '../../services/user-scripts/user-scripts-service';
 	import type { UserScript } from '../../services/user-scripts/types';
 	import { PatternTemplateParser } from '../../services/pattern/editing/pattern-template-parsing';
+	import { MenuPanel } from '../Menu';
+	import { editMenuItems } from '../../config/app-menu';
 
 	let {
 		patterns = $bindable(),
@@ -71,6 +73,7 @@
 		selectedRow = $bindable(0),
 		isActive = false,
 		onfocus,
+		onaction,
 		initAllChips,
 		getSpeedForChip,
 		chip,
@@ -86,6 +89,7 @@
 		selectedRow: number;
 		isActive?: boolean;
 		onfocus?: () => void;
+		onaction?: (data: { action: string }) => void;
 		initAllChips?: () => void;
 		getSpeedForChip?: (chipIndex: number) => number | null;
 		chip: Chip;
@@ -95,6 +99,8 @@
 		instruments: Instrument[];
 		tables?: import('../../models/project').Table[];
 	} = $props();
+
+	let contextMenuPosition = $state<{ x: number; y: number } | null>(null);
 
 	const services: { audioService: AudioService } = getContext('container');
 
@@ -1076,6 +1082,7 @@
 
 	function handleCanvasMouseDown(event: MouseEvent): void {
 		if (!canvas || !currentPattern || !renderer || !textParser) return;
+		if (event.button === 2) return;
 
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
@@ -1196,6 +1203,20 @@
 		mouseDownCell = null;
 		hadSelectionBeforeClick = false;
 		draw();
+	}
+
+	function handleContextMenu(event: MouseEvent): void {
+		event.preventDefault();
+		contextMenuPosition = { x: event.clientX, y: event.clientY };
+	}
+
+	function closeContextMenu(): void {
+		contextMenuPosition = null;
+	}
+
+	function handleContextMenuAction(data: { action: string }): void {
+		closeContextMenu();
+		onaction?.(data);
 	}
 
 	function getDefaultValueForField(fieldType: string, fieldKey: string): string | number {
@@ -1919,7 +1940,27 @@
 			onmousedown={handleCanvasMouseDown}
 			onmousemove={handleCanvasMouseMove}
 			onmouseup={handleCanvasMouseUp}
+			oncontextmenu={handleContextMenu}
 			class="focus:border-opacity-50 border-pattern-empty focus:border-pattern-text block border transition-colors duration-150 focus:outline-none">
 		</canvas>
+
+		{#if contextMenuPosition}
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="fixed inset-0 z-40"
+				onclick={closeContextMenu}
+				oncontextmenu={(e) => { e.preventDefault(); closeContextMenu(); }}>
+			</div>
+			<div
+				class="fixed z-50"
+				style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px;">
+				<MenuPanel
+					isFirst={true}
+					items={editMenuItems}
+					onAction={handleContextMenuAction}
+					onMenuClose={closeContextMenu} />
+			</div>
+		{/if}
 	</div>
 </div>

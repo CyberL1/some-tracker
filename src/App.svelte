@@ -419,6 +419,7 @@
 			bind:patternEditor
 			bind:tables
 			bind:projectSettings
+			onaction={handleMenuAction}
 			chipProcessors={container.audioService.chipProcessors} />
 	</div>
 	<ModalContainer />
