@@ -30,7 +30,8 @@ export class AYConverter implements PatternConverter {
 					? ({
 							effect: envelopeEffect.effect,
 							delay: envelopeEffect.delay,
-							parameter: envelopeEffect.parameter
+							parameter: envelopeEffect.parameter,
+							tableIndex: envelopeEffect.tableIndex
 						} as Record<string, unknown>)
 					: null
 			};
@@ -50,7 +51,8 @@ export class AYConverter implements PatternConverter {
 						? ({
 								effect: effect.effect,
 								delay: effect.delay,
-								parameter: effect.parameter
+								parameter: effect.parameter,
+								tableIndex: effect.tableIndex
 							} as Record<string, unknown>)
 						: null
 				};
@@ -77,7 +79,8 @@ export class AYConverter implements PatternConverter {
 				ayPatternRow.envelopeEffect = new Effect(
 					genericPatternRow.envelopeEffect.effect,
 					genericPatternRow.envelopeEffect.delay,
-					genericPatternRow.envelopeEffect.parameter
+					genericPatternRow.envelopeEffect.parameter,
+					genericPatternRow.envelopeEffect.tableIndex
 				);
 			}
 
@@ -100,7 +103,8 @@ export class AYConverter implements PatternConverter {
 					ayRow.effects[0] = new Effect(
 						genericRow.effect.effect,
 						genericRow.effect.delay,
-						genericRow.effect.parameter
+						genericRow.effect.parameter,
+						genericRow.effect.tableIndex
 					);
 				}
 			}

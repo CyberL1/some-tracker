@@ -228,22 +228,33 @@ class AYAudioDriver {
 		const PORTAMENTO = 'P'.charCodeAt(0);
 		const ON_OFF = 6;
 
+		const hasTableIndex = effect.tableIndex !== undefined && effect.tableIndex >= 0;
+
+		if (hasTableIndex) {
+			this._initEnvelopeEffectTable(state, effect);
+		} else {
+			state.envelopeEffectTable = -1;
+		}
+
 		if (effect.effect === ARPEGGIO) {
-			const arpeggioState = EffectAlgorithms.initArpeggio(effect.parameter, effect.delay);
+			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const arpeggioState = EffectAlgorithms.initArpeggio(param, effect.delay);
 			state.envelopeArpeggioSemitone1 = arpeggioState.semitone1;
 			state.envelopeArpeggioSemitone2 = arpeggioState.semitone2;
 			state.envelopeArpeggioDelay = arpeggioState.delay;
 			state.envelopeArpeggioCounter = arpeggioState.counter;
 			state.envelopeArpeggioPosition = arpeggioState.position;
 		} else if (effect.effect === SLIDE_UP) {
-			const slideState = EffectAlgorithms.initSlide(effect.parameter, effect.delay);
+			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const slideState = EffectAlgorithms.initSlide(param, effect.delay);
 			state.envelopeSlideDelay = slideState.delay;
 			state.envelopeSlideDelayCounter = slideState.counter;
 			state.envelopeSlideDelta = slideState.step;
 			state.envelopePortamentoActive = false;
 			state.envelopeOnOffCounter = 0;
 		} else if (effect.effect === SLIDE_DOWN) {
-			const slideState = EffectAlgorithms.initSlide(-effect.parameter, effect.delay);
+			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const slideState = EffectAlgorithms.initSlide(-param, effect.delay);
 			state.envelopeSlideDelay = slideState.delay;
 			state.envelopeSlideDelayCounter = slideState.counter;
 			state.envelopeSlideDelta = slideState.step;
@@ -255,10 +266,11 @@ class AYAudioDriver {
 				const currentValue = state.envelopeBaseValue;
 
 				if (currentValue >= 0) {
+					const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
 					const portamentoState = EffectAlgorithms.initPortamento(
 						currentValue,
 						targetValue,
-						effect.parameter,
+						param,
 						effect.delay
 					);
 					state.envelopePortamentoTarget = portamentoState.target;
@@ -274,7 +286,8 @@ class AYAudioDriver {
 				}
 			}
 		} else if (effect.effect === ON_OFF) {
-			const onOffState = EffectAlgorithms.initOnOff(effect.parameter);
+			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const onOffState = EffectAlgorithms.initOnOff(param);
 			state.envelopeOffDuration = onOffState.offDuration;
 			state.envelopeOnDuration = onOffState.onDuration;
 			state.envelopeOnOffCounter = onOffState.counter;
@@ -285,8 +298,85 @@ class AYAudioDriver {
 		}
 	}
 
+	_initEnvelopeEffectTable(state, effect) {
+		state.envelopeEffectTable = effect.tableIndex;
+		state.envelopeEffectTablePosition = 0;
+		state.envelopeEffectTableCounter = effect.delay || 1;
+		state.envelopeEffectTableDelay = effect.delay || 1;
+		state.envelopeEffectType = effect.effect;
+	}
+
+	_getEnvelopeEffectTableValue(state) {
+		const tableIndex = state.envelopeEffectTable;
+		if (tableIndex < 0) return 0;
+
+		const table = state.tables[tableIndex];
+		if (!table || !table.rows || table.rows.length === 0) return 0;
+
+		const position = state.envelopeEffectTablePosition;
+		return table.rows[position] || 0;
+	}
+
+	processEnvelopeEffectTable(state) {
+		const tableIndex = state.envelopeEffectTable;
+		if (tableIndex < 0) return;
+
+		const table = state.tables[tableIndex];
+		if (!table || !table.rows || table.rows.length === 0) return;
+
+		state.envelopeEffectTableCounter--;
+		if (state.envelopeEffectTableCounter <= 0) {
+			state.envelopeEffectTableCounter = state.envelopeEffectTableDelay;
+			state.envelopeEffectTablePosition++;
+
+			if (state.envelopeEffectTablePosition >= table.rows.length) {
+				if (table.loop >= 0 && table.loop < table.rows.length) {
+					state.envelopeEffectTablePosition = table.loop;
+				} else {
+					state.envelopeEffectTablePosition = 0;
+				}
+			}
+
+			this._applyEnvelopeEffectTableParameter(state);
+		}
+	}
+
+	_applyEnvelopeEffectTableParameter(state) {
+		const effectType = state.envelopeEffectType;
+		const param = this._getEnvelopeEffectTableValue(state);
+		const ARPEGGIO = 'A'.charCodeAt(0);
+		const SLIDE_UP = 1;
+		const SLIDE_DOWN = 2;
+		const PORTAMENTO = 'P'.charCodeAt(0);
+		const ON_OFF = 6;
+
+		if (effectType === ARPEGGIO) {
+			const semitone1 = (param >> 4) & 15;
+			const semitone2 = param & 15;
+			state.envelopeArpeggioSemitone1 = semitone1;
+			state.envelopeArpeggioSemitone2 = semitone2;
+		} else if (effectType === SLIDE_UP) {
+			state.envelopeSlideDelta = param;
+		} else if (effectType === SLIDE_DOWN) {
+			state.envelopeSlideDelta = -param;
+		} else if (effectType === PORTAMENTO) {
+			const delta = state.envelopePortamentoDelta;
+			const currentSliding = state.envelopeSlideCurrent;
+			state.envelopePortamentoStep = param;
+			if (delta - currentSliding < 0) {
+				state.envelopePortamentoStep = -param;
+			}
+		} else if (effectType === ON_OFF) {
+			const offDuration = param & 15;
+			const onDuration = param >> 4;
+			state.envelopeOffDuration = offDuration;
+			state.envelopeOnDuration = onDuration;
+		}
+	}
+
 	processInstruments(state, registerState) {
 		state.envelopeAddValue = 0;
+		this.processEnvelopeEffectTable(state);
 		this.processEnvelopeArpeggio(state);
 		this.processEnvelopeSlide(state);
 		this.processEnvelopePortamento(state);

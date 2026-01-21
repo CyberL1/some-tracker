@@ -66,11 +66,13 @@ class Effect {
 	effect: number;
 	delay: number;
 	parameter: number;
+	tableIndex?: number;
 
-	constructor(effect: number, delay: number = 0, parameter: number = 0) {
+	constructor(effect: number, delay: number = 0, parameter: number = 0, tableIndex?: number) {
 		this.effect = effect;
 		this.delay = delay;
 		this.parameter = parameter;
+		this.tableIndex = tableIndex;
 	}
 }
 

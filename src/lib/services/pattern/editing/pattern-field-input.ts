@@ -31,7 +31,7 @@ export class PatternFieldInput {
 		const isEffectField = EffectField.isEffectField(fieldInfo.fieldKey);
 
 		if (isEffectField) {
-			if (!/^[0-9A-FPS\.]$/i.test(key)) {
+			if (!/^[0-9A-FPST\.]$/i.test(key)) {
 				return null;
 			}
 		} else {

@@ -2,7 +2,7 @@ import { formatHex } from '../../../chips/base/field-formatters';
 
 export class PatternEffectHandling {
 	static formatEffectAsString(
-		effect: { effect: number; delay: number; parameter: number } | null | undefined
+		effect: { effect: number; delay: number; parameter: number; tableIndex?: number } | null | undefined
 	): string {
 		if (!effect) return '....';
 		let type: string;
@@ -20,6 +20,12 @@ export class PatternEffectHandling {
 			type = effect.effect.toString(16).toUpperCase();
 		}
 		const delay = formatHex(effect.delay, 1);
+
+		if (effect.tableIndex !== undefined) {
+			const tableChar = effect.tableIndex < 0 ? '.' : this.tableIndexToChar(effect.tableIndex);
+			return type + delay + 'T' + tableChar;
+		}
+
 		const param = formatHex(effect.parameter, 2);
 		return type + delay + param;
 	}
@@ -28,6 +34,7 @@ export class PatternEffectHandling {
 		effect: number;
 		delay: number;
 		parameter: number;
+		tableIndex?: number;
 	} {
 		let type: number;
 		const typeChar = value[0] || '.';
@@ -43,7 +50,36 @@ export class PatternEffectHandling {
 			type = parseInt(typeChar, 16) || 0;
 		}
 		const delay = parseInt(value[1] || '0', 16) || 0;
+
+		const char2 = value[2] || '.';
+		if (char2 === 'T' || char2 === 't') {
+			const tableChar = value[3] || '0';
+			const tableIndex = this.charToTableIndex(tableChar);
+			return { effect: type, delay, parameter: 0, tableIndex };
+		}
+
 		const param = parseInt((value.slice(2, 4) || '00').replace(/\./g, '0'), 16) || 0;
 		return { effect: type, delay, parameter: param };
+	}
+
+	private static tableIndexToChar(index: number): string {
+		if (index < 0) return '.';
+		const displayNum = index + 1;
+		if (displayNum < 10) return displayNum.toString();
+		if (displayNum < 32) return String.fromCharCode('A'.charCodeAt(0) + displayNum - 10);
+		return 'V';
+	}
+
+	private static charToTableIndex(char: string): number {
+		const upper = char.toUpperCase();
+		if (upper === '.' || upper === '0') return -1;
+		const code = upper.charCodeAt(0);
+		if (code >= '1'.charCodeAt(0) && code <= '9'.charCodeAt(0)) {
+			return (code - '0'.charCodeAt(0)) - 1;
+		}
+		if (code >= 'A'.charCodeAt(0) && code <= 'V'.charCodeAt(0)) {
+			return 10 + (code - 'A'.charCodeAt(0)) - 1;
+		}
+		return -1;
 	}
 }

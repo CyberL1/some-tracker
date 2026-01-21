@@ -2,6 +2,7 @@ export interface EffectLike {
 	effect: number;
 	delay: number;
 	parameter: number;
+	tableIndex?: number;
 }
 
 export function isEffectLike(value: unknown): value is EffectLike {

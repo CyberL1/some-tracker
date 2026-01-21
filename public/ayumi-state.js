@@ -46,6 +46,12 @@ class AyumiState extends TrackerState {
 		this.noiseBaseValue = 0;
 		this.noiseAddValue = 0;
 		this.envelopeAddValue = 0;
+
+		this.envelopeEffectTable = -1;
+		this.envelopeEffectTablePosition = 0;
+		this.envelopeEffectTableCounter = 0;
+		this.envelopeEffectTableDelay = 1;
+		this.envelopeEffectType = 0;
 	}
 
 	setWasmModule(module, ptr, wasmBuffer) {
@@ -110,6 +116,12 @@ class AyumiState extends TrackerState {
 		this.noiseBaseValue = 0;
 		this.envelopeAddValue = 0;
 		this.noiseAddValue = 0;
+
+		this.envelopeEffectTable = -1;
+		this.envelopeEffectTablePosition = 0;
+		this.envelopeEffectTableCounter = 0;
+		this.envelopeEffectTableDelay = 1;
+		this.envelopeEffectType = 0;
 	}
 }
 

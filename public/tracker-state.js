@@ -44,6 +44,15 @@ class TrackerState {
 		this.channelArpeggioDelay = Array(channelCount).fill(0);
 		this.channelArpeggioCounter = Array(channelCount).fill(0);
 		this.channelArpeggioPosition = Array(channelCount).fill(0);
+
+		this.channelEffectTables = Array(channelCount).fill(-1);
+		this.channelEffectTablePositions = Array(channelCount).fill(0);
+		this.channelEffectTableCounters = Array(channelCount).fill(0);
+		this.channelEffectTableDelays = Array(channelCount).fill(1);
+		this.channelEffectTypes = Array(channelCount).fill(0);
+
+		this.speedTable = -1;
+		this.speedTablePosition = 0;
 	}
 
 	reset() {
@@ -75,6 +84,15 @@ class TrackerState {
 		this.channelArpeggioDelay.fill(0);
 		this.channelArpeggioCounter.fill(0);
 		this.channelArpeggioPosition.fill(0);
+
+		this.channelEffectTables.fill(-1);
+		this.channelEffectTablePositions.fill(0);
+		this.channelEffectTableCounters.fill(0);
+		this.channelEffectTableDelays.fill(1);
+		this.channelEffectTypes.fill(0);
+
+		this.speedTable = -1;
+		this.speedTablePosition = 0;
 	}
 
 	setTuningTable(table) {

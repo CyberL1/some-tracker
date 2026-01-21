@@ -177,9 +177,11 @@ export class AYChipRenderer implements ChipRenderer {
 			if (state.tickAccumulator >= 1.0) {
 				if (state.currentTick === 0 && state.currentPattern) {
 					patternProcessor.parsePatternRow(state.currentPattern, state.currentRow, registerState);
+					patternProcessor.processSpeedTable();
 				}
 
 				patternProcessor.processTables();
+				patternProcessor.processEffectTables();
 				patternProcessor.processSlides();
 				patternProcessor.processArpeggio();
 				audioDriver.processInstruments(state, registerState);

@@ -483,6 +483,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 							this.state.currentRow,
 							this.registerState
 						);
+						this.patternProcessor.processSpeedTable();
 
 						const now = currentTime * 1000;
 						if (now - this.lastPositionUpdateTime >= this.positionUpdateThrottleMs) {
@@ -506,6 +507,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					this.enforceMuteState();
 
 					this.patternProcessor.processTables();
+					this.patternProcessor.processEffectTables();
 					this.patternProcessor.processSlides();
 					this.patternProcessor.processArpeggio();
 					this.audioDriver.processInstruments(this.state, this.registerState);
