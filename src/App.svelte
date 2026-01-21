@@ -29,11 +29,15 @@
 	import { themeService } from './lib/services/theme/theme-service';
 	import { themeEditorStore } from './lib/stores/theme-editor.svelte';
 	import ThemeEditorModal from './lib/components/Theme/ThemeEditorModal.svelte';
+	import UserScriptsModal from './lib/components/Modal/UserScriptsModal.svelte';
 	import { tick } from 'svelte';
+
+	import { userScriptsStore } from './lib/stores/user-scripts.svelte';
 
 	settingsStore.init();
 	editorStateStore.init();
 	themeStore.init(themeService);
+	userScriptsStore.init();
 
 	let lastAppliedThemeId = $state<string | null>(null);
 
@@ -317,6 +321,15 @@
 				return;
 			}
 
+			if (data.action === 'apply-script') {
+				const hasSelection = patternEditor?.hasSelection?.() ?? false;
+				const result = await open(UserScriptsModal, { hasSelection });
+				if (result && patternEditor?.applyScript) {
+					patternEditor.applyScript(result);
+				}
+				return;
+			}
+
 			if (data.action === 'save' || data.action === 'save-as') {
 				const currentProject = new Project(
 					projectSettings.title,
@@ -385,7 +398,16 @@
 	}
 
 	setContext('container', container);
+
+	function handleGlobalKeyDown(event: KeyboardEvent) {
+		if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 's') {
+			event.preventDefault();
+			handleMenuAction({ action: 'apply-script' });
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleGlobalKeyDown} />
 
 <main
 	class="flex h-screen flex-col gap-1 overflow-hidden bg-[var(--color-app-surface-secondary)] font-sans text-xs text-[var(--color-app-text-primary)]">

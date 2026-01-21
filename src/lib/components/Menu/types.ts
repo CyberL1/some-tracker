@@ -1,6 +1,6 @@
 export type MenuItem = {
 	label: string;
-	type?: 'normal' | 'expandable';
+	type?: 'normal' | 'expandable' | 'divider';
 	icon?: string;
 	action?: string;
 	items?: MenuItem[];

@@ -17,7 +17,7 @@
 	}: {
 		label: string;
 		icon: string;
-		type: 'normal' | 'expandable';
+		type: 'normal' | 'expandable' | 'divider';
 		action?: string;
 		items: MenuItem[];
 		shortcut?: string;
@@ -134,42 +134,46 @@
 	});
 </script>
 
-<div
-	class="menu-panel-button relative flex cursor-pointer items-center justify-between gap-4 px-2 py-1.5 text-xs hover:bg-[var(--color-app-surface-hover)]"
-	class:cursor-not-allowed={isDisabled}
-	class:opacity-50={isDisabled}
-	class:hover:bg-transparent={isDisabled}
-	onclick={handleClick}
-	onkeydown={handleKeyDown}
-	onmouseenter={handleMouseEnter}
-	onmouseleave={handleMouseLeave}
-	tabindex="0"
-	role="menuitem"
-	class:bg-[var(--color-app-surface-hover)]={isActive}>
-	<div class="flex items-center gap-2">
-		{#if icon}
-			<span>{icon}</span>
-		{/if}
-		<span>{label}</span>
-	</div>
-
-	<div class="flex items-center gap-2">
-		{#if shortcut}
-			<span class="text-xs text-[var(--color-app-text-muted)]">{shortcut}</span>
-		{/if}
-		{#if type === 'expandable'}
-			<span class="text-xs">▶</span>
-		{/if}
-	</div>
-
-	{#if showSubmenuPanel && type === 'expandable' && items && items.length > 0}
-		<div class="absolute top-0 left-full ml-0.5">
-			<MenuPanel
-				isFirst={false}
-				{items}
-				onAction={handleAction}
-				onMenuOpen={handleMenuOpen}
-				onMenuClose={handleMenuClose} />
+{#if type === 'divider'}
+	<div class="my-1 h-px bg-[var(--color-app-border)]" role="separator"></div>
+{:else}
+	<div
+		class="menu-panel-button relative flex cursor-pointer items-center justify-between gap-4 px-2 py-1.5 text-xs hover:bg-[var(--color-app-surface-hover)]"
+		class:cursor-not-allowed={isDisabled}
+		class:opacity-50={isDisabled}
+		class:hover:bg-transparent={isDisabled}
+		onclick={handleClick}
+		onkeydown={handleKeyDown}
+		onmouseenter={handleMouseEnter}
+		onmouseleave={handleMouseLeave}
+		tabindex="0"
+		role="menuitem"
+		class:bg-[var(--color-app-surface-hover)]={isActive}>
+		<div class="flex items-center gap-2">
+			{#if icon}
+				<span>{icon}</span>
+			{/if}
+			<span>{label}</span>
 		</div>
-	{/if}
-</div>
+
+		<div class="flex items-center gap-2">
+			{#if shortcut}
+				<span class="text-xs text-[var(--color-app-text-muted)]">{shortcut}</span>
+			{/if}
+			{#if type === 'expandable'}
+				<span class="text-xs">▶</span>
+			{/if}
+		</div>
+
+		{#if showSubmenuPanel && type === 'expandable' && items && items.length > 0}
+			<div class="absolute top-0 left-full ml-0.5">
+				<MenuPanel
+					isFirst={false}
+					{items}
+					onAction={handleAction}
+					onMenuOpen={handleMenuOpen}
+					onMenuClose={handleMenuClose} />
+			</div>
+		{/if}
+	</div>
+{/if}

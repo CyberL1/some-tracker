@@ -76,15 +76,22 @@ export const menuItems: MenuItem[] = [
 				shortcut: `${modKey}+V`,
 				disabled: () => !clipboardStore.hasData
 			},
-			{
-				label: 'Magic paste',
-				type: 'normal',
-				action: 'paste-without-erasing',
-				shortcut: `${modKey}+Shift+V`,
-				disabled: () => !clipboardStore.hasData
-			}
-		]
-	},
+		{
+			label: 'Magic paste',
+			type: 'normal',
+			action: 'paste-without-erasing',
+			shortcut: `${modKey}+Shift+V`,
+			disabled: () => !clipboardStore.hasData
+		},
+		{ label: 'divider', type: 'divider' },
+		{
+			label: 'Apply Script...',
+			type: 'normal',
+			action: 'apply-script',
+			shortcut: `${modKey}+Shift+S`
+		}
+	]
+},
 	{
 		label: 'View',
 		items: [

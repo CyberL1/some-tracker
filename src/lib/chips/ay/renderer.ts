@@ -67,9 +67,17 @@ export class AYChipRenderer implements ChipRenderer {
 		onProgress?.(40, 'Loading audio driver...');
 		const { default: AYAudioDriver } = await import(`${baseUrl}ay-audio-driver.js`);
 		const { default: AyumiEngine } = await import(`${baseUrl}ayumi-engine.js`);
-		const { default: AYChipRegisterState } = await import(`${baseUrl}ay-chip-register-state.js`);
+		const { default: AYChipRegisterState } = await import(
+			`${baseUrl}ay-chip-register-state.js`
+		);
 
-		return { AyumiState, TrackerPatternProcessor, AYAudioDriver, AyumiEngine, AYChipRegisterState };
+		return {
+			AyumiState,
+			TrackerPatternProcessor,
+			AYAudioDriver,
+			AyumiEngine,
+			AYChipRegisterState
+		};
 	}
 
 	private setupState(
@@ -176,7 +184,11 @@ export class AYChipRenderer implements ChipRenderer {
 
 			if (state.tickAccumulator >= 1.0) {
 				if (state.currentTick === 0 && state.currentPattern) {
-					patternProcessor.parsePatternRow(state.currentPattern, state.currentRow, registerState);
+					patternProcessor.parsePatternRow(
+						state.currentPattern,
+						state.currentRow,
+						registerState
+					);
 					patternProcessor.processSpeedTable();
 				}
 
@@ -240,8 +252,13 @@ export class AYChipRenderer implements ChipRenderer {
 
 		const { wasm, wasmBuffer } = await this.loadWasmModule(onProgress);
 		const ayumiPtr = this.initializeAyumi(wasm, song);
-		const { AyumiState, TrackerPatternProcessor, AYAudioDriver, AyumiEngine, AYChipRegisterState } =
-			await this.loadProcessorModules(onProgress);
+		const {
+			AyumiState,
+			TrackerPatternProcessor,
+			AYAudioDriver,
+			AyumiEngine,
+			AYChipRegisterState
+		} = await this.loadProcessorModules(onProgress);
 
 		const state = new AyumiState();
 		this.setupState(state, song, project, wasm, ayumiPtr, wasmBuffer);

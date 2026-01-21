@@ -2,7 +2,10 @@ import { formatHex } from '../../../chips/base/field-formatters';
 
 export class PatternEffectHandling {
 	static formatEffectAsString(
-		effect: { effect: number; delay: number; parameter: number; tableIndex?: number } | null | undefined
+		effect:
+			| { effect: number; delay: number; parameter: number; tableIndex?: number }
+			| null
+			| undefined
 	): string {
 		if (!effect) return '....';
 		let type: string;
@@ -22,7 +25,8 @@ export class PatternEffectHandling {
 		const delay = formatHex(effect.delay, 1);
 
 		if (effect.tableIndex !== undefined) {
-			const tableChar = effect.tableIndex < 0 ? '.' : this.tableIndexToChar(effect.tableIndex);
+			const tableChar =
+				effect.tableIndex < 0 ? '.' : this.tableIndexToChar(effect.tableIndex);
 			return type + delay + 'T' + tableChar;
 		}
 
@@ -75,7 +79,7 @@ export class PatternEffectHandling {
 		if (upper === '.' || upper === '0') return -1;
 		const code = upper.charCodeAt(0);
 		if (code >= '1'.charCodeAt(0) && code <= '9'.charCodeAt(0)) {
-			return (code - '0'.charCodeAt(0)) - 1;
+			return code - '0'.charCodeAt(0) - 1;
 		}
 		if (code >= 'A'.charCodeAt(0) && code <= 'V'.charCodeAt(0)) {
 			return 10 + (code - 'A'.charCodeAt(0)) - 1;

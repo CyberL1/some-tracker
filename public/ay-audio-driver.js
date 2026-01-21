@@ -237,7 +237,9 @@ class AYAudioDriver {
 		}
 
 		if (effect.effect === ARPEGGIO) {
-			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const param = hasTableIndex
+				? this._getEnvelopeEffectTableValue(state)
+				: effect.parameter;
 			const arpeggioState = EffectAlgorithms.initArpeggio(param, effect.delay);
 			state.envelopeArpeggioSemitone1 = arpeggioState.semitone1;
 			state.envelopeArpeggioSemitone2 = arpeggioState.semitone2;
@@ -245,7 +247,9 @@ class AYAudioDriver {
 			state.envelopeArpeggioCounter = arpeggioState.counter;
 			state.envelopeArpeggioPosition = arpeggioState.position;
 		} else if (effect.effect === SLIDE_UP) {
-			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const param = hasTableIndex
+				? this._getEnvelopeEffectTableValue(state)
+				: effect.parameter;
 			const slideState = EffectAlgorithms.initSlide(param, effect.delay);
 			state.envelopeSlideDelay = slideState.delay;
 			state.envelopeSlideDelayCounter = slideState.counter;
@@ -253,7 +257,9 @@ class AYAudioDriver {
 			state.envelopePortamentoActive = false;
 			state.envelopeOnOffCounter = 0;
 		} else if (effect.effect === SLIDE_DOWN) {
-			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const param = hasTableIndex
+				? this._getEnvelopeEffectTableValue(state)
+				: effect.parameter;
 			const slideState = EffectAlgorithms.initSlide(-param, effect.delay);
 			state.envelopeSlideDelay = slideState.delay;
 			state.envelopeSlideDelayCounter = slideState.counter;
@@ -266,7 +272,9 @@ class AYAudioDriver {
 				const currentValue = state.envelopeBaseValue;
 
 				if (currentValue >= 0) {
-					const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+					const param = hasTableIndex
+						? this._getEnvelopeEffectTableValue(state)
+						: effect.parameter;
 					const portamentoState = EffectAlgorithms.initPortamento(
 						currentValue,
 						targetValue,
@@ -286,7 +294,9 @@ class AYAudioDriver {
 				}
 			}
 		} else if (effect.effect === ON_OFF) {
-			const param = hasTableIndex ? this._getEnvelopeEffectTableValue(state) : effect.parameter;
+			const param = hasTableIndex
+				? this._getEnvelopeEffectTableValue(state)
+				: effect.parameter;
 			const onOffState = EffectAlgorithms.initOnOff(param);
 			state.envelopeOffDuration = onOffState.offDuration;
 			state.envelopeOnDuration = onOffState.onDuration;
@@ -484,7 +494,6 @@ class AYAudioDriver {
 				state.envelopeAddValue += envelopeValue;
 			}
 
-
 			if (instrumentRow.volume >= 0) {
 				state.channelInstrumentVolumes[channelIndex] = instrumentRow.volume;
 			}
@@ -673,12 +682,14 @@ class AYAudioDriver {
 	}
 
 	updateEnvelopeWithSlide(state, registerState) {
-		const baseValue = state.envelopeArpeggioCounter > 0 
-			? state.envelopeArpeggioBaseValue 
-			: state.envelopeBaseValue;
-		
+		const baseValue =
+			state.envelopeArpeggioCounter > 0
+				? state.envelopeArpeggioBaseValue
+				: state.envelopeBaseValue;
+
 		if (baseValue > 0) {
-			const finalEnvelopeValue = baseValue + state.envelopeSlideCurrent + state.envelopeAddValue;
+			const finalEnvelopeValue =
+				baseValue + state.envelopeSlideCurrent + state.envelopeAddValue;
 			const wrappedValue = ((finalEnvelopeValue % 0x10000) + 0x10000) % 0x10000;
 			registerState.envelopePeriod = wrappedValue;
 		}

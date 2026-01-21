@@ -145,13 +145,8 @@ class Pattern {
 		const fields = schema?.fields;
 		const globalFields = schema?.globalFields;
 
-		this.channels = channelLabels.map(
-			(label) => new Channel(length, label, fields)
-		);
-		this.patternRows = Array.from(
-			{ length },
-			() => new PatternRow(globalFields)
-		);
+		this.channels = channelLabels.map((label) => new Channel(length, label, fields));
+		this.patternRows = Array.from({ length }, () => new PatternRow(globalFields));
 	}
 }
 

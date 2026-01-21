@@ -476,7 +476,11 @@ class AyumiProcessor extends AudioWorkletProcessor {
 						}
 					}
 					this.ayumiEngine.applyRegisterState(this.registerState);
-				} else if (this.state.currentPattern && this.state.currentPattern.length > 0 && this.state.tickAccumulator >= 1.0) {
+				} else if (
+					this.state.currentPattern &&
+					this.state.currentPattern.length > 0 &&
+					this.state.tickAccumulator >= 1.0
+				) {
 					if (this.state.currentTick === 0) {
 						this.patternProcessor.parsePatternRow(
 							this.state.currentPattern,

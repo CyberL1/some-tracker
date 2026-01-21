@@ -50,13 +50,19 @@
 	} from '../../services/pattern/pattern-keyboard-shortcuts';
 	import { EnvelopeModeService } from '../../services/pattern/envelope-mode-service';
 	import { PatternRowDataService } from '../../services/pattern/pattern-row-data-service';
-	import { SelectionBoundsService } from '../../services/pattern/selection-bounds-service';
+	import {
+		SelectionBoundsService,
+		type SelectionBounds
+	} from '../../services/pattern/selection-bounds-service';
 	import {
 		envelopePeriodToNote,
 		noteToEnvelopePeriod
 	} from '../../utils/envelope-note-conversion';
 	import { themeService } from '../../services/theme/theme-service';
 	import { settingsStore } from '../../stores/settings.svelte';
+	import { UserScriptsService } from '../../services/user-scripts/user-scripts-service';
+	import type { UserScript } from '../../services/user-scripts/types';
+	import { PatternTemplateParser } from '../../services/pattern/editing/pattern-template-parsing';
 
 	let {
 		patterns = $bindable(),
@@ -334,6 +340,66 @@
 		lastVisibleRowsCache = null;
 		clearAllCaches();
 		draw();
+	}
+
+	export function hasSelection(): boolean {
+		return (
+			selectionStartRow !== null &&
+			selectionStartColumn !== null &&
+			selectionEndRow !== null &&
+			selectionEndColumn !== null &&
+			(selectionStartRow !== selectionEndRow || selectionStartColumn !== selectionEndColumn)
+		);
+	}
+
+	export async function applyScript(script: UserScript): Promise<void> {
+		const bounds = getSelectionBounds();
+		if (!bounds) return;
+
+		const patternId = patternOrder[currentPatternOrderIndex];
+		const originalPattern = findOrCreatePattern(patternId);
+
+		const selectedChannels = getSelectedChannels(originalPattern, bounds);
+
+		try {
+			const updatedPattern = await UserScriptsService.runScript(script, {
+				pattern: originalPattern,
+				bounds,
+				converter,
+				selectedChannels
+			});
+
+			recordBulkPatternEdit(originalPattern, updatedPattern);
+			updatePatternInArray(updatedPattern);
+			clearAllCaches();
+			draw();
+		} catch (error) {
+			console.error('Error executing user script:', error);
+		}
+	}
+
+	function getSelectedChannels(pattern: Pattern, bounds: SelectionBounds): Set<number> {
+		const channels = new Set<number>();
+		const rowString = getPatternRowData(pattern, bounds.minRow);
+		const cellPositions = getCellPositions(rowString, bounds.minRow);
+
+		for (let col = bounds.minCol; col <= bounds.maxCol && col < cellPositions.length; col++) {
+			const cell = cellPositions[col];
+			if (!cell.fieldKey) continue;
+
+			const isGlobal = !!schema.globalFields?.[cell.fieldKey];
+			if (isGlobal) continue;
+
+			const channelIndex = PatternTemplateParser.calculateChannelIndexForField(
+				cell.fieldKey,
+				cell.charIndex,
+				rowString,
+				schema
+			);
+			channels.add(channelIndex);
+		}
+
+		return channels;
 	}
 
 	export function playFromCursor() {
@@ -1130,16 +1196,6 @@
 		mouseDownCell = null;
 		hadSelectionBeforeClick = false;
 		draw();
-	}
-
-	function hasSelection(): boolean {
-		return (
-			selectionStartRow !== null &&
-			selectionStartColumn !== null &&
-			selectionEndRow !== null &&
-			selectionEndColumn !== null &&
-			(selectionStartRow !== selectionEndRow || selectionStartColumn !== selectionEndColumn)
-		);
 	}
 
 	function getDefaultValueForField(fieldType: string, fieldKey: string): string | number {

@@ -6,11 +6,13 @@
 		children,
 		onclick,
 		variant = 'default',
+		disabled = false,
 		class: className
 	}: {
 		children: Snippet;
 		onclick: (e: MouseEvent) => void;
 		variant?: 'default' | 'primary' | 'secondary';
+		disabled?: boolean;
 		class?: ClassValue;
 	} = $props();
 
@@ -25,7 +27,10 @@
 
 <button
 	{onclick}
+	{disabled}
 	class="cursor-pointer rounded-sm border px-4 py-1.5 text-xs transition-colors focus:border-transparent focus:ring-1
-		focus:ring-blue-500 focus:outline-none {variantClasses} {className}">
+		focus:ring-blue-500 focus:outline-none {variantClasses} {className}"
+	class:opacity-50={disabled}
+	class:cursor-not-allowed={disabled}>
 	{@render children()}
 </button>

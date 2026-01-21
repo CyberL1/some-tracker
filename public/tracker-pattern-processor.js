@@ -83,6 +83,10 @@ class TrackerPatternProcessor {
 		const hasSlideCommand = effects.some((e) => e && (e.effect === 1 || e.effect === 2));
 		const hasPortamentoCommand = effects.some((e) => e && e.effect === 'P'.charCodeAt(0));
 		const hasArpeggioCommand = effects.some((e) => e && e.effect === 'A'.charCodeAt(0));
+		const hasOnOffCommand = effects.some((e) => e && e.effect === 6);
+		const hasEffectWithTable = effects.some(
+			(e) => e && e.tableIndex !== undefined && e.tableIndex >= 0
+		);
 
 		if (!this.state.channelSlideAlreadyApplied) {
 			this.state.channelSlideAlreadyApplied = [];
@@ -107,14 +111,19 @@ class TrackerPatternProcessor {
 
 			this.state.channelBaseNotes[channelIndex] = noteValue;
 			this.state.channelCurrentNotes[channelIndex] = noteValue;
-			this.state.channelOnOffCounter[channelIndex] = 0;
+
+			if (!hasOnOffCommand) {
+				this.state.channelOnOffCounter[channelIndex] = 0;
+			}
 
 			if (this.state.channelTables[channelIndex] >= 0) {
 				this.state.tablePositions[channelIndex] = 0;
 				this.state.tableCounters[channelIndex] = 0;
 			}
 
-			this.state.channelEffectTables[channelIndex] = -1;
+			if (!hasEffectWithTable) {
+				this.state.channelEffectTables[channelIndex] = -1;
+			}
 
 			if (!hasArpeggioCommand) {
 				this.state.channelArpeggioCounter[channelIndex] = 0;
@@ -206,14 +215,18 @@ class TrackerPatternProcessor {
 				}
 			}
 		} else if (effect.effect === SLIDE_UP) {
-			const param = hasTableIndex ? this._getEffectTableValue(channelIndex) : effect.parameter;
+			const param = hasTableIndex
+				? this._getEffectTableValue(channelIndex)
+				: effect.parameter;
 			const slideState = EffectAlgorithms.initSlide(param, effect.delay);
 			this.state.channelSlideStep[channelIndex] = slideState.step;
 			this.state.channelSlideDelay[channelIndex] = slideState.delay;
 			this.state.channelSlideCount[channelIndex] = slideState.counter;
 			this.state.channelOnOffCounter[channelIndex] = 0;
 		} else if (effect.effect === SLIDE_DOWN) {
-			const param = hasTableIndex ? this._getEffectTableValue(channelIndex) : effect.parameter;
+			const param = hasTableIndex
+				? this._getEffectTableValue(channelIndex)
+				: effect.parameter;
 			const slideState = EffectAlgorithms.initSlide(-param, effect.delay);
 			this.state.channelSlideStep[channelIndex] = slideState.step;
 			this.state.channelSlideDelay[channelIndex] = slideState.delay;
@@ -245,7 +258,9 @@ class TrackerPatternProcessor {
 					this.state.channelBaseNotes[channelIndex] = previousNote;
 					this.state.channelCurrentNotes[channelIndex] = previousNote;
 
-					const param = hasTableIndex ? this._getEffectTableValue(channelIndex) : effect.parameter;
+					const param = hasTableIndex
+						? this._getEffectTableValue(channelIndex)
+						: effect.parameter;
 					this.state.channelSlideStep[channelIndex] = param;
 					if (delta - currentSliding < 0) {
 						this.state.channelSlideStep[channelIndex] = -param;
@@ -265,7 +280,9 @@ class TrackerPatternProcessor {
 				}
 			}
 		} else if (effect.effect === ON_OFF) {
-			const param = hasTableIndex ? this._getEffectTableValue(channelIndex) : effect.parameter;
+			const param = hasTableIndex
+				? this._getEffectTableValue(channelIndex)
+				: effect.parameter;
 			const onOffState = EffectAlgorithms.initOnOff(param);
 			this.state.channelOffDuration[channelIndex] = onOffState.offDuration;
 			this.state.channelOnDuration[channelIndex] = onOffState.onDuration;
@@ -334,7 +351,11 @@ class TrackerPatternProcessor {
 	}
 
 	processEffectTables() {
-		for (let channelIndex = 0; channelIndex < this.state.channelEffectTables.length; channelIndex++) {
+		for (
+			let channelIndex = 0;
+			channelIndex < this.state.channelEffectTables.length;
+			channelIndex++
+		) {
 			const tableIndex = this.state.channelEffectTables[channelIndex];
 			if (tableIndex < 0) continue;
 
@@ -343,7 +364,8 @@ class TrackerPatternProcessor {
 
 			this.state.channelEffectTableCounters[channelIndex]--;
 			if (this.state.channelEffectTableCounters[channelIndex] <= 0) {
-				this.state.channelEffectTableCounters[channelIndex] = this.state.channelEffectTableDelays[channelIndex];
+				this.state.channelEffectTableCounters[channelIndex] =
+					this.state.channelEffectTableDelays[channelIndex];
 				this.state.channelEffectTablePositions[channelIndex]++;
 
 				if (this.state.channelEffectTablePositions[channelIndex] >= table.rows.length) {
