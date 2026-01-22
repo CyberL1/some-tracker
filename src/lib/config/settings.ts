@@ -48,7 +48,6 @@ export const settingsItems: SettingsItem[] = [
 			{ value: 'Fira Code', label: 'Fira Code' },
 			{ value: 'JetBrains Mono', label: 'JetBrains Mono' },
 			{ value: 'IBM Plex Mono', label: 'IBM Plex Mono' },
-			{ value: 'Roboto Mono', label: 'Roboto Mono' },
 			{ value: 'Source Code Pro', label: 'Source Code Pro' }
 		]
 	},

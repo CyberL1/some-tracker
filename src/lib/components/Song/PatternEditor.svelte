@@ -159,7 +159,10 @@
 	let containerDiv: HTMLDivElement;
 
 	let COLORS = $state(getColors());
-	let FONTS = getFonts();
+	let FONTS = $derived.by(() => {
+		settingsStore.state.uiFontFamily;
+		return getFonts();
+	});
 
 	let fontSize = $derived(settingsStore.state.patternEditorFontSize);
 	let fontFamily = $derived(settingsStore.state.patternEditorFontFamily);
@@ -225,6 +228,20 @@
 		clearAllCaches();
 	});
 
+	let lastActiveState = isActive;
+	$effect(() => {
+		const becameActive = isActive && !lastActiveState;
+		lastActiveState = isActive;
+		
+		if (becameActive) {
+			clearAllCaches();
+			lastVisibleRowsCache = null;
+			if (ctx && renderer && textParser) {
+				draw();
+			}
+		}
+	});
+
 	function ensurePatternExists(): Pattern | null {
 		return currentPattern;
 	}
@@ -240,6 +257,14 @@
 
 	function updatePatternInArray(updatedPattern: Pattern): void {
 		patterns = PatternService.updatePatternInArray(patterns, updatedPattern);
+		patternGenericCache.delete(updatedPattern.id);
+		rowStringCache.invalidate((key) => {
+			if (typeof key === 'string') {
+				return key.startsWith(`${updatedPattern.id}:`);
+			}
+			return false;
+		});
+		lastVisibleRowsCache = null;
 	}
 
 	function createEditContext(): PatternEditContext {
@@ -306,8 +331,7 @@
 
 	export function getCurrentPatternLength(): number | null {
 		if (patternOrder.length === 0) return null;
-		const patternId = patternOrder[currentPatternOrderIndex];
-		const pattern = patterns.find((p) => p.id === patternId);
+		const pattern = currentPattern;
 		return pattern?.length ?? null;
 	}
 
@@ -511,26 +535,13 @@
 		ctx = canvas.getContext('2d')!;
 
 		try {
-			ctx.font = `${fontSize}px "${fontFamily}", ${FONTS.mono}`;
+			const effectiveFontFamily =
+				fontFamily === 'monospace' ? 'monospace' : `"${fontFamily}"`;
+			const fontFallback = fontFamily === 'monospace' ? 'monospace' : FONTS.mono;
+			const fontString = `${fontSize}px ${effectiveFontFamily}, ${fontFallback}`;
+
 			canvas.style.fontFeatureSettings = "'liga' 0, 'calt' 0";
 			canvas.style.fontVariantLigatures = 'none';
-
-			// Load font asynchronously and update when ready
-			if (fontFamily && fontFamily !== 'Fira Code') {
-				document.fonts
-					.load(`${fontSize}px "${fontFamily}"`)
-					.then(() => {
-						if (ctx && canvas) {
-							ctx.font = `${fontSize}px "${fontFamily}", ${FONTS.mono}`;
-							clearAllCaches();
-							updateSize();
-							draw();
-						}
-					})
-					.catch((e) => {
-						console.warn(`Failed to load font: ${fontFamily}`, e);
-					});
-			}
 
 			updateSize();
 
@@ -540,9 +551,32 @@
 				width: canvasWidth,
 				height: canvasHeight,
 				fontSize: fontSize,
-				fonts: { ...FONTS, mono: `"${fontFamily}", ${FONTS.mono}` },
+				fonts: { ...FONTS, mono: fontString },
 				textBaseline: 'middle'
 			});
+
+			ctx.font = fontString;
+
+			if (fontFamily && fontFamily !== 'monospace') {
+				const fontSpec = `${fontSize}px "${fontFamily}"`;
+				const isFontLoaded = document.fonts.check(fontSpec);
+				
+				if (!isFontLoaded) {
+					document.fonts
+						.load(fontSpec)
+						.then(() => {
+							if (ctx && canvas) {
+								ctx.font = fontString;
+								clearAllCaches();
+								updateSize();
+								draw();
+							}
+						})
+						.catch((e) => {
+							console.warn(`Failed to load font: ${fontFamily}`, e);
+						});
+				}
+			}
 
 			textParser = new PatternEditorTextParser(
 				schema,
@@ -606,7 +640,7 @@
 		renderer.drawBackground(canvasHeight);
 
 		const patternId = patternOrder[currentPatternOrderIndex];
-		const patternToDraw = patterns.find((p) => p.id === patternId) || ensurePatternExists();
+		const patternToDraw = findOrCreatePattern(patternId);
 		if (!patternToDraw) return;
 
 		const visibleRows = getVisibleRows(patternToDraw);
@@ -1849,10 +1883,7 @@
 						});
 					});
 				} else {
-					const patternId = patternOrder[currentPatternOrderIndex];
-					const pattern =
-						patterns.find((p) => p.id === patternId) ||
-						PatternService.createEmptyPattern(patternId);
+					const pattern = findOrCreatePattern(patternOrder[currentPatternOrderIndex]);
 					services.audioService.chipProcessors.forEach((processor, index) => {
 						const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
 						if (processor.changePatternDuringPlayback) {
@@ -1952,7 +1983,10 @@
 			<div
 				class="fixed inset-0 z-40"
 				onclick={closeContextMenu}
-				oncontextmenu={(e) => { e.preventDefault(); closeContextMenu(); }}>
+				oncontextmenu={(e) => {
+					e.preventDefault();
+					closeContextMenu();
+				}}>
 			</div>
 			<div
 				class="fixed z-50"
