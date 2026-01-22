@@ -49,40 +49,75 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 	drawChannelLabels(data: ChannelLabelData): void {
 		const channelPositions = this.calculateChannelPositions(data.rowString);
 		const labelY = this.lineHeight / 2;
+		const padding = 6;
+		const borderWidth = 1;
 
 		this.fillRect(0, 0, this.canvasWidth, this.lineHeight, this.patternColors.patternBg);
+
+		this.save();
+		const currentFont = this.ctx.font;
+		let boldFont = currentFont;
+		if (!/\b(bold|700|800|900)\b/.test(currentFont)) {
+			boldFont = currentFont.replace(/^(\d+px\s+)/, '$1bold ');
+		}
+		this.setFont(boldFont);
+
+		const separatorMargin = 4;
 
 		for (let i = 0; i < data.channelLabels.length && i < channelPositions.length; i++) {
 			const label = `Channel ${data.channelLabels[i]}`;
 			const channelStart = channelPositions[i];
 			const channelEnd =
 				i < channelPositions.length - 1 ? channelPositions[i + 1] : this.canvasWidth;
-			const channelWidth = channelEnd - channelStart;
+			const buttonX = Math.max(0, channelStart - separatorMargin);
+			const buttonEnd =
+				i < channelPositions.length - 1 ? channelEnd - separatorMargin : this.canvasWidth;
+			const buttonWidth = buttonEnd - buttonX;
+			const buttonHeight = this.lineHeight - 4;
+			const buttonY = (this.lineHeight - buttonHeight) / 2;
 			const labelWidth = this.measureText(label);
-			const x = channelStart + (channelWidth - labelWidth) / 2;
+			const textX = buttonX + (buttonWidth - labelWidth) / 2;
 			const isMuted = data.channelMuted[i] ?? false;
-			const color = isMuted ? this.patternColors.patternEmpty : this.patternColors.patternText;
+			const textColor = isMuted
+				? this.patternColors.patternEmpty
+				: this.patternColors.patternRowNum || this.patternColors.patternText;
+			const borderColor = isMuted
+				? this.patternColors.patternEmpty
+				: this.patternColors.patternCellSelected ||
+					this.patternColors.patternSelected ||
+					this.patternColors.patternText;
+			const bgColor = this.patternColors.patternSelected || this.patternColors.patternBg;
 
-			this.fillText(label, x, labelY, color);
+			this.fillRectWithAlpha(buttonX, buttonY, buttonWidth, buttonHeight, bgColor, 0.3);
+
+			this.save();
+			this.ctx.globalAlpha = 0.4;
+			this.strokeRect(buttonX, buttonY, buttonWidth, buttonHeight, borderColor, borderWidth);
+			this.restore();
+
+			this.fillText(label, textX, labelY, textColor);
 		}
+
+		this.restore();
 	}
 
 	drawChannelSeparators(rowString: string, canvasHeight: number): void {
 		const channelPositions = this.calculateChannelPositions(rowString);
-		
+
 		if (channelPositions.length === 0) return;
 
 		this.save();
-		this.ctx.strokeStyle = this.patternColors.patternEmpty;
-		this.ctx.lineWidth = 1;
-		this.ctx.globalAlpha = 0.5;
+		this.ctx.strokeStyle =
+			this.patternColors.patternChannelSeparator || this.patternColors.patternEmpty;
+		this.ctx.lineWidth = 1.8;
 
 		const margin = 4;
+		const startY = this.lineHeight;
 
 		for (let i = 0; i < channelPositions.length; i++) {
 			const x = Math.floor(channelPositions[i] - margin) + 0.5;
 			this.beginPath();
-			this.moveTo(x, 0);
+			this.moveTo(x, startY);
 			this.lineTo(x, canvasHeight);
 			this.stroke();
 		}

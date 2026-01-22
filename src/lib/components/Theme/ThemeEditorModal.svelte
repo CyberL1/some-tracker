@@ -42,6 +42,7 @@
 		patternRowNumAlternate: 'Alternate Row Number',
 		patternNoteOff: 'Note Off Value',
 		patternTableOff: 'Table Off Value',
+		patternChannelSeparator: 'Channel Separator',
 		orderBg: 'Pattern Order Background',
 		orderText: 'Pattern Order Text',
 		orderEmpty: 'Empty Pattern Cell',
@@ -87,7 +88,7 @@
 		editedTheme.colors = editedColors;
 
 		const colors = editedColors;
-		
+
 		const previewColors: ThemeColors = {
 			patternBg: colors.patternBg,
 			patternText: colors.patternText,
@@ -107,6 +108,7 @@
 			patternRowNumAlternate: colors.patternRowNumAlternate,
 			patternNoteOff: colors.patternNoteOff,
 			patternTableOff: colors.patternTableOff,
+			patternChannelSeparator: colors.patternChannelSeparator,
 			orderBg: colors.orderBg,
 			orderText: colors.orderText,
 			orderEmpty: colors.orderEmpty,
@@ -176,17 +178,18 @@
 
 <Portal>
 	<div
-		class="fixed inset-0 z-50 flex items-start justify-end p-4 pointer-events-none"
+		class="pointer-events-none fixed inset-0 z-50 flex items-start justify-end p-4"
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
 		onkeydown={handleKeyDown}>
 		<div
-			class="pointer-events-auto w-[400px] max-h-[90vh] overflow-y-auto rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface)] shadow-xl"
+			class="pointer-events-auto max-h-[90vh] w-[400px] overflow-y-auto rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface)] shadow-xl"
 			role="presentation"
 			onclick={(e) => e.stopPropagation()}
 			onkeydown={(e) => e.stopPropagation()}>
-			<div class="border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+			<div
+				class="border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 				<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">
 					{isNew ? 'Create Theme' : 'Edit Theme'}
 				</h2>
@@ -198,7 +201,9 @@
 				</FormField>
 
 				<div class="mt-6 first:mt-0">
-					<h3 class="mb-4 text-sm font-bold text-[var(--color-app-text-primary)]">Pattern Editor Colors</h3>
+					<h3 class="mb-4 text-sm font-bold text-[var(--color-app-text-primary)]">
+						Pattern Editor Colors
+					</h3>
 					<div class="flex flex-col gap-3">
 						{#each patternEditorFields as field}
 							<FormField label={field.label}>
@@ -218,7 +223,9 @@
 				</div>
 
 				<div class="mt-6 border-t border-[var(--color-app-border)] pt-6">
-					<h3 class="mb-4 text-sm font-bold text-[var(--color-app-text-primary)]">Pattern Order Colors</h3>
+					<h3 class="mb-4 text-sm font-bold text-[var(--color-app-text-primary)]">
+						Pattern Order Colors
+					</h3>
 					<div class="flex flex-col gap-3">
 						{#each patternOrderFields as field}
 							<FormField label={field.label}>
@@ -238,7 +245,9 @@
 				</div>
 
 				<div class="mt-6 border-t border-[var(--color-app-border)] pt-6">
-					<h3 class="mb-4 text-sm font-bold text-[var(--color-app-text-primary)]">Application Colors</h3>
+					<h3 class="mb-4 text-sm font-bold text-[var(--color-app-text-primary)]">
+						Application Colors
+					</h3>
 					<div class="flex flex-col gap-3">
 						{#each appFields as field}
 							<FormField label={field.label}>
@@ -258,7 +267,8 @@
 				</div>
 			</div>
 
-			<div class="flex justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+			<div
+				class="flex justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 				<Button variant="secondary" onclick={handleCancel}>Cancel</Button>
 				<Button variant="primary" onclick={handleSave}>Save</Button>
 			</div>

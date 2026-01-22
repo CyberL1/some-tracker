@@ -232,7 +232,7 @@
 	$effect(() => {
 		const becameActive = isActive && !lastActiveState;
 		lastActiveState = isActive;
-		
+
 		if (becameActive) {
 			clearAllCaches();
 			lastVisibleRowsCache = null;
@@ -560,7 +560,7 @@
 			if (fontFamily && fontFamily !== 'monospace') {
 				const fontSpec = `${fontSize}px "${fontFamily}"`;
 				const isFontLoaded = document.fonts.check(fontSpec);
-				
+
 				if (!isFontLoaded) {
 					document.fonts
 						.load(fontSpec)
@@ -1036,20 +1036,6 @@
 
 	let isHoveringLabel = $state(false);
 
-	function handleMouseMove(event: MouseEvent): void {
-		if (!canvas) return;
-
-		const rect = canvas.getBoundingClientRect();
-		const y = event.clientY - rect.top;
-
-		const wasHovering = isHoveringLabel;
-		isHoveringLabel = y <= lineHeight;
-
-		if (wasHovering !== isHoveringLabel) {
-			canvas.style.cursor = isHoveringLabel ? 'pointer' : 'default';
-		}
-	}
-
 	function handleMouseLeave(): void {
 		if (canvas) {
 			canvas.style.cursor = 'default';
@@ -1057,7 +1043,7 @@
 		}
 	}
 
-	function handleMouseEnter(): void {
+	function handleMouseEnter(event: MouseEvent): void {
 		if (canvas) {
 			canvas.focus();
 			const selection = window.getSelection();
@@ -1065,6 +1051,11 @@
 				selection.removeAllRanges();
 			}
 			onfocus?.();
+
+			const rect = canvas.getBoundingClientRect();
+			const y = event.clientY - rect.top;
+			isHoveringLabel = y <= lineHeight;
+			canvas.style.cursor = isHoveringLabel ? 'pointer' : 'default';
 		}
 	}
 
@@ -1199,12 +1190,21 @@
 	}
 
 	function handleCanvasMouseMove(event: MouseEvent): void {
-		if (!canvas || !currentPattern || !renderer || !textParser) return;
-		if (!isSelecting || !mouseDownCell || playbackStore.isPlaying) return;
+		if (!canvas) return;
 
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
 		const y = event.clientY - rect.top;
+
+		const wasHoveringLabel = isHoveringLabel;
+		isHoveringLabel = y <= lineHeight;
+
+		if (wasHoveringLabel !== isHoveringLabel) {
+			canvas.style.cursor = isHoveringLabel ? 'pointer' : 'default';
+		}
+
+		if (!currentPattern || !renderer || !textParser) return;
+		if (!isSelecting || !mouseDownCell || playbackStore.isPlaying) return;
 
 		const cell = findCellAtPosition(x, y);
 		if (!cell) return;

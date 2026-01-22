@@ -16,7 +16,8 @@ export const PATTERN_EDITOR_COLOR_KEYS = [
 	'patternTable',
 	'patternRowNumAlternate',
 	'patternNoteOff',
-	'patternTableOff'
+	'patternTableOff',
+	'patternChannelSeparator'
 ] as const;
 
 export const PATTERN_ORDER_COLOR_KEYS = [
