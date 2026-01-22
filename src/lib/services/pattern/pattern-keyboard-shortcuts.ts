@@ -74,7 +74,7 @@ export class PatternKeyboardShortcutsService {
 			return { handled: true, shouldPreventDefault: true };
 		}
 
-		if (isModifier && key === 'a') {
+		if ((event.ctrlKey || event.metaKey) && !event.shiftKey && key === 'a') {
 			if (!shortcutsContext.isPlaying) {
 				shortcutsContext.onSelectAll(
 					shortcutsContext.selectedColumn,
