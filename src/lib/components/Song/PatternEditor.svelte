@@ -166,6 +166,7 @@
 
 	let fontSize = $derived(settingsStore.state.patternEditorFontSize);
 	let fontFamily = $derived(settingsStore.state.patternEditorFontFamily);
+	let channelSeparatorWidth = $derived(settingsStore.state.channelSeparatorWidth);
 	let canvasWidth = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_WIDTH);
 	let canvasHeight = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_HEIGHT);
 	let lineHeight = $derived(fontSize * PATTERN_EDITOR_CONSTANTS.LINE_HEIGHT_MULTIPLIER);
@@ -592,7 +593,8 @@
 				colors: COLORS,
 				canvasWidth,
 				lineHeight,
-				schema
+				schema,
+				channelSeparatorWidth
 			});
 		} catch (error) {
 			console.error('Error during canvas setup:', error);
@@ -1745,6 +1747,7 @@
 	let lastCanvasHeight = -1;
 	let lastFontSize = -1;
 	let lastFontFamily = '';
+	let lastChannelSeparatorWidth = -1;
 	let needsSetup = true;
 
 	$effect(() => {
@@ -1753,6 +1756,7 @@
 		const currentPatternLength = currentPattern?.length ?? -1;
 		const fontSizeChanged = fontSize !== lastFontSize;
 		const fontFamilyChanged = fontFamily !== lastFontFamily;
+		const channelSeparatorWidthChanged = channelSeparatorWidth !== lastChannelSeparatorWidth;
 
 		if (needsSetup || !ctx) {
 			ctx = canvas.getContext('2d')!;
@@ -1768,15 +1772,17 @@
 			lastCanvasHeight = canvasHeight;
 			lastFontSize = fontSize;
 			lastFontFamily = fontFamily;
+			lastChannelSeparatorWidth = channelSeparatorWidth;
 			return;
 		}
 
-		if (fontSizeChanged || fontFamilyChanged) {
+		if (fontSizeChanged || fontFamilyChanged || channelSeparatorWidthChanged) {
 			clearAllCaches();
 			setupCanvas();
 			draw();
 			lastFontSize = fontSize;
 			lastFontFamily = fontFamily;
+			lastChannelSeparatorWidth = channelSeparatorWidth;
 			lastCanvasWidth = canvasWidth;
 			lastCanvasHeight = canvasHeight;
 			return;

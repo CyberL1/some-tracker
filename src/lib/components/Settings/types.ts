@@ -5,6 +5,7 @@ export interface Settings {
 	patternEditorFontSize: number;
 	patternEditorFontFamily: string;
 	uiFontFamily: string;
+	channelSeparatorWidth: number;
 }
 
 export interface SettingsItem {

@@ -57,14 +57,14 @@
 	});
 </script>
 
-<div class="flex h-[600px] w-[600px] flex-col">
+<div class="flex h-[600px] w-[600px] flex-col overflow-x-hidden">
 	<div class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">Settings</h2>
 	</div>
 
 	<TabView {tabs} bind:activeTabId>
 		{#snippet children(tabId)}
-			<div class="overflow-y-auto p-4">
+			<div class="overflow-x-hidden overflow-y-auto p-4">
 				{#if tabId === 'general'}
 					{#each generalSettings as item (item.setting)}
 						<SettingField {item} bind:tempSettings={tempSettings} />

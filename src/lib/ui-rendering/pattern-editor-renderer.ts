@@ -8,6 +8,7 @@ export interface PatternEditorRenderOptions extends Omit<BaseRenderOptions, 'col
 	colors: ReturnType<typeof getColors>;
 	lineHeight: number;
 	schema: Chip['schema'];
+	channelSeparatorWidth: number;
 }
 
 export interface RowRenderData {
@@ -33,12 +34,14 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 	private lineHeight: number;
 	private schema: Chip['schema'];
 	private patternColors: ReturnType<typeof getColors>;
+	private channelSeparatorWidth: number;
 
 	constructor(options: PatternEditorRenderOptions) {
 		super(options);
 		this.lineHeight = options.lineHeight;
 		this.schema = options.schema;
 		this.patternColors = options.colors;
+		this.channelSeparatorWidth = options.channelSeparatorWidth;
 	}
 
 	drawRow(data: RowRenderData): void {
@@ -104,12 +107,12 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 	drawChannelSeparators(rowString: string, canvasHeight: number): void {
 		const channelPositions = this.calculateChannelPositions(rowString);
 
-		if (channelPositions.length === 0) return;
+		if (channelPositions.length === 0 || this.channelSeparatorWidth <= 0) return;
 
 		this.save();
 		this.ctx.strokeStyle =
 			this.patternColors.patternChannelSeparator || this.patternColors.patternEmpty;
-		this.ctx.lineWidth = 1.8;
+		this.ctx.lineWidth = this.channelSeparatorWidth;
 
 		const margin = 4;
 		const startY = this.lineHeight;

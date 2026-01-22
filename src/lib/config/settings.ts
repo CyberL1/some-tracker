@@ -65,6 +65,17 @@ export const settingsItems: SettingsItem[] = [
 			{ value: 'Roboto', label: 'Roboto (Sans-serif)' },
 			{ value: 'Open Sans', label: 'Open Sans (Sans-serif)' }
 		]
+	},
+	{
+		label: 'Channel Separator Width',
+		description: 'Adjust the width of channel separators in the pattern editor',
+		type: 'range',
+		defaultValue: 1,
+		setting: 'channelSeparatorWidth',
+		category: 'appearance',
+		min: 0,
+		max: 3,
+		step: 0.1
 	}
 ];
 
