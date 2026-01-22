@@ -54,12 +54,40 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 
 		for (let i = 0; i < data.channelLabels.length && i < channelPositions.length; i++) {
 			const label = `Channel ${data.channelLabels[i]}`;
-			const x = channelPositions[i];
+			const channelStart = channelPositions[i];
+			const channelEnd =
+				i < channelPositions.length - 1 ? channelPositions[i + 1] : this.canvasWidth;
+			const channelWidth = channelEnd - channelStart;
+			const labelWidth = this.measureText(label);
+			const x = channelStart + (channelWidth - labelWidth) / 2;
 			const isMuted = data.channelMuted[i] ?? false;
 			const color = isMuted ? this.patternColors.patternEmpty : this.patternColors.patternText;
 
 			this.fillText(label, x, labelY, color);
 		}
+	}
+
+	drawChannelSeparators(rowString: string, canvasHeight: number): void {
+		const channelPositions = this.calculateChannelPositions(rowString);
+		
+		if (channelPositions.length === 0) return;
+
+		this.save();
+		this.ctx.strokeStyle = this.patternColors.patternEmpty;
+		this.ctx.lineWidth = 1;
+		this.ctx.globalAlpha = 0.5;
+
+		const margin = 4;
+
+		for (let i = 0; i < channelPositions.length; i++) {
+			const x = Math.floor(channelPositions[i] - margin) + 0.5;
+			this.beginPath();
+			this.moveTo(x, 0);
+			this.lineTo(x, canvasHeight);
+			this.stroke();
+		}
+
+		this.restore();
 	}
 
 	calculateChannelPositions(rowString: string): number[] {

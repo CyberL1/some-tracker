@@ -671,6 +671,8 @@
 			) {
 				const rowString = getPatternRowData(patternToDraw, firstVisibleRow.rowIndex);
 
+				renderer.drawChannelSeparators(rowString, canvasHeight);
+
 				const channelLabels =
 					schema.channelLabels || patternToDraw.channels.map((ch) => ch.label);
 				const channelMuted = getChannelMutedState(patternToDraw);
