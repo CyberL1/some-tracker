@@ -42,6 +42,15 @@ export class LuaExecutor {
 			instrument: row.instrument ?? 0,
 			table: row.table_ ?? row.table ?? 0,
 			envelopeShape: row.envelopeShape ?? 0,
+			envelopeValue: row.envelopeValue ?? 0,
+			envelopeEffect:
+				row.envelopeEffect && typeof row.envelopeEffect === 'object'
+					? {
+							effect: row.envelopeEffect.effect ?? 0,
+							delay: row.envelopeEffect.delay ?? 0,
+							parameter: row.envelopeEffect.parameter ?? 0
+						}
+					: null,
 			effect:
 				row.effect && typeof row.effect === 'object'
 					? {

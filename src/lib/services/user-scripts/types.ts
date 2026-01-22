@@ -6,6 +6,12 @@ export interface ScriptRowData {
 	instrument: number;
 	table: number;
 	envelopeShape: number;
+	envelopeValue: number;
+	envelopeEffect: {
+		effect: number;
+		delay: number;
+		parameter: number;
+	} | null;
 	effect: {
 		effect: number;
 		delay: number;

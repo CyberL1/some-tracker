@@ -109,10 +109,14 @@
 				<div><code>row.instrument</code> - number</div>
 				<div><code>row.table</code> - number</div>
 				<div><code>row.envelopeShape</code> - 0-15</div>
+				<div><code>row.envelopeValue</code> - 0-65535</div>
+				<div><code>row.envelopeEffect</code> - nil or table</div>
 				<div><code>row.effect</code> - nil or table</div>
 			</div>
 			<div class="font-medium mt-3 mb-2">Effect table (if not nil):</div>
 			<div><code>effect.effect</code>, <code>effect.delay</code>, <code>effect.parameter</code></div>
+			<div class="font-medium mt-3 mb-2">Envelope Effect table (if not nil):</div>
+			<div><code>envelopeEffect.effect</code>, <code>envelopeEffect.delay</code>, <code>envelopeEffect.parameter</code></div>
 			<div class="font-medium mt-3 mb-2">Example (Fade In):</div>
 			<pre style="font-family: {monoFont}, monospace;" class="text-[10px] bg-[var(--color-app-surface)] p-2 rounded whitespace-pre overflow-x-auto">local minRow = selection.minRow
 local maxRow = selection.maxRow

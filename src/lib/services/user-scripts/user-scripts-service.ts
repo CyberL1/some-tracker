@@ -24,6 +24,10 @@ export class UserScriptsService {
 		const rows: ScriptRowData[] = [];
 
 		for (let rowIndex = bounds.minRow; rowIndex <= bounds.maxRow; rowIndex++) {
+			const patternRow = genericPattern.patternRows[rowIndex];
+			const envelopeEffectValue = patternRow?.envelopeEffect;
+			const envelopeEffect = isEffectLike(envelopeEffectValue) ? envelopeEffectValue : null;
+
 			for (let channelIndex = 0; channelIndex < genericPattern.channels.length; channelIndex++) {
 				if (!selectedChannels.has(channelIndex)) continue;
 
@@ -40,6 +44,14 @@ export class UserScriptsService {
 					instrument: toNumber(row.instrument),
 					table: toNumber(row.table),
 					envelopeShape: toNumber(row.envelopeShape),
+					envelopeValue: toNumber(patternRow?.envelopeValue),
+					envelopeEffect: envelopeEffect
+						? {
+								effect: envelopeEffect.effect,
+								delay: envelopeEffect.delay,
+								parameter: envelopeEffect.parameter
+							}
+						: null,
 					effect: effect
 						? {
 								effect: effect.effect,
@@ -77,6 +89,7 @@ export class UserScriptsService {
 		converter: PatternConverter
 	): Pattern {
 		const genericPattern = converter.toGeneric(pattern);
+		const processedPatternRows = new Set<number>();
 
 		for (const rowData of result.rows) {
 			const channel = genericPattern.channels[rowData.channelIndex];
@@ -97,6 +110,23 @@ export class UserScriptsService {
 					delay: rowData.effect.delay,
 					parameter: rowData.effect.parameter
 				};
+			}
+
+			if (!processedPatternRows.has(rowData.rowIndex)) {
+				const patternRow = genericPattern.patternRows[rowData.rowIndex];
+				if (patternRow) {
+					patternRow.envelopeValue = rowData.envelopeValue;
+					if (rowData.envelopeEffect) {
+						patternRow.envelopeEffect = {
+							effect: rowData.envelopeEffect.effect,
+							delay: rowData.envelopeEffect.delay,
+							parameter: rowData.envelopeEffect.parameter
+						} as Record<string, unknown>;
+					} else {
+						patternRow.envelopeEffect = null;
+					}
+				}
+				processedPatternRows.add(rowData.rowIndex);
 			}
 		}
 
