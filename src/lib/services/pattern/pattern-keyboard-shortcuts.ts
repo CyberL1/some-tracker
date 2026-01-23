@@ -1,6 +1,7 @@
 import type { Pattern } from '../../models/song';
 import type { NavigationState, NavigationContext } from './pattern-navigation';
 import { PatternNavigationService } from './pattern-navigation';
+import { ProgressiveSelectionService } from './progressive-selection-service';
 
 export interface PatternKeyboardShortcutsContext {
 	isPlaying: boolean;
@@ -17,6 +18,12 @@ export interface PatternKeyboardShortcutsContext {
 	onPasteWithoutErasing: () => void;
 	onDelete: () => void;
 	onSelectAll: (column: number, startRow: number, endRow: number) => void;
+	onSelectProgressive: (
+		startRow: number,
+		endRow: number,
+		startColumn: number,
+		endColumn: number
+	) => void;
 	onTogglePlayback: () => void;
 	onPausePlayback: () => void;
 	onMoveRow: (delta: number) => void;
@@ -28,6 +35,11 @@ export interface PatternKeyboardShortcutsContext {
 	onSetSelectionAnchor: (row: number, column: number) => void;
 	onExtendSelection: (row: number, column: number) => void;
 	onIncrementFieldValue: (delta: number, isOctaveIncrement?: boolean) => void;
+	selectionStartRow: number | null;
+	selectionStartColumn: number | null;
+	selectionEndRow: number | null;
+	selectionEndColumn: number | null;
+	getPatternRowData: (pattern: Pattern, rowIndex: number) => string;
 	navigationContext: NavigationContext;
 }
 
@@ -76,10 +88,22 @@ export class PatternKeyboardShortcutsService {
 
 		if ((event.ctrlKey || event.metaKey) && !event.shiftKey && key === 'a') {
 			if (!shortcutsContext.isPlaying) {
-				shortcutsContext.onSelectAll(
+				const result = ProgressiveSelectionService.selectAll(
+					shortcutsContext.pattern,
 					shortcutsContext.selectedColumn,
-					0,
-					shortcutsContext.pattern.length - 1
+					shortcutsContext.selectionStartRow,
+					shortcutsContext.selectionStartColumn,
+					shortcutsContext.selectionEndRow,
+					shortcutsContext.selectionEndColumn,
+					shortcutsContext.navigationContext.getCellPositions,
+					shortcutsContext.getPatternRowData,
+					shortcutsContext.navigationContext.schema
+				);
+				shortcutsContext.onSelectProgressive(
+					result.startRow,
+					result.endRow,
+					result.startColumn,
+					result.endColumn
 				);
 			}
 			return { handled: true, shouldPreventDefault: true };

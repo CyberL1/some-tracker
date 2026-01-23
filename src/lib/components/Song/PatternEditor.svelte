@@ -822,6 +822,18 @@
 				selectionEndColumn = column;
 				draw();
 			},
+			onSelectProgressive: (
+				startRow: number,
+				endRow: number,
+				startColumn: number,
+				endColumn: number
+			) => {
+				selectionStartRow = startRow;
+				selectionStartColumn = startColumn;
+				selectionEndRow = endRow;
+				selectionEndColumn = endColumn;
+				draw();
+			},
 			onTogglePlayback: () => {
 				playbackStore.isPlaying = true;
 				togglePlayback();
@@ -860,6 +872,11 @@
 			onIncrementFieldValue: (delta: number, isOctaveIncrement?: boolean) => {
 				incrementFieldValue(delta, isOctaveIncrement);
 			},
+			selectionStartRow,
+			selectionStartColumn,
+			selectionEndRow,
+			selectionEndColumn,
+			getPatternRowData,
 			navigationContext: {
 				patterns,
 				patternOrder,
