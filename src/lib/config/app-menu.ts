@@ -48,6 +48,31 @@ export const editMenuItems: MenuItem[] = [
 	},
 	{ label: 'divider', type: 'divider' },
 	{
+		label: 'Increment Value',
+		type: 'normal',
+		action: 'increment-value',
+		shortcut: '+'
+	},
+	{
+		label: 'Decrement Value',
+		type: 'normal',
+		action: 'decrement-value',
+		shortcut: '-'
+	},
+	{
+		label: 'Transpose Octave Up',
+		type: 'normal',
+		action: 'transpose-octave-up',
+		shortcut: 'Shift++'
+	},
+	{
+		label: 'Transpose Octave Down',
+		type: 'normal',
+		action: 'transpose-octave-down',
+		shortcut: 'Shift+-'
+	},
+	{ label: 'divider', type: 'divider' },
+	{
 		label: 'Apply Script...',
 		type: 'normal',
 		action: 'apply-script',

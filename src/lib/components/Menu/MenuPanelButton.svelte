@@ -135,10 +135,10 @@
 </script>
 
 {#if type === 'divider'}
-	<div class="my-1 h-px bg-[var(--color-app-border)]" role="separator"></div>
+	<div class="my-[0.2rem] h-px bg-[var(--color-app-border)]" role="separator"></div>
 {:else}
 	<div
-		class="menu-panel-button relative flex cursor-pointer items-center justify-between gap-4 px-2 py-1.5 text-xs hover:bg-[var(--color-app-surface-hover)]"
+		class="menu-panel-button relative flex cursor-pointer items-center justify-between gap-3 px-1.5 py-[0.2rem] text-xs whitespace-nowrap hover:bg-[var(--color-app-surface-hover)]"
 		class:cursor-not-allowed={isDisabled}
 		class:opacity-50={isDisabled}
 		class:hover:bg-transparent={isDisabled}
@@ -149,14 +149,14 @@
 		tabindex="0"
 		role="menuitem"
 		class:bg-[var(--color-app-surface-hover)]={isActive}>
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-1.5">
 			{#if icon}
 				<span>{icon}</span>
 			{/if}
 			<span>{label}</span>
 		</div>
 
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-1.5">
 			{#if shortcut}
 				<span class="text-xs text-[var(--color-app-text-muted)]">{shortcut}</span>
 			{/if}

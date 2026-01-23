@@ -238,6 +238,44 @@
 				return;
 			}
 
+			if (data.action === 'increment-value') {
+				const event = new KeyboardEvent('keydown', {
+					key: '+',
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
+			if (data.action === 'decrement-value') {
+				const event = new KeyboardEvent('keydown', {
+					key: '-',
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
+			if (data.action === 'transpose-octave-up') {
+				const event = new KeyboardEvent('keydown', {
+					key: '+',
+					shiftKey: true,
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
+			if (data.action === 'transpose-octave-down') {
+				const event = new KeyboardEvent('keydown', {
+					key: '-',
+					shiftKey: true,
+					bubbles: true
+				});
+				patternEditor?.handleKeyDownFromMenu?.(event);
+				return;
+			}
+
 			if (data.action === 'playFromBeginning') {
 				if (playbackStore.isPlaying) {
 					playbackStore.isPlaying = false;

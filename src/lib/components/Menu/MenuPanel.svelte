@@ -48,7 +48,7 @@
 	tabindex="-1"
 	class="menu-panel {isFirst
 		? ''
-		: 'mx-[-8px]'} w-52 rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] shadow-lg"
+		: 'mx-[-8px]'} w-auto rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] shadow-lg"
 	onclick={handlePanelClick}
 	role="menu">
 	{#if items && items.length > 0}
@@ -70,6 +70,6 @@
 
 <style>
 	.menu-panel {
-		min-width: 180px;
+		min-width: 200px;
 	}
 </style>
