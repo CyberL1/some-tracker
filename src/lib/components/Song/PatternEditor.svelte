@@ -990,6 +990,8 @@
 
 			clearAllCaches();
 			draw();
+		} else if (event.key.length === 1) {
+			event.preventDefault();
 		}
 	}
 
