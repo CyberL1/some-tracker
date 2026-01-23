@@ -91,7 +91,7 @@ class Row {
 				if (data[key as keyof Row] !== undefined) {
 					this[key] = data[key as keyof Row];
 				} else {
-					this[key] = getDefaultForFieldType(field.type);
+					this[key] = getDefaultForFieldType(field.type, key, field.allowZeroValue);
 				}
 			}
 		}
@@ -113,7 +113,7 @@ class PatternRow {
 				if (data[key] !== undefined) {
 					this[key] = data[key];
 				} else {
-					this[key] = getDefaultForFieldType(field.type);
+					this[key] = getDefaultForFieldType(field.type, key, field.allowZeroValue);
 				}
 			}
 		}

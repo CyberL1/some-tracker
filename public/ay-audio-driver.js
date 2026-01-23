@@ -117,7 +117,16 @@ class AYAudioDriver {
 	}
 
 	processPatternRow(state, pattern, rowIndex, patternRow, registerState) {
-		state.noiseBaseValue = patternRow.noiseValue || 0;
+		if (patternRow.noiseValue === null || patternRow.noiseValue === undefined || patternRow.noiseValue === 0) {
+			state.noiseBaseValue = state.noisePreviousValue;
+		} else if (patternRow.noiseValue === -1) {
+			state.noiseBaseValue = 0;
+			state.noisePreviousValue = 0;
+		} else {
+			state.noiseBaseValue = patternRow.noiseValue;
+			state.noisePreviousValue = patternRow.noiseValue;
+		}
+
 		state.noiseAddValue = 0;
 		state.envelopeAddValue = 0;
 

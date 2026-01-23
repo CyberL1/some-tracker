@@ -14,14 +14,17 @@ export abstract class BaseFieldHandler {
 		return field;
 	}
 
-	protected getCurrentValue(context: EditingContext, fieldInfo: FieldInfo): string | number {
+	protected getCurrentValue(
+		context: EditingContext,
+		fieldInfo: FieldInfo
+	): string | number | null {
 		return PatternValueUpdates.getFieldValue(context, fieldInfo);
 	}
 
 	protected updateValue(
 		context: EditingContext,
 		fieldInfo: FieldInfo,
-		newValue: string | number
+		newValue: string | number | null
 	): Pattern {
 		return PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
 	}

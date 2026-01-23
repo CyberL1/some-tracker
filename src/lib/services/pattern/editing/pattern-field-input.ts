@@ -49,13 +49,13 @@ export class PatternFieldInput {
 
 		const strategy = FieldStrategyFactory.getStrategy('hex');
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
-		const currentStr = strategy.format(currentValue, field.length);
+		const currentStr = strategy.format(currentValue, field.length, field.allowZeroValue);
 		const newStr = StringManipulation.replaceCharAtOffset(
 			currentStr,
 			fieldInfo.charOffset,
 			upperKey
 		);
-		const newValue = strategy.parse(newStr, field.length);
+		const newValue = strategy.parse(newStr, field.length, field.allowZeroValue);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
 		return { updatedPattern, shouldMoveNext: false };
@@ -75,13 +75,13 @@ export class PatternFieldInput {
 
 		const strategy = FieldStrategyFactory.getStrategy('dec');
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
-		const currentStr = strategy.format(currentValue, field.length);
+		const currentStr = strategy.format(currentValue, field.length, field.allowZeroValue);
 		const newStr = StringManipulation.replaceCharAtOffset(
 			currentStr,
 			fieldInfo.charOffset,
 			key
 		);
-		const newValue = strategy.parse(newStr, field.length);
+		const newValue = strategy.parse(newStr, field.length, field.allowZeroValue);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
 		return { updatedPattern, shouldMoveNext: false };
@@ -108,13 +108,13 @@ export class PatternFieldInput {
 
 		const strategy = FieldStrategyFactory.getStrategy('symbol');
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
-		const currentStr = strategy.format(currentValue, field.length);
+		const currentStr = strategy.format(currentValue, field.length, field.allowZeroValue);
 		const newStr = StringManipulation.replaceCharAtOffset(
 			currentStr,
 			fieldInfo.charOffset,
 			upperKey
 		);
-		const newValue = strategy.parse(newStr, field.length);
+		const newValue = strategy.parse(newStr, field.length, field.allowZeroValue);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
 		return { updatedPattern, shouldMoveNext: false };

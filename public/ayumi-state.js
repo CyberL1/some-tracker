@@ -44,6 +44,7 @@ class AyumiState extends TrackerState {
 		this.envelopeArpeggioPosition = 0;
 		this.envelopeArpeggioBaseValue = 0;
 		this.noiseBaseValue = 0;
+		this.noisePreviousValue = 0;
 		this.noiseAddValue = 0;
 		this.envelopeAddValue = 0;
 

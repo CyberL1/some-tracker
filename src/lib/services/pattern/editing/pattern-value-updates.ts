@@ -7,7 +7,7 @@ export class PatternValueUpdates {
 	static updateFieldValue(
 		context: EditingContext,
 		fieldInfo: FieldInfo,
-		newValue: string | number
+		newValue: string | number | null
 	): Pattern {
 		const genericPattern = context.converter.toGeneric(context.pattern);
 		if (fieldInfo.isGlobal) {
@@ -20,24 +20,29 @@ export class PatternValueUpdates {
 		return context.converter.fromGeneric(genericPattern);
 	}
 
-	static getFieldValue(context: EditingContext, fieldInfo: FieldInfo): string | number {
+	static getFieldValue(
+		context: EditingContext,
+		fieldInfo: FieldInfo
+	): string | number | null {
 		const genericPattern = context.converter.toGeneric(context.pattern);
 		if (fieldInfo.isGlobal) {
 			const patternRow = genericPattern.patternRows[context.selectedRow];
-			return (patternRow[fieldInfo.fieldKey] as string | number) || 0;
+			return (patternRow[fieldInfo.fieldKey] as string | number | null) ?? null;
 		} else {
 			const channel = genericPattern.channels[fieldInfo.channelIndex];
 			const row = channel.rows[context.selectedRow];
-			return (row[fieldInfo.fieldKey] as string | number) || 0;
+			return (row[fieldInfo.fieldKey] as string | number | null) ?? null;
 		}
 	}
 
 	static getFieldDefinition(
 		context: EditingContext,
 		fieldKey: string
-	): { key: string; type: string; length: number } | null {
+	): { key: string; type: string; length: number; allowZeroValue?: boolean } | null {
 		const field = context.schema.fields[fieldKey] || context.schema.globalFields?.[fieldKey];
-		return field ? { key: fieldKey, type: field.type, length: field.length } : null;
+		return field
+			? { key: fieldKey, type: field.type, length: field.length, allowZeroValue: field.allowZeroValue }
+			: null;
 	}
 
 	static incrementNoteValue(currentValue: string, delta: number): string {

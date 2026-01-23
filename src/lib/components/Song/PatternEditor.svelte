@@ -1428,7 +1428,7 @@
 		row: number,
 		col: number,
 		fieldInfo: any,
-		currentValue: string | number,
+		currentValue: string | number | null,
 		delta: number,
 		isOctaveIncrement: boolean
 	): Pattern {
@@ -1479,7 +1479,7 @@
 			editorStateStore.get().envelopeAsNote &&
 			tuningTable
 		) {
-			const currentPeriod = currentValue as number;
+			const currentPeriod = (currentValue as number) ?? 0;
 			const noteIndex = envelopePeriodToNote(currentPeriod, tuningTable);
 			if (noteIndex !== null) {
 				const semitonesDelta = isOctaveIncrement ? delta * 12 : delta;
@@ -1511,7 +1511,7 @@
 			!EffectField.isEffectField(fieldInfo.fieldKey)
 		) {
 			const newValue = PatternValueUpdates.incrementNumericValue(
-				currentValue as number,
+				(currentValue as number) ?? 0,
 				delta,
 				fieldInfo.fieldType,
 				fieldDefinition?.length
@@ -1580,7 +1580,7 @@
 				row: number;
 				col: number;
 				fieldInfo: any;
-				currentValue: string | number;
+				currentValue: string | number | null;
 			}> = [];
 
 			for (let row = minRow; row <= maxRow && row < pattern.length; row++) {

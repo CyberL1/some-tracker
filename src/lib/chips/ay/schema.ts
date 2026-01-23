@@ -6,7 +6,7 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 	globalFields: {
 		envelopeValue: { key: 'envelopeValue', type: 'hex', length: 4, color: 'patternEnvelope' },
 		envelopeEffect: { key: 'envelopeEffect', type: 'hex', length: 4, color: 'patternEffect' },
-		noiseValue: { key: 'noiseValue', type: 'hex', length: 2, color: 'patternNoise' }
+		noiseValue: { key: 'noiseValue', type: 'hex', length: 2, color: 'patternNoise', allowZeroValue: true }
 	},
 	channelLabels: ['A', 'B', 'C'],
 	template: '{note} {instrument}{envelopeShape}{table}{volume} {effect}',

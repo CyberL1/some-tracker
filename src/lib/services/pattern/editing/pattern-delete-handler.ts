@@ -62,17 +62,17 @@ export class PatternDeleteHandler {
 	private static handleNumericFieldDelete(
 		context: EditingContext,
 		fieldInfo: FieldInfo,
-		field: { key: string; type: string; length: number }
+		field: { key: string; type: string; length: number; allowZeroValue?: boolean }
 	): { updatedPattern: Pattern; shouldMoveNext: boolean } | null {
 		const currentValue = PatternValueUpdates.getFieldValue(context, fieldInfo);
-		const TABLE_OFF_VALUE = -1;
+		const ZERO_VALUE = -1;
 
 		if (!FieldStrategyFactory.isSupported(field.type)) {
 			return null;
 		}
 
 		const strategy = FieldStrategyFactory.getStrategy(field.type);
-		const currentStr = strategy.format(currentValue, field.length);
+		const currentStr = strategy.format(currentValue, field.length, field.allowZeroValue);
 
 		if (fieldInfo.charOffset < 0 || fieldInfo.charOffset >= currentStr.length) {
 			return null;
@@ -80,12 +80,12 @@ export class PatternDeleteHandler {
 
 		const charAtOffset = currentStr[fieldInfo.charOffset];
 
-		if (field.type === 'symbol' && currentValue === TABLE_OFF_VALUE) {
+		if (currentValue === ZERO_VALUE) {
 			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, 0);
 			return { updatedPattern, shouldMoveNext: false };
 		}
 
-		if (charAtOffset === '0' || charAtOffset === '.') {
+		if (charAtOffset === '.' || charAtOffset === '0') {
 			return null;
 		}
 
@@ -95,8 +95,7 @@ export class PatternDeleteHandler {
 			'0'
 		);
 
-		const isAllZeros = /^0+$/.test(newStr);
-		const newValue = isAllZeros ? 0 : strategy.parse(newStr, field.length);
+		const newValue = strategy.parse(newStr, field.length, field.allowZeroValue);
 
 		const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, newValue);
 		return { updatedPattern, shouldMoveNext: false };

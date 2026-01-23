@@ -177,7 +177,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 
 	protected formatField(
 		value: number | string | null | undefined,
-		field: { type: string; length: number }
+		field: { type: string; length: number; allowZeroValue?: boolean }
 	): string {
 		if (
 			typeof value === 'string' &&
@@ -190,7 +190,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 
 		switch (field.type) {
 			case 'hex':
-				return formatHex(value, field.length);
+				return formatHex(value, field.length, field.allowZeroValue);
 			case 'symbol':
 				return formatSymbol(value, field.length);
 			case 'note':
@@ -200,8 +200,11 @@ export abstract class BaseFormatter implements PatternFormatter {
 		}
 	}
 
-	protected parseField(value: string, field: { type: string; length: number }): number | string {
-		if (value === '.'.repeat(field.length)) return 0;
+	protected parseField(
+		value: string,
+		field: { type: string; length: number }
+	): number | string | null {
+		if (value === '.'.repeat(field.length)) return null;
 		switch (field.type) {
 			case 'hex':
 				return parseHex(value, field.length);

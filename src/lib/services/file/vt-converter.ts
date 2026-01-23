@@ -605,6 +605,8 @@ class VT2Converter {
 		pattern: Pattern,
 		channelOffset: number = 0
 	): void {
+		const ZERO_VALUE = -1;
+
 		for (
 			let rowIndex = 0;
 			rowIndex < Math.min(vt2Pattern.rows.length, pattern.length);
@@ -619,7 +621,9 @@ class VT2Converter {
 			if (rowIndex < pattern.patternRows.length) {
 				pattern.patternRows[rowIndex].envelopeValue =
 					vt2Pattern.envelopeValues[rowIndex] || 0;
-				pattern.patternRows[rowIndex].noiseValue = vt2Pattern.noiseValues[rowIndex] || 0;
+
+				const noiseValue = vt2Pattern.noiseValues[rowIndex];
+				pattern.patternRows[rowIndex].noiseValue = noiseValue === 0 ? ZERO_VALUE : noiseValue;
 			}
 
 			for (let channelIndex = 0; channelIndex < 3; channelIndex++) {
