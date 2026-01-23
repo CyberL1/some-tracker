@@ -48,6 +48,8 @@
 		PatternKeyboardShortcutsService,
 		type PatternKeyboardShortcutsContext
 	} from '../../services/pattern/pattern-keyboard-shortcuts';
+	import { autoEnvStore } from '../../stores/auto-env.svelte';
+	import { AutoEnvService } from '../../services/pattern/auto-env-service';
 	import { EnvelopeModeService } from '../../services/pattern/envelope-mode-service';
 	import { PatternRowDataService } from '../../services/pattern/pattern-row-data-service';
 	import {
@@ -952,8 +954,29 @@
 
 		if (editingResult) {
 			event.preventDefault();
-			recordPatternEdit(pattern, editingResult.updatedPattern);
-			updatePatternInArray(editingResult.updatedPattern);
+
+			let finalPattern = editingResult.updatedPattern;
+
+			if (
+				autoEnvStore.enabled &&
+				fieldInfoBeforeEdit &&
+				fieldInfoBeforeEdit.channelIndex >= 0 &&
+				(fieldInfoBeforeEdit.fieldType === 'note' || fieldInfoBeforeEdit.fieldKey === 'envelopeShape')
+			) {
+				const autoEnvPattern = AutoEnvService.applyAutoEnvelope(
+					finalPattern,
+					selectedRow,
+					fieldInfoBeforeEdit.channelIndex,
+					tuningTable,
+					autoEnvStore.currentRatio
+				);
+				if (autoEnvPattern) {
+					finalPattern = autoEnvPattern;
+				}
+			}
+
+			recordPatternEdit(pattern, finalPattern);
+			updatePatternInArray(finalPattern);
 
 			if (editingResult.shouldMoveNext) {
 				moveColumn(1);

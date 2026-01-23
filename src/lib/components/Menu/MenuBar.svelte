@@ -18,6 +18,7 @@
 	import Input from '../Input/Input.svelte';
 	import type { Song } from '../../models/song';
 	import Checkbox from '../Checkbox/Checkbox.svelte';
+	import { autoEnvStore, AUTO_ENV_PRESETS } from '../../stores/auto-env.svelte';
 
 	let activeMenu = $state('');
 	let {
@@ -99,6 +100,39 @@
 			editorStateStore.setStep(current - 1);
 		}
 	}
+
+	function commitAutoEnvNumerator() {
+		const num = parseInt(autoEnvStore.numerator.toString(), 10);
+		if (!isNaN(num) && num > 0 && num <= 999) {
+			autoEnvStore.setNumerator(num);
+		} else {
+			autoEnvStore.setNumerator(1);
+		}
+	}
+
+	function commitAutoEnvDenominator() {
+		const denom = parseInt(autoEnvStore.denominator.toString(), 10);
+		if (!isNaN(denom) && denom > 0 && denom <= 999) {
+			autoEnvStore.setDenominator(denom);
+		} else {
+			autoEnvStore.setDenominator(1);
+		}
+	}
+
+	let showAutoEnvPresets = $state(false);
+
+	$effect(() => {
+		if (showAutoEnvPresets) {
+			const handleClickOutside = (e: MouseEvent) => {
+				const target = e.target as HTMLElement;
+				if (!target.closest('.auto-env-presets-container')) {
+					showAutoEnvPresets = false;
+				}
+			};
+			document.addEventListener('click', handleClickOutside);
+			return () => document.removeEventListener('click', handleClickOutside);
+		}
+	});
 
 </script>
 
@@ -195,6 +229,82 @@
 			</div>
 		</div>
 		{#if hasAYSong}
+			<div class="auto-env-presets-container relative flex items-center gap-1.5">
+				<label class="flex cursor-pointer items-center gap-1.5">
+					<Checkbox
+						showStatus={false}
+						checked={autoEnvStore.enabled}
+						onchange={() => {
+							autoEnvStore.toggle();
+						}}
+						title="Auto Envelope" />
+					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Auto Env</span>
+				</label>
+				{#if autoEnvStore.enabled}
+					<div class="flex items-center gap-0.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
+						<Input
+							bind:value={autoEnvStore.numerator}
+							type="number"
+							min={1}
+							max={999}
+							class="h-6 w-10 cursor-pointer border-0 bg-transparent text-center font-mono text-xs focus:ring-0"
+							onblur={commitAutoEnvNumerator}
+							onfocus={(e: FocusEvent) => {
+								(e.target as HTMLInputElement)?.select();
+							}}
+							onkeydown={(e: KeyboardEvent) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									commitAutoEnvNumerator();
+									(e.target as HTMLInputElement)?.blur();
+								}
+							}}
+							title="Auto Env Numerator" />
+						<span class="text-xs text-[var(--color-app-text-muted)]">:</span>
+						<Input
+							bind:value={autoEnvStore.denominator}
+							type="number"
+							min={1}
+							max={999}
+							class="h-6 w-10 cursor-pointer border-0 bg-transparent text-center font-mono text-xs focus:ring-0"
+							onblur={commitAutoEnvDenominator}
+							onfocus={(e: FocusEvent) => {
+								(e.target as HTMLInputElement)?.select();
+							}}
+							onkeydown={(e: KeyboardEvent) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									commitAutoEnvDenominator();
+									(e.target as HTMLInputElement)?.blur();
+								}
+							}}
+							title="Auto Env Denominator" />
+						<button
+							type="button"
+							class="cursor-pointer border-l border-[var(--color-app-border)] px-1.5 py-1 text-xs text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)]"
+							onclick={() => showAutoEnvPresets = !showAutoEnvPresets}
+							title="Show presets">
+							▾
+						</button>
+					</div>
+					{#if showAutoEnvPresets}
+						<div class="absolute left-0 top-full z-50 mt-1 flex flex-wrap gap-1 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] p-2 shadow-lg" style="width: 200px;">
+							{#each AUTO_ENV_PRESETS as preset}
+								<button
+									type="button"
+									class="cursor-pointer rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-2 py-1 font-mono text-xs text-[var(--color-app-text-primary)] transition-colors hover:bg-[var(--color-app-surface-hover)]"
+									onclick={() => {
+										autoEnvStore.setPreset(preset);
+										showAutoEnvPresets = false;
+									}}
+									title="Set ratio to {preset.label}">
+									{preset.label}
+								</button>
+							{/each}
+						</div>
+					{/if}
+				{/if}
+			</div>
 			<div class="flex items-center gap-1.5">
 				<label class="flex cursor-pointer items-center gap-1.5">
 					<Checkbox
