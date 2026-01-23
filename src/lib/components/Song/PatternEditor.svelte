@@ -670,8 +670,12 @@
 				const channelMuted = getChannelMutedState(patternToRender);
 
 				const bounds = getSelectionBounds();
+				const isCurrentPattern = row.patternIndex === patternId;
 				const isInSelection =
-					bounds && row.rowIndex >= bounds.minRow && row.rowIndex <= bounds.maxRow;
+					isCurrentPattern &&
+					bounds &&
+					row.rowIndex >= bounds.minRow &&
+					row.rowIndex <= bounds.maxRow;
 
 				let selectionStartCol: number | null = null;
 				let selectionEndCol: number | null = null;
@@ -1090,8 +1094,10 @@
 		let closestRow: (typeof visibleRows)[0] | null = null;
 		let minRowDistance = Infinity;
 
+		const patternId = patternOrder[currentPatternOrderIndex];
+
 		for (const row of visibleRows) {
-			if (row.isEmpty || row.rowIndex < 0) continue;
+			if (row.isEmpty || row.rowIndex < 0 || row.isGhost || row.patternIndex !== patternId) continue;
 
 			const rowY = row.displayIndex * lineHeight;
 			const rowCenterY = rowY + lineHeight / 2;
