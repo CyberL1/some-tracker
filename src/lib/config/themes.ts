@@ -13,7 +13,7 @@ export const BUILTIN_THEMES: Theme[] = [
 			patternInstrument: '#b4befe',
 			patternEffect: '#f9e2af',
 			patternEnvelope: '#a6e3a1',
-			patternNoise: '#45475a',
+			patternNoise: '#727483',
 			patternSelected: '#313244',
 			patternCellSelected: '#45475a',
 			patternRowNum: '#89b4fa',
