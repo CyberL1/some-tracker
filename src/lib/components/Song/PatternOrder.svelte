@@ -171,6 +171,7 @@
 			const isSelected = i === currentPatternOrderIndex;
 			const isHovered = hoveredIndex === i;
 			const isEditing = editingPatternIndex === i;
+			const isDraggingThis = isDragging && draggedIndex === i;
 
 			renderer.drawPatternCell({
 				pattern,
@@ -180,8 +181,17 @@
 				isHovered,
 				isEditing,
 				editingValue: editingPatternValue,
-				index: i
+				index: i,
+				isDragging: isDraggingThis
 			});
+		}
+
+		if (isDragging && dropTargetIndex !== null && draggedIndex !== dropTargetIndex) {
+			const dropY = centerY - (currentPatternOrderIndex - dropTargetIndex) * CELL_HEIGHT;
+			const indicatorY = dropTargetIndex > (draggedIndex ?? -1)
+				? dropY + CELL_HEIGHT / 2
+				: dropY - CELL_HEIGHT / 2;
+			renderer.drawDropIndicator(indicatorY);
 		}
 
 		const hasMoreAbove = startIndex > 0;
@@ -192,8 +202,17 @@
 
 	let editingPatternIndex: number | null = $state(null);
 	let editingPatternValue: string = $state('');
+	let isDragging: boolean = $state(false);
+	let draggedIndex: number | null = $state(null);
+	let dropTargetIndex: number | null = $state(null);
+	let dragStartY: number | null = null;
+	const DRAG_THRESHOLD = 5;
 
 	function handleClick(event: MouseEvent): void {
+		if (draggedIndex !== null) {
+			return;
+		}
+
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
 		const y = event.clientY - rect.top;
@@ -218,6 +237,64 @@
 			}
 		} else {
 			finishPatternEdit();
+		}
+	}
+
+	function handleMouseDown(event: MouseEvent): void {
+		if (editingPatternIndex !== null) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const x = event.clientX - rect.left;
+		const y = event.clientY - rect.top;
+		const centerY = canvasHeight / 2;
+
+		if (x < PADDING || x > PADDING + CELL_WIDTH) return;
+
+		const clickedIndex = Math.round(currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT);
+
+		if (clickedIndex >= 0 && clickedIndex < patternOrder.length) {
+			dragStartY = y;
+			draggedIndex = clickedIndex;
+		}
+	}
+
+	function handleMouseUp(event: MouseEvent): void {
+		const wasDragging = isDragging;
+
+		if (isDragging && draggedIndex !== null && dropTargetIndex !== null && draggedIndex !== dropTargetIndex) {
+			const result = PatternService.movePatternInOrder(patternOrder, draggedIndex, dropTargetIndex);
+			patternOrder = result.newPatternOrder;
+
+			if (currentPatternOrderIndex === draggedIndex) {
+				currentPatternOrderIndex = dropTargetIndex;
+			} else if (draggedIndex < currentPatternOrderIndex && dropTargetIndex >= currentPatternOrderIndex) {
+				currentPatternOrderIndex--;
+			} else if (draggedIndex > currentPatternOrderIndex && dropTargetIndex <= currentPatternOrderIndex) {
+				currentPatternOrderIndex++;
+			}
+
+			afterPatternOperation();
+		}
+
+		isDragging = false;
+		dropTargetIndex = null;
+		dragStartY = null;
+
+		if (!wasDragging) {
+			draggedIndex = null;
+		} else {
+			setTimeout(() => {
+				draggedIndex = null;
+				if (lastMouseY !== null && lastMouseX !== null) {
+					updateCursor(lastMouseY, lastMouseX);
+				}
+			}, 0);
+		}
+
+		draw();
+
+		if (!wasDragging && lastMouseY !== null && lastMouseX !== null) {
+			updateCursor(lastMouseY, lastMouseX);
 		}
 	}
 
@@ -340,15 +417,17 @@
 			draw();
 		}
 
-		canvas.style.cursor = newHoveredIndex !== null ? 'pointer' : 'default';
+		if (!isDragging && draggedIndex === null) {
+			canvas.style.cursor = newHoveredIndex !== null ? 'grab' : 'default';
+		}
 	}
 
 	function switchPattern(index: number): void {
 		currentPatternOrderIndex = index;
 		selectedRow = 0;
 
-		if (lastMouseY !== null) {
-			updateCursor(lastMouseY);
+		if (lastMouseY !== null && lastMouseX !== null) {
+			updateCursor(lastMouseY, lastMouseX);
 		}
 	}
 
@@ -368,7 +447,29 @@
 		const x = event.clientX - rect.left;
 		lastMouseY = y;
 		lastMouseX = x;
-		updateCursor(y, x);
+
+		if (draggedIndex !== null && !isDragging && dragStartY !== null) {
+			if (Math.abs(y - dragStartY) > DRAG_THRESHOLD) {
+				isDragging = true;
+				canvas.style.cursor = 'grabbing';
+				draw();
+			}
+		}
+
+		if (isDragging && draggedIndex !== null) {
+			const centerY = canvasHeight / 2;
+			const newDropTargetIndex = Math.round(currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT);
+
+			if (newDropTargetIndex >= 0 && newDropTargetIndex < patternOrder.length) {
+				if (dropTargetIndex !== newDropTargetIndex) {
+					dropTargetIndex = newDropTargetIndex;
+					draw();
+				}
+			}
+			canvas.style.cursor = 'grabbing';
+		} else {
+			updateCursor(y, x);
+		}
 	}
 
 	function handleMouseLeave(): void {
@@ -377,7 +478,12 @@
 		hoveredButton = null;
 		lastMouseY = null;
 		lastMouseX = null;
-		canvas.style.cursor = 'default';
+
+		if (!isDragging) {
+			canvas.style.cursor = 'default';
+			draggedIndex = null;
+			dragStartY = null;
+		}
 
 		if (previousHoveredIndex !== null) {
 			draw();
@@ -494,6 +600,8 @@
 		onclick={handleClick}
 		onwheel={handleWheel}
 		onkeydown={handleKeyDown}
+		onmousedown={handleMouseDown}
+		onmouseup={handleMouseUp}
 		onmousemove={handleMouseMove}
 		onmouseleave={handleMouseLeave}
 		onmouseenter={handleMouseEnter}

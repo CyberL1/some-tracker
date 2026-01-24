@@ -286,6 +286,27 @@ export class PatternService {
 	}
 
 	/**
+	 * Move a pattern from one position to another in the pattern order
+	 */
+	static movePatternInOrder(
+		patternOrder: number[],
+		fromIndex: number,
+		toIndex: number
+	): {
+		newPatternOrder: number[];
+	} {
+		if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= patternOrder.length || toIndex < 0 || toIndex >= patternOrder.length) {
+			return { newPatternOrder: patternOrder };
+		}
+
+		const newPatternOrder = [...patternOrder];
+		const [movedPattern] = newPatternOrder.splice(fromIndex, 1);
+		newPatternOrder.splice(toIndex, 0, movedPattern);
+
+		return { newPatternOrder };
+	}
+
+	/**
 	 * Resize a pattern to a new length, preserving existing data
 	 */
 	static resizePattern(pattern: Pattern, newLength: number, schema?: ChipSchema): Pattern {

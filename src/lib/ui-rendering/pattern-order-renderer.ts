@@ -23,6 +23,7 @@ export interface PatternCell {
 	isEditing: boolean;
 	editingValue: string;
 	index: number;
+	isDragging?: boolean;
 }
 
 export class PatternOrderRenderer extends BaseCanvasRenderer {
@@ -61,10 +62,19 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		const cellY = cell.y - this.cellHeight / 2;
 		const isEmpty = !cell.pattern;
 
+		if (cell.isDragging) {
+			this.save();
+			this.ctx.globalAlpha = 0.4;
+		}
+
 		this.drawCellBackground(cell, cellY);
 		this.drawCellText(cell, isEmpty);
 		this.drawCellEditingIndicator(cell, cellY);
 		this.drawCellSelectionIndicator(cell);
+
+		if (cell.isDragging) {
+			this.restore();
+		}
 	}
 
 	private drawCellBackground(cell: PatternCell, cellY: number): void {
@@ -231,6 +241,17 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		this.setTextAlign('center');
 		this.setTextBaseline('top');
 		this.fillText('▼', this.canvasWidth / 2, this.canvasHeight - this.fadeHeight + 2, this.orderColors.orderText);
+		this.restore();
+	}
+
+	drawDropIndicator(y: number): void {
+		const lineY = Math.round(y) + 0.5;
+		this.save();
+		this.ctx.setLineDash([4, 2]);
+		this.beginPath();
+		this.moveTo(this.padding, lineY);
+		this.lineTo(this.padding + this.cellWidth, lineY);
+		this.stroke(this.orderColors.orderText, 2);
 		this.restore();
 	}
 }
