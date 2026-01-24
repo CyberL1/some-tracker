@@ -10,6 +10,7 @@
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import ModalContainer from './lib/components/Modal/ModalContainer.svelte';
 	import ProgressModal from './lib/components/Modal/ProgressModal.svelte';
+	import WavExportSettingsModal from './lib/components/Modal/WavExportSettingsModal.svelte';
 	import { open } from './lib/services/modal/modal-service';
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio/audio-service';
@@ -391,7 +392,14 @@
 					tables
 				);
 
-				await open(ProgressModal, { project: currentProject, exportType: 'wav' });
+				const wavSettings = await open(WavExportSettingsModal, { project: currentProject });
+				if (wavSettings) {
+					await open(ProgressModal, {
+						project: currentProject,
+						exportType: 'wav',
+						wavSettings
+					});
+				}
 				return;
 			}
 

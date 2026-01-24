@@ -6,7 +6,7 @@
 	import { open } from '../../services/modal/modal-service';
 
 	let { resolve, dismiss, hasSelection = false } = $props<{
-		resolve?: (script: UserScript) => void;
+		resolve?: (script?: UserScript) => void;
 		dismiss?: () => void;
 		hasSelection?: boolean;
 	}>();
@@ -36,7 +36,7 @@
 	}
 
 	function handleCancel() {
-		dismiss?.();
+		resolve?.(undefined);
 	}
 
 	function selectScript(script: UserScript) {

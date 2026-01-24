@@ -63,7 +63,7 @@
 			bind:value={customValue}
 			oninput={handleCustomValueChange}
 			placeholder="Enter value"
-			class="w-full rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-2 py-1 pr-8 text-xs focus:border-transparent focus:ring-1 focus:ring-[var(--color-app-primary)] focus:outline-none" />
+			class="w-full rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-2 py-1 pr-8 text-xs text-[var(--color-app-text-secondary)] placeholder-[var(--color-app-text-muted)] focus:border-transparent focus:ring-1 focus:ring-[var(--color-app-primary)] focus:outline-none" />
 		<button
 			onclick={switchToDropdown}
 			class="absolute top-1/2 right-1 -translate-y-1/2 rounded p-1 text-[var(--color-app-text-muted)] hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-secondary)]"
@@ -76,7 +76,7 @@
 		<select
 			bind:value={selectedOption}
 			onchange={handleSelectionChange}
-			class="w-full cursor-pointer rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-2 py-1 pr-8 text-xs focus:border-transparent focus:ring-1 focus:ring-[var(--color-app-primary)] focus:outline-none">
+			class="w-full cursor-pointer rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-2 py-1 pr-8 text-xs text-[var(--color-app-text-secondary)] focus:border-transparent focus:ring-1 focus:ring-[var(--color-app-primary)] focus:outline-none">
 			<option value="" disabled>Select option</option>
 			{#each options as option}
 				<option value={option.label}>{option.label}</option>

@@ -12,7 +12,7 @@
 	}
 
 	function handleCancel() {
-		dismiss?.();
+		resolve?.(false);
 	}
 </script>
 

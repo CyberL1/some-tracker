@@ -4,15 +4,18 @@
 	import { exportToWAV } from '../../services/file/wav-export';
 	import { exportToPSG } from '../../services/file/psg-export';
 	import type { Project } from '../../models/project';
+	import type { WavExportSettings } from '../../services/file/wav-export-settings';
 
 	let {
 		project,
 		exportType = 'wav',
+		wavSettings,
 		resolve,
 		dismiss
 	} = $props<{
 		project: Project;
 		exportType?: 'wav' | 'psg';
+		wavSettings?: WavExportSettings;
 		resolve?: (value?: any) => void;
 		dismiss?: (error?: any) => void;
 	}>();
@@ -32,16 +35,27 @@
 		const startTime = Date.now();
 
 		try {
-			const exportFn = exportType === 'psg' ? exportToPSG : exportToWAV;
-			await exportFn(
-				project,
-				0,
-				(progressValue, messageValue) => {
-					progress = progressValue;
-					message = messageValue;
-				},
-				abortController.signal
-			);
+			if (exportType === 'psg') {
+				await exportToPSG(
+					project,
+					0,
+					(progressValue, messageValue) => {
+						progress = progressValue;
+						message = messageValue;
+					},
+					abortController.signal
+				);
+			} else {
+				await exportToWAV(
+					project,
+					wavSettings,
+					(progressValue, messageValue) => {
+						progress = progressValue;
+						message = messageValue;
+					},
+					abortController.signal
+				);
+			}
 
 			const elapsed = Date.now() - startTime;
 			const remaining = Math.max(0, 1000 - elapsed);

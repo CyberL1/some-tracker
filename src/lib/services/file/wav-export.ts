@@ -3,9 +3,12 @@ import type { Chip } from '../../chips/types';
 import { getChipByType, createRenderer } from '../../chips/registry';
 import { mixAudioChannels } from '../../utils/audio-mixer';
 import { downloadFile, sanitizeFilename } from '../../utils/file-download';
+import type { WavExportSettings } from './wav-export-settings';
+import { defaultWavExportSettings } from './wav-export-settings';
 
-const SAMPLE_RATE = 44100;
+const RENDERER_SAMPLE_RATE = 44100;
 const RENDERING_PROGRESS_MAX = 90;
+const RESAMPLING_PROGRESS = 91;
 const ENCODING_PROGRESS = 92;
 const DOWNLOAD_PROGRESS = 99;
 const COMPLETE_PROGRESS = 100;
@@ -16,37 +19,146 @@ function writeString(view: DataView, offset: number, string: string) {
 	}
 }
 
-function encodeWAV(samples: Float32Array[], sampleRate: number): ArrayBuffer {
+function resampleAudio(
+	channels: Float32Array[],
+	fromRate: number,
+	toRate: number
+): Float32Array[] {
+	if (fromRate === toRate) {
+		return channels;
+	}
+
+	const ratio = fromRate / toRate;
+	const newLength = Math.floor(channels[0].length / ratio);
+	const resampled: Float32Array[] = [];
+
+	for (const channel of channels) {
+		const output = new Float32Array(newLength);
+		for (let i = 0; i < newLength; i++) {
+			const srcIndex = i * ratio;
+			const srcIndexFloor = Math.floor(srcIndex);
+			const srcIndexCeil = Math.min(srcIndexFloor + 1, channel.length - 1);
+			const frac = srcIndex - srcIndexFloor;
+			output[i] = channel[srcIndexFloor] * (1 - frac) + channel[srcIndexCeil] * frac;
+		}
+		resampled.push(output);
+	}
+
+	return resampled;
+}
+
+function createMetadataChunk(settings: WavExportSettings): ArrayBuffer | null {
+	const fields: { tag: string; value: string }[] = [];
+
+	if (settings.title) fields.push({ tag: 'INAM', value: settings.title });
+	if (settings.artist) fields.push({ tag: 'IART', value: settings.artist });
+	if (settings.album) fields.push({ tag: 'IPRD', value: settings.album });
+	if (settings.year) fields.push({ tag: 'ICRD', value: settings.year });
+	if (settings.comment) fields.push({ tag: 'ICMT', value: settings.comment });
+
+	if (fields.length === 0) return null;
+
+	let totalSize = 4;
+	const fieldBuffers: ArrayBuffer[] = [];
+
+	for (const field of fields) {
+		const valueLength = field.value.length + (field.value.length % 2);
+		const fieldSize = 8 + valueLength;
+		const buffer = new ArrayBuffer(fieldSize);
+		const view = new DataView(buffer);
+
+		writeString(view, 0, field.tag);
+		view.setUint32(4, field.value.length, true);
+		writeString(view, 8, field.value);
+
+		fieldBuffers.push(buffer);
+		totalSize += fieldSize;
+	}
+
+	const listBuffer = new ArrayBuffer(8 + totalSize);
+	const listView = new DataView(listBuffer);
+
+	writeString(listView, 0, 'LIST');
+	listView.setUint32(4, totalSize, true);
+	writeString(listView, 8, 'INFO');
+
+	let offset = 12;
+	for (const fieldBuffer of fieldBuffers) {
+		new Uint8Array(listBuffer, offset).set(new Uint8Array(fieldBuffer));
+		offset += fieldBuffer.byteLength;
+	}
+
+	return listBuffer;
+}
+
+function encodeWAV(
+	samples: Float32Array[],
+	sampleRate: number,
+	settings: WavExportSettings
+): ArrayBuffer {
 	const numChannels = samples.length;
 	const length = samples[0].length;
-	const bytesPerSample = 2;
+	const bitDepth = settings.bitDepth;
+	const isFloat = bitDepth === 32;
+	const bytesPerSample = bitDepth / 8;
 	const blockAlign = numChannels * bytesPerSample;
 	const byteRate = sampleRate * blockAlign;
 	const dataSize = length * blockAlign;
-	const buffer = new ArrayBuffer(44 + dataSize);
+
+	const metadataChunk = createMetadataChunk(settings);
+	const metadataSize = metadataChunk ? metadataChunk.byteLength : 0;
+
+	const headerSize = 44;
+	const totalSize = headerSize + dataSize + metadataSize;
+	const buffer = new ArrayBuffer(totalSize);
 	const view = new DataView(buffer);
 
 	writeString(view, 0, 'RIFF');
-	view.setUint32(4, 36 + dataSize, true);
+	view.setUint32(4, totalSize - 8, true);
 	writeString(view, 8, 'WAVE');
 	writeString(view, 12, 'fmt ');
 	view.setUint32(16, 16, true);
-	view.setUint16(20, 1, true);
+	view.setUint16(20, isFloat ? 3 : 1, true);
 	view.setUint16(22, numChannels, true);
 	view.setUint32(24, sampleRate, true);
 	view.setUint32(28, byteRate, true);
 	view.setUint16(32, blockAlign, true);
-	view.setUint16(34, 16, true);
+	view.setUint16(34, bitDepth, true);
 	writeString(view, 36, 'data');
 	view.setUint32(40, dataSize, true);
 
-	const output = new Int16Array(buffer, 44);
-	for (let i = 0; i < length; i++) {
-		for (let channel = 0; channel < numChannels; channel++) {
-			const offset = i * numChannels + channel;
-			const s = Math.max(-1, Math.min(1, samples[channel][i]));
-			output[offset] = s < 0 ? s * 0x8000 : s * 0x7fff;
+	let offset = headerSize;
+
+	if (isFloat) {
+		const output = new Float32Array(buffer, offset, length * numChannels);
+		for (let i = 0; i < length; i++) {
+			for (let channel = 0; channel < numChannels; channel++) {
+				output[i * numChannels + channel] = Math.max(-1, Math.min(1, samples[channel][i]));
+			}
 		}
+	} else if (bitDepth === 24) {
+		for (let i = 0; i < length; i++) {
+			for (let channel = 0; channel < numChannels; channel++) {
+				const s = Math.max(-1, Math.min(1, samples[channel][i]));
+				const val = Math.round(s * (s < 0 ? 0x800000 : 0x7fffff));
+				view.setInt8(offset++, val & 0xff);
+				view.setInt8(offset++, (val >> 8) & 0xff);
+				view.setInt8(offset++, (val >> 16) & 0xff);
+			}
+		}
+	} else {
+		const output = new Int16Array(buffer, offset, length * numChannels);
+		for (let i = 0; i < length; i++) {
+			for (let channel = 0; channel < numChannels; channel++) {
+				const s = Math.max(-1, Math.min(1, samples[channel][i]));
+				output[i * numChannels + channel] = s < 0 ? s * 0x8000 : s * 0x7fff;
+			}
+		}
+		offset += output.byteLength;
+	}
+
+	if (metadataChunk) {
+		new Uint8Array(buffer, offset).set(new Uint8Array(metadataChunk));
 	}
 
 	return buffer;
@@ -87,6 +199,7 @@ class WavExportService {
 		project: Project,
 		songIndex: number,
 		totalSongs: number,
+		loops: number,
 		onProgress?: (progress: number, message: string) => void
 	): Promise<Float32Array[]> {
 		const song = project.songs[songIndex];
@@ -119,15 +232,41 @@ class WavExportService {
 
 		onProgress?.(progressStart + 5, `Rendering song ${songIndex + 1}/${totalSongs}...`);
 
-		return renderer.render(project, songIndex, (progress, message) => {
-			const mappedProgress =
-				progressStart + 5 + (progress / 100) * (progressEnd - progressStart - 5);
-			onProgress?.(mappedProgress, `Song ${songIndex + 1}/${totalSongs}: ${message}`);
-		});
+		const loopedChannels: Float32Array[][] = [];
+
+		for (let loop = 0; loop < loops; loop++) {
+			const channels = await renderer.render(project, songIndex, (progress, message) => {
+				const loopProgress = loop / loops + progress / 100 / loops;
+				const mappedProgress = progressStart + 5 + loopProgress * (progressEnd - progressStart - 5);
+				const loopInfo = loops > 1 ? ` (loop ${loop + 1}/${loops})` : '';
+				onProgress?.(mappedProgress, `Song ${songIndex + 1}/${totalSongs}${loopInfo}: ${message}`);
+			});
+			loopedChannels.push(channels);
+		}
+
+		const totalLength = loopedChannels.reduce(
+			(sum, channels) => sum + channels[0].length,
+			0
+		);
+		const numChannels = loopedChannels[0].length;
+		const result: Float32Array[] = [];
+
+		for (let ch = 0; ch < numChannels; ch++) {
+			const combined = new Float32Array(totalLength);
+			let offset = 0;
+			for (const channels of loopedChannels) {
+				combined.set(channels[ch], offset);
+				offset += channels[ch].length;
+			}
+			result.push(combined);
+		}
+
+		return result;
 	}
 
 	async export(
 		project: Project,
+		settings: WavExportSettings,
 		onProgress?: (progress: number, message: string) => void,
 		abortSignal?: AbortSignal
 	): Promise<void> {
@@ -150,7 +289,7 @@ class WavExportService {
 			}
 
 			try {
-				const channels = await this.renderSong(project, i, totalSongs, onProgress);
+				const channels = await this.renderSong(project, i, totalSongs, settings.loops, onProgress);
 				renderedSongs.push(channels);
 			} catch (error) {
 				if (error instanceof Error && error.message === 'Song is empty') {
@@ -169,14 +308,27 @@ class WavExportService {
 		}
 
 		onProgress?.(RENDERING_PROGRESS_MAX, 'Mixing songs...');
-		const [mixedLeft, mixedRight] = mixAudioChannels(renderedSongs);
+		let [mixedLeft, mixedRight] = mixAudioChannels(renderedSongs);
 
 		if (abortSignal?.aborted) {
 			throw new Error('Export cancelled');
 		}
 
+		if (settings.sampleRate !== RENDERER_SAMPLE_RATE) {
+			onProgress?.(RESAMPLING_PROGRESS, `Resampling to ${settings.sampleRate} Hz...`);
+			[mixedLeft, mixedRight] = resampleAudio(
+				[mixedLeft, mixedRight],
+				RENDERER_SAMPLE_RATE,
+				settings.sampleRate
+			);
+
+			if (abortSignal?.aborted) {
+				throw new Error('Export cancelled');
+			}
+		}
+
 		onProgress?.(ENCODING_PROGRESS, 'Encoding WAV file...');
-		const wavBuffer = encodeWAV([mixedLeft, mixedRight], SAMPLE_RATE);
+		const wavBuffer = encodeWAV([mixedLeft, mixedRight], settings.sampleRate, settings);
 		const blob = new Blob([wavBuffer], { type: 'audio/wav' });
 
 		if (abortSignal?.aborted) {
@@ -184,7 +336,7 @@ class WavExportService {
 		}
 
 		onProgress?.(DOWNLOAD_PROGRESS, 'Downloading...');
-		const filename = project.name || 'export';
+		const filename = settings.title || project.name || 'export';
 		const sanitizedFilename = sanitizeFilename(filename);
 		downloadFile(blob, `${sanitizedFilename}.wav`);
 
@@ -196,12 +348,12 @@ const wavExportService = new WavExportService();
 
 export async function exportToWAV(
 	project: Project,
-	songIndex: number = 0,
+	settings: WavExportSettings = defaultWavExportSettings,
 	onProgress?: (progress: number, message: string) => void,
 	abortSignal?: AbortSignal
 ): Promise<void> {
 	try {
-		await wavExportService.export(project, onProgress, abortSignal);
+		await wavExportService.export(project, settings, onProgress, abortSignal);
 	} catch (error) {
 		if (error instanceof Error && error.message === 'Export cancelled') {
 			onProgress?.(0, 'Export cancelled');

@@ -6,7 +6,7 @@
 	let { script, isNew = false, resolve, dismiss } = $props<{
 		script?: UserScript;
 		isNew?: boolean;
-		resolve?: (script: UserScript) => void;
+		resolve?: (script?: UserScript) => void;
 		dismiss?: () => void;
 	}>();
 
@@ -43,7 +43,7 @@
 	}
 
 	function handleCancel() {
-		dismiss?.();
+		resolve?.(undefined);
 	}
 
 	const monoFont = $derived(settingsStore.state.patternEditorFontFamily || 'monospace');
