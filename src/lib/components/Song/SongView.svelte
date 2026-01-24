@@ -63,6 +63,7 @@
 	let patternLengthValue = $state('');
 	let isPatternLengthInputFocused = $state(false);
 	let isPatternLengthButtonAction = $state(false);
+	let isUserEditingPatternLength = $state(false);
 
 	const blurredContentClass = $derived(
 		isRightPanelExpanded ? 'pointer-events-none opacity-50 blur-sm' : ''
@@ -214,36 +215,74 @@
 		return activeEditor.getCurrentPatternLength?.() ?? null;
 	});
 
+	let lastSyncedEditorIndex = $state(-1);
+	let expectedPatternLength = $state<number | null>(null);
+
+	function syncPatternLengthValue() {
+		if (isPatternLengthInputFocused || isPatternLengthButtonAction || isUserEditingPatternLength) {
+			return;
+		}
+		const activeEditor = patternEditors[activeEditorIndex];
+		if (!activeEditor) {
+			return;
+		}
+		const length = currentPatternLength;
+		if (length !== null) {
+			patternLengthValue = length.toString();
+		}
+	}
+
 	$effect(() => {
-		if (!isPatternLengthInputFocused && !isPatternLengthButtonAction) {
-			const activeEditor = patternEditors[activeEditorIndex];
-			if (activeEditor) {
-				const length = activeEditor.getCurrentPatternLength?.();
-				if (length !== null && patternLengthValue !== length.toString()) {
-					patternLengthValue = length.toString();
-				}
-			}
+		if (activeEditorIndex !== lastSyncedEditorIndex) {
+			lastSyncedEditorIndex = activeEditorIndex;
+			syncPatternLengthValue();
+		}
+	});
+
+	$effect(() => {
+		if (expectedPatternLength !== null && currentPatternLength === expectedPatternLength) {
+			isUserEditingPatternLength = false;
+			isPatternLengthButtonAction = false;
+			expectedPatternLength = null;
+		}
+	});
+
+	$effect(() => {
+		if (
+			currentPatternLength !== null &&
+			patternLengthValue === '' &&
+			!isPatternLengthInputFocused &&
+			!isPatternLengthButtonAction &&
+			!isUserEditingPatternLength
+		) {
+			syncPatternLengthValue();
 		}
 	});
 
 	function commitPatternLength() {
+		isPatternLengthInputFocused = false;
 		const length = parseInt(patternLengthValue, 10);
 		const activeEditor = patternEditors[activeEditorIndex];
 		if (!isNaN(length) && length >= 1 && length <= 256 && activeEditor) {
 			try {
 				activeEditor.resizePatternTo?.(length);
+				expectedPatternLength = length;
 			} catch (error) {
 				console.error('Failed to resize pattern:', error);
 				const current = currentPatternLength;
 				if (current !== null) {
 					patternLengthValue = current.toString();
 				}
+				isUserEditingPatternLength = false;
+				expectedPatternLength = null;
 			}
 		} else {
 			const current = currentPatternLength;
 			if (current !== null) {
 				patternLengthValue = current.toString();
 			}
+			isUserEditingPatternLength = false;
+			expectedPatternLength = null;
 		}
 	}
 
@@ -254,20 +293,22 @@
 			return;
 		}
 		isPatternLengthButtonAction = true;
+		isUserEditingPatternLength = true;
 		const newLength = current + 1;
 		try {
 			activeEditor.resizePatternTo?.(newLength);
 			patternLengthValue = newLength.toString();
+			expectedPatternLength = newLength;
 		} catch (error) {
 			console.error('Failed to increment pattern length:', error);
 			const actual = currentPatternLength;
 			if (actual !== null) {
 				patternLengthValue = actual.toString();
 			}
-		}
-		setTimeout(() => {
+			isUserEditingPatternLength = false;
 			isPatternLengthButtonAction = false;
-		}, 100);
+			expectedPatternLength = null;
+		}
 	}
 
 	function decrementPatternLength() {
@@ -277,20 +318,22 @@
 			return;
 		}
 		isPatternLengthButtonAction = true;
+		isUserEditingPatternLength = true;
 		const newLength = current - 1;
 		try {
 			activeEditor.resizePatternTo?.(newLength);
 			patternLengthValue = newLength.toString();
+			expectedPatternLength = newLength;
 		} catch (error) {
 			console.error('Failed to decrement pattern length:', error);
 			const actual = currentPatternLength;
 			if (actual !== null) {
 				patternLengthValue = actual.toString();
 			}
-		}
-		setTimeout(() => {
+			isUserEditingPatternLength = false;
 			isPatternLengthButtonAction = false;
-		}, 100);
+			expectedPatternLength = null;
+		}
 	}
 </script>
 
@@ -326,7 +369,7 @@
 						<div class="flex items-center gap-1">
 							<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {playbackStore.isPlaying ? 'opacity-50' : ''}">
 								<Input
-									bind:value={patternLengthValue}
+									value={patternLengthValue}
 									id="pattern-length-input-{i}"
 									type="number"
 									min="1"
@@ -337,6 +380,14 @@
 									onfocus={() => {
 										if (!playbackStore.isPlaying) {
 											isPatternLengthInputFocused = true;
+											isUserEditingPatternLength = true;
+										}
+									}}
+									oninput={(e) => {
+										if (!playbackStore.isPlaying) {
+											isPatternLengthInputFocused = true;
+											isUserEditingPatternLength = true;
+											patternLengthValue = (e.target as HTMLInputElement).value;
 										}
 									}}
 									onblur={() => {
@@ -396,6 +447,7 @@
 					onfocus={() => {
 						activeEditorIndex = i;
 						patternEditor = patternEditors[i];
+						syncPatternLengthValue();
 					}}
 					{onaction}
 					initAllChips={initAllChipsForPlayback}
