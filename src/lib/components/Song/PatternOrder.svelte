@@ -89,6 +89,10 @@
 			lastCanvasHeight = canvasHeight;
 			draw();
 			lastHoveredIndex = hoveredIndex;
+
+			if (lastMouseY !== null && lastMouseX !== null && !isDragging) {
+				updateCursor(lastMouseY, lastMouseX);
+			}
 		} else if (hoveredIndex !== lastHoveredIndex) {
 			draw();
 			lastHoveredIndex = hoveredIndex;
@@ -206,10 +210,12 @@
 	let draggedIndex: number | null = $state(null);
 	let dropTargetIndex: number | null = $state(null);
 	let dragStartY: number | null = null;
+	let justFinishedDrag: boolean = $state(false);
 	const DRAG_THRESHOLD = 5;
 
 	function handleClick(event: MouseEvent): void {
-		if (draggedIndex !== null) {
+		if (justFinishedDrag) {
+			justFinishedDrag = false;
 			return;
 		}
 
@@ -241,7 +247,9 @@
 	}
 
 	function handleMouseDown(event: MouseEvent): void {
-		if (editingPatternIndex !== null) return;
+		if (isDragging) return;
+
+		justFinishedDrag = false;
 
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
@@ -253,6 +261,9 @@
 		const clickedIndex = Math.round(currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT);
 
 		if (clickedIndex >= 0 && clickedIndex < patternOrder.length) {
+			if (editingPatternIndex !== null && editingPatternIndex !== clickedIndex) {
+				finishPatternEdit();
+			}
 			dragStartY = y;
 			draggedIndex = clickedIndex;
 		}
@@ -276,24 +287,18 @@
 			afterPatternOperation();
 		}
 
+		if (wasDragging) {
+			justFinishedDrag = true;
+		}
+
 		isDragging = false;
+		draggedIndex = null;
 		dropTargetIndex = null;
 		dragStartY = null;
 
-		if (!wasDragging) {
-			draggedIndex = null;
-		} else {
-			setTimeout(() => {
-				draggedIndex = null;
-				if (lastMouseY !== null && lastMouseX !== null) {
-					updateCursor(lastMouseY, lastMouseX);
-				}
-			}, 0);
-		}
-
 		draw();
 
-		if (!wasDragging && lastMouseY !== null && lastMouseX !== null) {
+		if (lastMouseY !== null && lastMouseX !== null) {
 			updateCursor(lastMouseY, lastMouseX);
 		}
 	}
@@ -417,7 +422,7 @@
 			draw();
 		}
 
-		if (!isDragging && draggedIndex === null) {
+		if (!isDragging) {
 			canvas.style.cursor = newHoveredIndex !== null ? 'grab' : 'default';
 		}
 	}
@@ -450,6 +455,10 @@
 
 		if (draggedIndex !== null && !isDragging && dragStartY !== null) {
 			if (Math.abs(y - dragStartY) > DRAG_THRESHOLD) {
+				if (editingPatternIndex !== null) {
+					editingPatternIndex = null;
+					editingPatternValue = '';
+				}
 				isDragging = true;
 				canvas.style.cursor = 'grabbing';
 				draw();
