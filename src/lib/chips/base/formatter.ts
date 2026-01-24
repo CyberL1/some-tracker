@@ -202,12 +202,12 @@ export abstract class BaseFormatter implements PatternFormatter {
 
 	protected parseField(
 		value: string,
-		field: { type: string; length: number }
+		field: { type: string; length: number; allowZeroValue?: boolean }
 	): number | string | null {
 		if (value === '.'.repeat(field.length)) return null;
 		switch (field.type) {
 			case 'hex':
-				return parseHex(value, field.length);
+				return parseHex(value, field.length, field.allowZeroValue);
 			case 'symbol':
 				return parseSymbol(value, field.length);
 			case 'note':

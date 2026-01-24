@@ -26,6 +26,14 @@ export const settingsItems: SettingsItem[] = [
 		category: 'general'
 	},
 	{
+		label: 'Auto-enter Instrument',
+		description: 'Automatically insert the current instrument index when entering notes',
+		type: 'toggle',
+		defaultValue: false,
+		setting: 'autoEnterInstrument',
+		category: 'general'
+	},
+	{
 		label: 'Pattern Editor Font Size',
 		description: 'Adjust the font size in the pattern editor',
 		type: 'number',

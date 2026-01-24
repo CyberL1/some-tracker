@@ -3,7 +3,8 @@ import { settingsStore } from './settings.svelte';
 let editorState = $state({
 	octave: 4,
 	step: 1,
-	envelopeAsNote: false
+	envelopeAsNote: false,
+	currentInstrument: '01'
 });
 
 export const editorStateStore = {
@@ -28,5 +29,8 @@ export const editorStateStore = {
 		if (editorState.envelopeAsNote === envelopeAsNote) return;
 		editorState = { ...editorState, envelopeAsNote };
 		settingsStore.set('envelopeAsNote', envelopeAsNote);
+	},
+	setCurrentInstrument: (instrument: string) => {
+		editorState = { ...editorState, currentInstrument: instrument };
 	}
 };

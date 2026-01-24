@@ -4,6 +4,8 @@ import type { EditingContext, FieldInfo } from './editing-context';
 import type { Pattern } from '../../../models/song';
 import { PatternValueUpdates } from './pattern-value-updates';
 import { editorStateStore } from '../../../stores/editor-state.svelte';
+import { settingsStore } from '../../../stores/settings.svelte';
+import { parseSymbol } from '../../../chips/base/field-formatters';
 
 export class PatternNoteInput {
 	private static readonly PIANO_KEYBOARD_MAP: Record<
@@ -72,11 +74,12 @@ export class PatternNoteInput {
 		const keyboardNote = this.mapKeyboardKeyToNote(key);
 		if (keyboardNote) {
 			const noteStr = formatNoteFromEnum(keyboardNote.noteName, keyboardNote.octave);
-			const updatedPattern = PatternValueUpdates.updateFieldValue(
+			let updatedPattern = PatternValueUpdates.updateFieldValue(
 				context,
 				fieldInfo,
 				noteStr
 			);
+			updatedPattern = this.autoEnterInstrument(context, fieldInfo, updatedPattern);
 			return { updatedPattern, shouldMoveNext: false };
 		}
 
@@ -89,15 +92,46 @@ export class PatternNoteInput {
 		if (this.LETTER_NOTE_MAP[upperKey]) {
 			const currentOctave = editorStateStore.get().octave;
 			const noteStr = formatNoteFromEnum(this.LETTER_NOTE_MAP[upperKey], currentOctave);
-			const updatedPattern = PatternValueUpdates.updateFieldValue(
+			let updatedPattern = PatternValueUpdates.updateFieldValue(
 				context,
 				fieldInfo,
 				noteStr
 			);
+			updatedPattern = this.autoEnterInstrument(context, fieldInfo, updatedPattern);
 			return { updatedPattern, shouldMoveNext: false };
 		}
 
 		return null;
+	}
+
+	private static autoEnterInstrument(
+		context: EditingContext,
+		fieldInfo: FieldInfo,
+		pattern: Pattern
+	): Pattern {
+		const autoEnterEnabled = settingsStore.get().autoEnterInstrument;
+		if (!autoEnterEnabled || fieldInfo.isGlobal || fieldInfo.channelIndex < 0) {
+			return pattern;
+		}
+
+		const instrumentFieldDef = context.schema.fields.instrument;
+		if (!instrumentFieldDef) {
+			return pattern;
+		}
+
+		const currentInstrumentId = editorStateStore.get().currentInstrument;
+		const instrumentValue = parseSymbol(currentInstrumentId, instrumentFieldDef.length);
+
+		const instrumentFieldInfo: FieldInfo = {
+			fieldKey: 'instrument',
+			fieldType: instrumentFieldDef.type,
+			isGlobal: false,
+			channelIndex: fieldInfo.channelIndex,
+			charOffset: 0
+		};
+
+		const updatedContext = { ...context, pattern };
+		return PatternValueUpdates.updateFieldValue(updatedContext, instrumentFieldInfo, instrumentValue);
 	}
 
 	static mapKeyboardKeyToNote(key: string): { noteName: NoteName; octave: number } | null {

@@ -2,6 +2,7 @@ export interface Settings {
 	volume: number;
 	showVisualGrid: boolean;
 	envelopeAsNote: boolean;
+	autoEnterInstrument: boolean;
 	patternEditorFontSize: number;
 	patternEditorFontFamily: string;
 	uiFontFamily: string;

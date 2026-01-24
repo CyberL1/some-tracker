@@ -11,7 +11,7 @@
 	import IconCarbonMinimize from '~icons/carbon/minimize';
 	import Card from '../Card/Card.svelte';
 	import Input from '../Input/Input.svelte';
-	import { getContext } from 'svelte';
+	import { getContext, untrack } from 'svelte';
 	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Chip } from '../../chips/types';
 	import {
@@ -20,6 +20,7 @@
 		getNextAvailableInstrumentId,
 		isInstrumentIdInRange
 	} from '../../utils/instrument-id';
+	import { editorStateStore } from '../../stores/editor-state.svelte';
 
 	const services: { audioService: AudioService } = getContext('container');
 
@@ -42,6 +43,15 @@
 	let asHex = $state(false);
 	let selectedInstrumentIndex = $state(0);
 	let instrumentEditorRef: any = $state(null);
+
+	$effect(() => {
+		if (instruments.length > 0 && instruments[selectedInstrumentIndex]) {
+			const instrumentId = instruments[selectedInstrumentIndex].id;
+			untrack(() => {
+				editorStateStore.setCurrentInstrument(instrumentId);
+			});
+		}
+	});
 
 	const InstrumentEditor = $derived(chip.instrumentEditor);
 
