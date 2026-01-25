@@ -157,6 +157,57 @@ class EffectAlgorithms {
 		if (position === 2) return semitone2;
 		return 0;
 	}
+
+	static initVibrato(parameter, delay) {
+		const speed = (parameter >> 4) & 15;
+		const depth = parameter & 15;
+		const normalizedDelay = delay || 0;
+		const initialCounter = normalizedDelay === 0 ? 1 : normalizedDelay;
+		return {
+			speed: speed === 0 ? 1 : speed,
+			depth,
+			delay: normalizedDelay,
+			counter: initialCounter,
+			position: 0
+		};
+	}
+
+	static processVibratoCounter(counter, delay, speed, position) {
+		if (counter > 0) {
+			const newCounter = counter - 1;
+			if (newCounter === 0) {
+				const newPosition = (position + 1) % (speed * 4);
+				return {
+					counter: delay === 0 ? 1 : delay,
+					position: newPosition
+				};
+			}
+			return {
+				counter: newCounter,
+				position
+			};
+		}
+		return { counter, position };
+	}
+
+	static getVibratoOffset(position, speed, depth) {
+		if (depth === 0) return 0;
+		const cycle = speed * 4;
+		const phase = position % cycle;
+		const quarterCycle = speed;
+		const halfCycle = speed * 2;
+		const threeQuarterCycle = speed * 3;
+
+		if (phase < quarterCycle) {
+			return Math.floor((phase / quarterCycle) * depth);
+		} else if (phase < halfCycle) {
+			return depth - Math.floor(((phase - quarterCycle) / quarterCycle) * depth);
+		} else if (phase < threeQuarterCycle) {
+			return -Math.floor(((phase - halfCycle) / quarterCycle) * depth);
+		} else {
+			return -depth + Math.floor(((phase - threeQuarterCycle) / quarterCycle) * depth);
+		}
+	}
 }
 
 export default EffectAlgorithms;

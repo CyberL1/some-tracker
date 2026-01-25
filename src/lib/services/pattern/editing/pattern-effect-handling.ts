@@ -13,6 +13,8 @@ export class PatternEffectHandling {
 			type = '.';
 		} else if (effect.effect === 'A'.charCodeAt(0)) {
 			type = 'A';
+		} else if (effect.effect === 'V'.charCodeAt(0)) {
+			type = 'V';
 		} else if (effect.effect === 'S'.charCodeAt(0)) {
 			type = 'S';
 		} else if (effect.effect === 'P'.charCodeAt(0)) {
@@ -46,6 +48,8 @@ export class PatternEffectHandling {
 			type = 0;
 		} else if (typeChar === 'A' || typeChar === 'a') {
 			type = 'A'.charCodeAt(0);
+		} else if (typeChar === 'V' || typeChar === 'v') {
+			type = 'V'.charCodeAt(0);
 		} else if (typeChar === 'S' || typeChar === 's') {
 			type = 'S'.charCodeAt(0);
 		} else if (typeChar === 'P' || typeChar === 'p') {

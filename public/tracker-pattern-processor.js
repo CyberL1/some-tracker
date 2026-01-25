@@ -83,6 +83,7 @@ class TrackerPatternProcessor {
 		const hasSlideCommand = effects.some((e) => e && (e.effect === 1 || e.effect === 2));
 		const hasPortamentoCommand = effects.some((e) => e && e.effect === 'P'.charCodeAt(0));
 		const hasArpeggioCommand = effects.some((e) => e && e.effect === 'A'.charCodeAt(0));
+		const hasVibratoCommand = effects.some((e) => e && e.effect === 'V'.charCodeAt(0));
 		const hasOnOffCommand = effects.some((e) => e && e.effect === 6);
 		const hasEffectWithTable = effects.some(
 			(e) => e && e.tableIndex !== undefined && e.tableIndex >= 0
@@ -102,6 +103,10 @@ class TrackerPatternProcessor {
 			this.state.channelPortamentoActive[channelIndex] = false;
 			this.state.channelOnOffCounter[channelIndex] = 0;
 			this.state.channelArpeggioCounter[channelIndex] = 0;
+			this.state.channelVibratoCounter[channelIndex] = 0;
+			if (this.state.channelVibratoSliding) {
+				this.state.channelVibratoSliding[channelIndex] = 0;
+			}
 		} else if (row.note.name !== 0) {
 			this.state.channelSoundEnabled[channelIndex] = true;
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
@@ -127,6 +132,10 @@ class TrackerPatternProcessor {
 
 			if (!hasArpeggioCommand) {
 				this.state.channelArpeggioCounter[channelIndex] = 0;
+			}
+
+			if (!hasVibratoCommand) {
+				this.state.channelVibratoCounter[channelIndex] = 0;
 			}
 
 			if (!hasPortamentoCommand) {
@@ -174,6 +183,7 @@ class TrackerPatternProcessor {
 
 		const effect = row.effects[0];
 		const ARPEGGIO = 'A'.charCodeAt(0);
+		const VIBRATO = 'V'.charCodeAt(0);
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
 		const PORTAMENTO = 'P'.charCodeAt(0);
@@ -202,6 +212,23 @@ class TrackerPatternProcessor {
 				this.state.channelArpeggioDelay[channelIndex] = arpeggioState.delay;
 				this.state.channelArpeggioCounter[channelIndex] = arpeggioState.counter;
 				this.state.channelArpeggioPosition[channelIndex] = arpeggioState.position;
+			}
+		} else if (effect.effect === VIBRATO) {
+			if (hasTableIndex) {
+				const param = this._getEffectTableValue(channelIndex);
+				const vibratoState = EffectAlgorithms.initVibrato(param, effect.delay);
+				this.state.channelVibratoSpeed[channelIndex] = vibratoState.speed;
+				this.state.channelVibratoDepth[channelIndex] = vibratoState.depth;
+				this.state.channelVibratoDelay[channelIndex] = vibratoState.delay;
+				this.state.channelVibratoCounter[channelIndex] = vibratoState.counter;
+				this.state.channelVibratoPosition[channelIndex] = vibratoState.position;
+			} else {
+				const vibratoState = EffectAlgorithms.initVibrato(effect.parameter, effect.delay);
+				this.state.channelVibratoSpeed[channelIndex] = vibratoState.speed;
+				this.state.channelVibratoDepth[channelIndex] = vibratoState.depth;
+				this.state.channelVibratoDelay[channelIndex] = vibratoState.delay;
+				this.state.channelVibratoCounter[channelIndex] = vibratoState.counter;
+				this.state.channelVibratoPosition[channelIndex] = vibratoState.position;
 			}
 		} else if (effect.effect === SPEED) {
 			if (hasTableIndex) {
@@ -385,6 +412,7 @@ class TrackerPatternProcessor {
 		const effectType = this.state.channelEffectTypes[channelIndex];
 		const param = this._getEffectTableValue(channelIndex);
 		const ARPEGGIO = 'A'.charCodeAt(0);
+		const VIBRATO = 'V'.charCodeAt(0);
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
 		const PORTAMENTO = 'P'.charCodeAt(0);
@@ -396,6 +424,11 @@ class TrackerPatternProcessor {
 			const semitone2 = param & 15;
 			this.state.channelArpeggioSemitone1[channelIndex] = semitone1;
 			this.state.channelArpeggioSemitone2[channelIndex] = semitone2;
+		} else if (effectType === VIBRATO) {
+			const speed = (param >> 4) & 15;
+			const depth = param & 15;
+			this.state.channelVibratoSpeed[channelIndex] = speed === 0 ? 1 : speed;
+			this.state.channelVibratoDepth[channelIndex] = depth;
 		} else if (effectType === SLIDE_UP) {
 			this.state.channelSlideStep[channelIndex] = param;
 		} else if (effectType === SLIDE_DOWN) {
@@ -497,6 +530,36 @@ class TrackerPatternProcessor {
 				if (finalNote > maxNote) finalNote = maxNote;
 
 				this.state.channelCurrentNotes[channelIndex] = finalNote;
+			}
+		}
+	}
+
+	processVibrato() {
+		for (
+			let channelIndex = 0;
+			channelIndex < this.state.channelVibratoCounter.length;
+			channelIndex++
+		) {
+			if (this.state.channelVibratoCounter[channelIndex] > 0) {
+				const result = EffectAlgorithms.processVibratoCounter(
+					this.state.channelVibratoCounter[channelIndex],
+					this.state.channelVibratoDelay[channelIndex],
+					this.state.channelVibratoSpeed[channelIndex],
+					this.state.channelVibratoPosition[channelIndex]
+				);
+				this.state.channelVibratoCounter[channelIndex] = result.counter;
+				this.state.channelVibratoPosition[channelIndex] = result.position;
+
+				const offset = EffectAlgorithms.getVibratoOffset(
+					result.position,
+					this.state.channelVibratoSpeed[channelIndex],
+					this.state.channelVibratoDepth[channelIndex]
+				);
+
+				if (!this.state.channelVibratoSliding) {
+					this.state.channelVibratoSliding = Array(this.state.channelVibratoCounter.length).fill(0);
+				}
+				this.state.channelVibratoSliding[channelIndex] = offset;
 			}
 		}
 	}

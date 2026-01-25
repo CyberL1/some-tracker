@@ -27,6 +27,7 @@ class TrackerState {
 		this.channelBaseNotes = Array(channelCount).fill(0);
 		this.channelCurrentNotes = Array(channelCount).fill(0);
 		this.channelToneSliding = Array(channelCount).fill(0);
+		this.channelVibratoSliding = Array(channelCount).fill(0);
 		this.channelSlideStep = Array(channelCount).fill(0);
 		this.channelSlideDelay = Array(channelCount).fill(0);
 		this.channelSlideCount = Array(channelCount).fill(0);
@@ -44,6 +45,11 @@ class TrackerState {
 		this.channelArpeggioDelay = Array(channelCount).fill(0);
 		this.channelArpeggioCounter = Array(channelCount).fill(0);
 		this.channelArpeggioPosition = Array(channelCount).fill(0);
+		this.channelVibratoSpeed = Array(channelCount).fill(0);
+		this.channelVibratoDepth = Array(channelCount).fill(0);
+		this.channelVibratoDelay = Array(channelCount).fill(0);
+		this.channelVibratoCounter = Array(channelCount).fill(0);
+		this.channelVibratoPosition = Array(channelCount).fill(0);
 
 		this.channelEffectTables = Array(channelCount).fill(-1);
 		this.channelEffectTablePositions = Array(channelCount).fill(0);
@@ -67,6 +73,7 @@ class TrackerState {
 		this.channelBaseNotes.fill(0);
 		this.channelCurrentNotes.fill(0);
 		this.channelToneSliding.fill(0);
+		this.channelVibratoSliding.fill(0);
 		this.channelSlideStep.fill(0);
 		this.channelSlideDelay.fill(0);
 		this.channelSlideCount.fill(0);
@@ -84,6 +91,11 @@ class TrackerState {
 		this.channelArpeggioDelay.fill(0);
 		this.channelArpeggioCounter.fill(0);
 		this.channelArpeggioPosition.fill(0);
+		this.channelVibratoSpeed.fill(0);
+		this.channelVibratoDepth.fill(0);
+		this.channelVibratoDelay.fill(0);
+		this.channelVibratoCounter.fill(0);
+		this.channelVibratoPosition.fill(0);
 
 		this.channelEffectTables.fill(-1);
 		this.channelEffectTablePositions.fill(0);

@@ -114,6 +114,9 @@ class AYAudioDriver {
 				state.channelToneSliding[channelIndex] = 0;
 			}
 		}
+		if (state.channelVibratoSliding) {
+			state.channelVibratoSliding[channelIndex] = 0;
+		}
 	}
 
 	processPatternRow(state, pattern, rowIndex, patternRow, registerState) {
@@ -480,7 +483,10 @@ class AYAudioDriver {
 			const toneSliding = state.channelToneSliding
 				? state.channelToneSliding[channelIndex] || 0
 				: 0;
-			const finalTone = (noteTone + sampleTone + toneSliding) & 0xfff;
+			const vibratoSliding = state.channelVibratoSliding
+				? state.channelVibratoSliding[channelIndex] || 0
+				: 0;
+			const finalTone = (noteTone + sampleTone + toneSliding + vibratoSliding) & 0xfff;
 			registerState.channels[channelIndex].tone = finalTone;
 
 			if (instrumentRow.noise) {
