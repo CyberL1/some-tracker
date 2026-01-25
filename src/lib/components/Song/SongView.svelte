@@ -216,6 +216,7 @@
 	});
 
 	let lastSyncedEditorIndex = $state(-1);
+	let lastSyncedPatternOrderIndex = $state(-1);
 	let expectedPatternLength = $state<number | null>(null);
 
 	function syncPatternLengthValue() {
@@ -235,6 +236,17 @@
 	$effect(() => {
 		if (activeEditorIndex !== lastSyncedEditorIndex) {
 			lastSyncedEditorIndex = activeEditorIndex;
+			syncPatternLengthValue();
+		}
+	});
+
+	$effect(() => {
+		if (sharedPatternOrderIndex !== lastSyncedPatternOrderIndex) {
+			lastSyncedPatternOrderIndex = sharedPatternOrderIndex;
+			isPatternLengthInputFocused = false;
+			isPatternLengthButtonAction = false;
+			isUserEditingPatternLength = false;
+			expectedPatternLength = null;
 			syncPatternLengthValue();
 		}
 	});

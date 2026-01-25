@@ -39,12 +39,12 @@
 
 	async function handleDismiss() {
 		if (hasUnsavedChanges) {
-			try {
-				await open(ConfirmModal, {
-					message: 'You have unsaved changes. Are you sure you want to close settings?'
-				});
+			const confirmed = await open(ConfirmModal, {
+				message: 'You have unsaved changes. Are you sure you want to close settings?'
+			});
+			if (confirmed) {
 				dismiss?.();
-			} catch {}
+			}
 		} else {
 			dismiss?.();
 		}
