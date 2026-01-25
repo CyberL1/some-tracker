@@ -24,7 +24,6 @@
 	import SettingsModal from './lib/components/Settings/SettingsModal.svelte';
 	import AboutModal from './lib/components/Modal/AboutModal.svelte';
 	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
-	import { convertVT2String } from './lib/services/file/vt-converter';
 	import { editorStateStore } from './lib/stores/editor-state.svelte';
 	import { themeStore } from './lib/stores/theme.svelte';
 	import { themeService } from './lib/services/theme/theme-service';
@@ -94,58 +93,23 @@
 		author: ''
 	});
 
-	let demoSongLoaded = $state(false);
+	let projectInitialized = $state(false);
 
 	$effect(() => {
-		if (demoSongLoaded) return;
+		if (projectInitialized) return;
 
 		(async () => {
-			try {
-				const fileName = 'MmcM - SpEc!aL 4 diHaLt.vt2';
-				const baseUrl = import.meta.env.BASE_URL || '/';
-				const filePath = `${baseUrl}${fileName}`.replace(/\/+/g, '/');
-				const response = await fetch(filePath);
-				if (!response.ok) {
-					throw new Error(`Failed to load demo song: ${response.statusText}`);
-				}
-				const content = await response.text();
-				const importedProject = convertVT2String(content);
+			const newProject = await projectService.resetProject(AY_CHIP);
 
-				container.audioService.clearChipProcessors();
+			projectSettings = {
+				title: newProject.name,
+				author: newProject.author
+			};
+			songs = newProject.songs;
+			patternOrder = newProject.patternOrder;
+			tables = newProject.tables;
 
-				for (const _song of importedProject.songs) {
-					await container.audioService.addChipProcessor(AY_CHIP);
-				}
-
-				projectSettings = {
-					title: importedProject.name,
-					author: importedProject.author
-				};
-				songs = importedProject.songs;
-				patternOrder = importedProject.patternOrder;
-				tables = importedProject.tables;
-
-				demoSongLoaded = true;
-			} catch (error) {
-				console.error('Failed to load demo song:', error);
-				const newProject = new Project();
-				if (newProject.songs.length > 0) {
-					const song = newProject.songs[0];
-					song.chipType = AY_CHIP.type;
-					applySchemaDefaults(song, AY_CHIP.schema);
-				}
-
-				songs = newProject.songs;
-				patternOrder = newProject.patternOrder;
-				tables = newProject.tables;
-
-				projectSettings = {
-					title: newProject.name,
-					author: newProject.author
-				};
-
-				demoSongLoaded = true;
-			}
+			projectInitialized = true;
 		})();
 	});
 
