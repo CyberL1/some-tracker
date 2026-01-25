@@ -1,5 +1,4 @@
 const ZERO_VALUE = -1;
-const ZERO_DISPLAY = '00';
 
 export function formatHex(
 	value: number | string | null | undefined,
@@ -12,7 +11,7 @@ export function formatHex(
 
 	if (allowZeroValue) {
 		if (num === 0) return '.'.repeat(digits);
-		if (num === ZERO_VALUE) return ZERO_DISPLAY.padStart(digits, '0');
+		if (num === ZERO_VALUE) return '0'.repeat(digits);
 	} else {
 		if (num === 0) return '.'.repeat(digits);
 	}
@@ -23,7 +22,7 @@ export function formatHex(
 function normalizeSymbolValue(value: number | string | null | undefined): number | null {
 	if (value === null || value === undefined) return null;
 	if (typeof value === 'string') {
-		if (value.toUpperCase() === 'OFF' || value === '00') return ZERO_VALUE;
+		if (value.toUpperCase() === 'OFF' || value === '00' || value === '0') return ZERO_VALUE;
 		const parsed = parseInt(value, 36);
 		return isNaN(parsed) ? null : parsed;
 	}
@@ -34,7 +33,7 @@ export function formatSymbol(value: number | string | null | undefined, length: 
 	const num = normalizeSymbolValue(value);
 
 	if (num === null || num === 0) return '.'.repeat(length);
-	if (num === ZERO_VALUE) return ZERO_DISPLAY.padStart(length, '0');
+	if (num === ZERO_VALUE) return '0'.repeat(length);
 
 	const base36 = num.toString(36).toUpperCase();
 	if (base36.length <= length) {
@@ -59,7 +58,7 @@ export function parseSymbol(value: string, length: number): number {
 	if (value === '.'.repeat(length)) return 0;
 
 	const cleaned = value.replace(/\./g, '').toUpperCase();
-	if (cleaned === 'OFF' || cleaned === '00') return ZERO_VALUE;
+	if (cleaned === 'OFF' || cleaned === '00' || cleaned === '0') return ZERO_VALUE;
 
 	const parsed = parseInt(cleaned, 36);
 	return isNaN(parsed) ? 0 : parsed;

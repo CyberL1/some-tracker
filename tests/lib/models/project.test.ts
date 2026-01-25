@@ -13,7 +13,7 @@ describe('Project', () => {
 			expect(project.songs).toHaveLength(0);
 			expect(project.loopPointId).toBe(0);
 			expect(project.patternOrder).toEqual([0]);
-			expect(project.tables).toHaveLength(32);
+			expect(project.tables).toHaveLength(35);
 		});
 
 		it('should create project with custom values', () => {
@@ -53,11 +53,11 @@ describe('Table', () => {
 		it('should generate correct default names', () => {
 			const table1 = new Table(0, [], 0);
 			const table2 = new Table(9, [], 0);
-			const table3 = new Table(31, [], 0);
+			const table3 = new Table(34, [], 0);
 
 			expect(table1.name).toBe('Table 1');
-			expect(table2.name).toBe('Table 10');
-			expect(table3.name).toBe('Table 32');
+			expect(table2.name).toBe('Table A');
+			expect(table3.name).toBe('Table Z');
 		});
 	});
 });

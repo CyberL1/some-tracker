@@ -5,7 +5,7 @@ import { Song } from '../../../../src/lib/models/song';
 import type { Chip } from '../../../../src/lib/chips/types';
 import type { AudioService } from '../../../../src/lib/services/audio/audio-service';
 
-const DEFAULT_TABLE_COUNT = 32;
+const DEFAULT_TABLE_COUNT = 35;
 const DEFAULT_PATTERN_ORDER = [0];
 const CHIP_TYPE_AY = 'ay';
 

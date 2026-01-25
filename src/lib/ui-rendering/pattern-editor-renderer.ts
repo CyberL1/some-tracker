@@ -432,7 +432,7 @@ export class PatternEditorRenderer extends BaseCanvasRenderer {
 			}
 
 			const isTableField = currentSegment?.fieldKey === 'table';
-			if (isTableField && fieldText === '00') {
+			if (isTableField && fieldText === '0') {
 				return this.patternColors.patternTableOff;
 			}
 		}

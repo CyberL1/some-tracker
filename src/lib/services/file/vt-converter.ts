@@ -293,7 +293,7 @@ class VT2Converter {
 				table.id - 1,
 				table.data,
 				table.loop ? table.loopPoint : 0,
-				`Table ${table.id}`
+				`Table ${table.id.toString(36).toUpperCase()}`
 			);
 		});
 	}

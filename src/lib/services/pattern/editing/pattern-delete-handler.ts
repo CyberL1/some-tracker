@@ -89,10 +89,11 @@ export class PatternDeleteHandler {
 			return null;
 		}
 
+		const replacementChar = field.length === 1 ? '.' : '0';
 		const newStr = StringManipulation.replaceCharAtOffset(
 			currentStr,
 			fieldInfo.charOffset,
-			'0'
+			replacementChar
 		);
 
 		const newValue = strategy.parse(newStr, field.length, field.allowZeroValue);

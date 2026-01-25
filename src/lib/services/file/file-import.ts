@@ -27,7 +27,7 @@ function reconstructProject(data: any): Project {
 		data.patternOrder || [0],
 		tables.length > 0
 			? tables
-			: Array.from({ length: 32 }, (_, i) => new Table(i, [], 0, `Table ${i + 1}`))
+			: Array.from({ length: 35 }, (_, i) => new Table(i, [], 0, `Table ${(i + 1).toString(36).toUpperCase()}`))
 	);
 }
 
@@ -36,7 +36,7 @@ function reconstructTable(data: any): Table {
 		data.id ?? 0,
 		data.rows || [],
 		data.loop || 0,
-		data.name || `Table ${(data.id ?? 0) + 1}`
+		data.name || `Table ${((data.id ?? 0) + 1).toString(36).toUpperCase()}`
 	);
 }
 

@@ -12,7 +12,7 @@
 	import type { AudioService } from '../../services/audio/audio-service';
 
 	const services: { audioService: AudioService } = getContext('container');
-	const TOTAL_TABLES = 32;
+	const TOTAL_TABLES = 35;
 
 	let {
 		tables = $bindable(),
@@ -43,7 +43,7 @@
 			const newTables = [...tables];
 			while (newTables.length < TOTAL_TABLES) {
 				const id = newTables.length;
-				newTables.push(new TableModel(id, [], 0, `Table ${id + 1}`));
+				newTables.push(new TableModel(id, [], 0, `Table ${(id + 1).toString(36).toUpperCase()}`));
 			}
 			if (newTables.length > TOTAL_TABLES) {
 				newTables.splice(TOTAL_TABLES);
@@ -101,7 +101,7 @@
 									: isUsed
 										? 'text-[var(--color-app-text-tertiary)] group-hover:text-[var(--color-app-text-primary)]'
 										: 'text-[var(--color-app-text-muted)] group-hover:text-[var(--color-app-text-tertiary)]'}">
-								{(table.id + 1).toString(16).toUpperCase().padStart(2, '0')}
+								{(table.id + 1).toString(36).toUpperCase()}
 							</span>
 							<span
 								class="text-xs {isSelected
