@@ -65,7 +65,7 @@
 	import { UserScriptsService } from '../../services/user-scripts/user-scripts-service';
 	import type { UserScript } from '../../services/user-scripts/types';
 	import { PatternTemplateParser } from '../../services/pattern/editing/pattern-template-parsing';
-	import { MenuPanel } from '../Menu';
+	import { ContextMenu } from '../Menu';
 	import { editMenuItems } from '../../config/app-menu';
 
 	let {
@@ -2031,26 +2031,10 @@
 			class="focus:border-opacity-50 border-pattern-empty focus:border-pattern-text block border transition-colors duration-150 focus:outline-none">
 		</canvas>
 
-		{#if contextMenuPosition}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div
-				class="fixed inset-0 z-40"
-				onclick={closeContextMenu}
-				oncontextmenu={(e) => {
-					e.preventDefault();
-					closeContextMenu();
-				}}>
-			</div>
-			<div
-				class="fixed z-50"
-				style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px;">
-				<MenuPanel
-					isFirst={true}
-					items={editMenuItems}
-					onAction={handleContextMenuAction}
-					onMenuClose={closeContextMenu} />
-			</div>
-		{/if}
+		<ContextMenu
+			position={contextMenuPosition}
+			items={editMenuItems}
+			onAction={handleContextMenuAction}
+			onClose={closeContextMenu} />
 	</div>
 </div>

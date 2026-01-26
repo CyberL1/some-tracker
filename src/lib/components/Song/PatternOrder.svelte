@@ -12,7 +12,7 @@
 	import IconCarbonSubtract from '~icons/carbon/subtract';
 	import IconCarbonAdd from '~icons/carbon/add';
 	import PatternOrderButton from './PatternOrderButton.svelte';
-	import { MenuPanel } from '../Menu';
+	import { ContextMenu } from '../Menu';
 	import type { MenuItem } from '../Menu/types';
 
 	interface Props {
@@ -752,25 +752,9 @@
 		</PatternOrderButton>
 	</div>
 
-	{#if contextMenuPosition}
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="fixed inset-0 z-40"
-			onclick={closeContextMenu}
-			oncontextmenu={(e) => {
-				e.preventDefault();
-				closeContextMenu();
-			}}>
-		</div>
-		<div
-			class="fixed z-50"
-			style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px;">
-			<MenuPanel
-				isFirst={true}
-				items={contextMenuItems}
-				onAction={handleContextMenuAction}
-				onMenuClose={closeContextMenu} />
-		</div>
-	{/if}
+	<ContextMenu
+		position={contextMenuPosition}
+		items={contextMenuItems}
+		onAction={handleContextMenuAction}
+		onClose={closeContextMenu} />
 </div>
