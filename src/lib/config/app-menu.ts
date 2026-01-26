@@ -111,8 +111,7 @@ export const menuItems: MenuItem[] = [
 					{ label: 'WAV', type: 'normal', action: 'export-wav' },
 					{ label: 'PSG', type: 'normal', action: 'export-psg' }
 				]
-			},
-			{ label: 'Settings', type: 'normal', action: 'settings' }
+			}
 		]
 	},
 	{
@@ -128,6 +127,11 @@ export const menuItems: MenuItem[] = [
 				action: 'appearance'
 			}
 		]
+	},
+	{
+		label: 'Settings',
+		type: 'normal',
+		action: 'settings'
 	},
 	{
 		label: 'Help',

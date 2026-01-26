@@ -387,7 +387,6 @@
 					{songPatterns}
 					{songs}
 					onPatternCreated={handlePatternCreated} />
-				<div class="w-20 bg-transparent"></div>
 			</Card>
 		</div>
 		<div

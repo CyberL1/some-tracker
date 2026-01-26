@@ -2,9 +2,10 @@
 	import MenuPanel from './MenuPanel.svelte';
 	import type { MenuItem } from './types';
 
-	let { label, items, activeMenu, onAction, onMenuOpen, onMenuClose } = $props<{
+	let { label, items, action, activeMenu, onAction, onMenuOpen, onMenuClose } = $props<{
 		label?: string;
 		items?: MenuItem[];
+		action?: string;
 		activeMenu?: string;
 		onAction?: (data: { action: string }) => void;
 		onMenuOpen?: (data: { label: string }) => void;
@@ -12,9 +13,16 @@
 	}>();
 
 	const showPanel = $derived(activeMenu === label);
+	const hasItems = $derived(items && items.length > 0);
 
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
+
+		if (action && !hasItems) {
+			onAction?.({ action });
+			onMenuClose?.({ all: true });
+			return;
+		}
 
 		if (showPanel) {
 			onMenuClose?.({ label });

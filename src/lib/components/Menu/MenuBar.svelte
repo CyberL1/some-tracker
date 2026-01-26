@@ -141,6 +141,7 @@
 		<MenuButton
 			label={item.label}
 			items={item.items || []}
+			action={item.action}
 			{activeMenu}
 			onAction={handleAction}
 			onMenuOpen={handleMenuOpen}
