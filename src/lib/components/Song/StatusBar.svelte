@@ -66,6 +66,10 @@
 			return 'Table: Select a table number. Base 36: (0-9, A-Z).';
 		}
 
+		if (selectedFieldKey === 'envelopeShape') {
+			return 'Envelope Shape: Set envelope generator shape. Hex: (1-F).';
+		}
+
 		if (selectedFieldKey === 'noiseValue') {
 			return 'Noise: Set noise generator value. Hex: (00-1F).';
 		}
