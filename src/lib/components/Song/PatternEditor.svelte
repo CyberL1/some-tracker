@@ -332,6 +332,23 @@
 		}
 	}
 
+	export function getSelectedColumn(): number {
+		return selectedColumn;
+	}
+
+	export function getSelectedFieldKey(): string | null {
+		if (patternOrder.length === 0) return null;
+		const pattern = currentPattern;
+		if (!pattern || selectedRow < 0 || selectedRow >= pattern.length) return null;
+
+		const rowString = getPatternRowData(pattern, selectedRow);
+		const cellPositions = getCellPositions(rowString, selectedRow);
+
+		if (selectedColumn < 0 || selectedColumn >= cellPositions.length) return null;
+		const cell = cellPositions[selectedColumn];
+		return cell?.fieldKey || null;
+	}
+
 	export function getCurrentPatternLength(): number | null {
 		if (patternOrder.length === 0) return null;
 		const pattern = currentPattern;
