@@ -721,14 +721,22 @@
 
 		ctx.globalAlpha = 1.0;
 
-		if (patternToDraw) {
+		if (patternToDraw && patternToDraw.length > 0) {
+			let rowToUse: number | null = null;
 			const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
+			
 			if (
 				firstVisibleRow &&
 				firstVisibleRow.rowIndex >= 0 &&
 				firstVisibleRow.rowIndex < patternToDraw.length
 			) {
-				const rowString = getPatternRowData(patternToDraw, firstVisibleRow.rowIndex);
+				rowToUse = firstVisibleRow.rowIndex;
+			} else {
+				rowToUse = 0;
+			}
+
+			if (rowToUse !== null && rowToUse >= 0 && rowToUse < patternToDraw.length) {
+				const rowString = getPatternRowData(patternToDraw, rowToUse);
 
 				renderer.drawChannelSeparators(rowString, canvasHeight);
 
