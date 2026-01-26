@@ -12,6 +12,8 @@
 	import IconCarbonSubtract from '~icons/carbon/subtract';
 	import IconCarbonAdd from '~icons/carbon/add';
 	import PatternOrderButton from './PatternOrderButton.svelte';
+	import { MenuPanel } from '../Menu';
+	import type { MenuItem } from '../Menu/types';
 
 	interface Props {
 		currentPatternOrderIndex: number;
@@ -379,6 +381,8 @@
 	let lastMouseX: number | null = null;
 	let hoveredIndex: number | null = null;
 	let hoveredButton: 'remove' | 'up' | 'add' | 'clone' | null = $state(null);
+	let contextMenuPosition: { x: number; y: number } | null = $state(null);
+	let contextMenuPatternIndex: number | null = $state(null);
 
 	function updateCursor(mouseY?: number, mouseX?: number): void {
 		if (!canvas || mouseY === undefined) return;
@@ -600,6 +604,79 @@
 	const totalHeight = BUTTON_SIZE * 4 + BUTTON_SPACING * 3;
 	const startY = $derived(buttonCenterY - totalHeight / 2);
 	const canRemove = $derived(patternOrder.length > 1);
+
+	function handleContextMenu(event: MouseEvent): void {
+		event.preventDefault();
+		const rect = canvas.getBoundingClientRect();
+		const x = event.clientX - rect.left;
+		const y = event.clientY - rect.top;
+		const centerY = canvasHeight / 2;
+
+		const clickedIndex = Math.round(currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT);
+
+		if (clickedIndex >= 0 && clickedIndex < patternOrder.length) {
+			if (x >= PADDING && x <= PADDING + CELL_WIDTH) {
+				contextMenuPatternIndex = clickedIndex;
+				contextMenuPosition = { x: event.clientX, y: event.clientY };
+			}
+		}
+	}
+
+	function closeContextMenu(): void {
+		contextMenuPosition = null;
+		contextMenuPatternIndex = null;
+	}
+
+	function handleContextMenuAction(data: { action: string }): void {
+		if (contextMenuPatternIndex === null) {
+			closeContextMenu();
+			return;
+		}
+
+		const index = contextMenuPatternIndex;
+		closeContextMenu();
+
+		switch (data.action) {
+			case 'make-unique':
+				makePatternUniqueAtIndex(index);
+				break;
+			case 'delete':
+				if (canRemove) {
+					removePatternAtIndex(index);
+				}
+				break;
+			case 'add':
+				addPatternAtIndex(index);
+				break;
+			case 'clone':
+				clonePatternAtIndex(index);
+				break;
+		}
+	}
+
+	const contextMenuItems: MenuItem[] = [
+		{
+			label: 'Make Unique',
+			type: 'normal',
+			action: 'make-unique'
+		},
+		{
+			label: 'Delete',
+			type: 'normal',
+			action: 'delete',
+			disabled: () => !canRemove
+		},
+		{
+			label: 'Add',
+			type: 'normal',
+			action: 'add'
+		},
+		{
+			label: 'Clone',
+			type: 'normal',
+			action: 'clone'
+		}
+	];
 </script>
 
 <div style="width: {canvasWidth}px; height: {canvasHeight}px;" class="relative overflow-hidden">
@@ -614,6 +691,7 @@
 		onmousemove={handleMouseMove}
 		onmouseleave={handleMouseLeave}
 		onmouseenter={handleMouseEnter}
+		oncontextmenu={handleContextMenu}
 		class="focus:border-opacity-50 border-pattern-empty bg-pattern-bg focus:border-pattern-text block border transition-colors duration-150 focus:outline-none"
 		style="width: {canvasWidth}px; height: {canvasHeight}px;"></canvas>
 
@@ -673,4 +751,26 @@
 				style="height: {BUTTON_SIZE - 6}px; width: {BUTTON_SIZE - 6}px;" />
 		</PatternOrderButton>
 	</div>
+
+	{#if contextMenuPosition}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="fixed inset-0 z-40"
+			onclick={closeContextMenu}
+			oncontextmenu={(e) => {
+				e.preventDefault();
+				closeContextMenu();
+			}}>
+		</div>
+		<div
+			class="fixed z-50"
+			style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px;">
+			<MenuPanel
+				isFirst={true}
+				items={contextMenuItems}
+				onAction={handleContextMenuAction}
+				onMenuClose={closeContextMenu} />
+		</div>
+	{/if}
 </div>
