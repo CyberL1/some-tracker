@@ -249,15 +249,24 @@ class AYAudioDriver {
 		}
 
 		if (effect.effect === ARPEGGIO) {
-			const param = hasTableIndex
-				? this._getEnvelopeEffectTableValue(state)
-				: effect.parameter;
-			const arpeggioState = EffectAlgorithms.initArpeggio(param, effect.delay);
-			state.envelopeArpeggioSemitone1 = arpeggioState.semitone1;
-			state.envelopeArpeggioSemitone2 = arpeggioState.semitone2;
-			state.envelopeArpeggioDelay = arpeggioState.delay;
-			state.envelopeArpeggioCounter = arpeggioState.counter;
-			state.envelopeArpeggioPosition = arpeggioState.position;
+			if (hasTableIndex) {
+				const arpeggioState = EffectAlgorithms.initArpeggio(0, effect.delay);
+				state.envelopeArpeggioSemitone1 = 0;
+				state.envelopeArpeggioSemitone2 = 0;
+				state.envelopeArpeggioDelay = arpeggioState.delay;
+				state.envelopeArpeggioCounter = arpeggioState.counter;
+				state.envelopeArpeggioPosition = arpeggioState.position;
+			} else {
+				const arpeggioState = EffectAlgorithms.initArpeggio(
+					effect.parameter,
+					effect.delay
+				);
+				state.envelopeArpeggioSemitone1 = arpeggioState.semitone1;
+				state.envelopeArpeggioSemitone2 = arpeggioState.semitone2;
+				state.envelopeArpeggioDelay = arpeggioState.delay;
+				state.envelopeArpeggioCounter = arpeggioState.counter;
+				state.envelopeArpeggioPosition = arpeggioState.position;
+			}
 		} else if (effect.effect === SLIDE_UP) {
 			const param = hasTableIndex
 				? this._getEnvelopeEffectTableValue(state)
@@ -342,6 +351,7 @@ class AYAudioDriver {
 	processEnvelopeEffectTable(state) {
 		const tableIndex = state.envelopeEffectTable;
 		if (tableIndex < 0) return;
+		if (state.envelopeEffectType === 'A'.charCodeAt(0)) return;
 
 		const table = state.tables[tableIndex];
 		if (!table || !table.rows || table.rows.length === 0) return;
@@ -366,18 +376,12 @@ class AYAudioDriver {
 	_applyEnvelopeEffectTableParameter(state) {
 		const effectType = state.envelopeEffectType;
 		const param = this._getEnvelopeEffectTableValue(state);
-		const ARPEGGIO = 'A'.charCodeAt(0);
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
 		const PORTAMENTO = 'P'.charCodeAt(0);
 		const ON_OFF = 6;
 
-		if (effectType === ARPEGGIO) {
-			const semitone1 = (param >> 4) & 15;
-			const semitone2 = param & 15;
-			state.envelopeArpeggioSemitone1 = semitone1;
-			state.envelopeArpeggioSemitone2 = semitone2;
-		} else if (effectType === SLIDE_UP) {
+		if (effectType === SLIDE_UP) {
 			state.envelopeSlideDelta = param;
 		} else if (effectType === SLIDE_DOWN) {
 			state.envelopeSlideDelta = -param;

@@ -152,6 +152,28 @@ class EffectAlgorithms {
 		return { counter, position };
 	}
 
+	static processArpeggioCounterTable(counter, delay, position, tableLength, tableLoop) {
+		if (counter > 0) {
+			const newCounter = counter - 1;
+			if (newCounter === 0) {
+				let newPosition = 0;
+				if (tableLength > 0) {
+					newPosition = position + 1;
+					if (newPosition >= tableLength) {
+						newPosition =
+							tableLoop >= 0 && tableLoop < tableLength ? tableLoop : 0;
+					}
+				}
+				return {
+					counter: delay,
+					position: newPosition
+				};
+			}
+			return { counter: newCounter, position };
+		}
+		return { counter, position };
+	}
+
 	static getArpeggioOffset(position, semitone1, semitone2) {
 		if (position === 1) return semitone1;
 		if (position === 2) return semitone2;

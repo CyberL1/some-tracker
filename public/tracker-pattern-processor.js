@@ -198,10 +198,9 @@ class TrackerPatternProcessor {
 
 		if (effect.effect === ARPEGGIO) {
 			if (hasTableIndex) {
-				const param = this._getEffectTableValue(channelIndex);
-				const arpeggioState = EffectAlgorithms.initArpeggio(param, effect.delay);
-				this.state.channelArpeggioSemitone1[channelIndex] = arpeggioState.semitone1;
-				this.state.channelArpeggioSemitone2[channelIndex] = arpeggioState.semitone2;
+				const arpeggioState = EffectAlgorithms.initArpeggio(0, effect.delay);
+				this.state.channelArpeggioSemitone1[channelIndex] = 0;
+				this.state.channelArpeggioSemitone2[channelIndex] = 0;
 				this.state.channelArpeggioDelay[channelIndex] = arpeggioState.delay;
 				this.state.channelArpeggioCounter[channelIndex] = arpeggioState.counter;
 				this.state.channelArpeggioPosition[channelIndex] = arpeggioState.position;
@@ -385,6 +384,7 @@ class TrackerPatternProcessor {
 		) {
 			const tableIndex = this.state.channelEffectTables[channelIndex];
 			if (tableIndex < 0) continue;
+			if (this.state.channelEffectTypes[channelIndex] === 'A'.charCodeAt(0)) continue;
 
 			const table = this.state.tables[tableIndex];
 			if (!table || !table.rows || table.rows.length === 0) continue;
@@ -411,7 +411,6 @@ class TrackerPatternProcessor {
 	_applyEffectTableParameter(channelIndex) {
 		const effectType = this.state.channelEffectTypes[channelIndex];
 		const param = this._getEffectTableValue(channelIndex);
-		const ARPEGGIO = 'A'.charCodeAt(0);
 		const VIBRATO = 'V'.charCodeAt(0);
 		const SLIDE_UP = 1;
 		const SLIDE_DOWN = 2;
@@ -419,12 +418,7 @@ class TrackerPatternProcessor {
 		const ON_OFF = 6;
 		const SPEED = 'S'.charCodeAt(0);
 
-		if (effectType === ARPEGGIO) {
-			const semitone1 = (param >> 4) & 15;
-			const semitone2 = param & 15;
-			this.state.channelArpeggioSemitone1[channelIndex] = semitone1;
-			this.state.channelArpeggioSemitone2[channelIndex] = semitone2;
-		} else if (effectType === VIBRATO) {
+		if (effectType === VIBRATO) {
 			const speed = (param >> 4) & 15;
 			const depth = param & 15;
 			this.state.channelVibratoSpeed[channelIndex] = speed === 0 ? 1 : speed;
@@ -502,26 +496,58 @@ class TrackerPatternProcessor {
 	}
 
 	processArpeggio() {
+		const ARPEGGIO = 'A'.charCodeAt(0);
 		for (
 			let channelIndex = 0;
 			channelIndex < this.state.channelArpeggioCounter.length;
 			channelIndex++
 		) {
 			if (this.state.channelArpeggioCounter[channelIndex] > 0) {
-				const result = EffectAlgorithms.processArpeggioCounter(
-					this.state.channelArpeggioCounter[channelIndex],
-					this.state.channelArpeggioDelay[channelIndex],
-					this.state.channelArpeggioPosition[channelIndex]
-				);
+				const tableIndex = this.state.channelEffectTables[channelIndex];
+				const isArpeggioTable =
+					tableIndex >= 0 &&
+					this.state.channelEffectTypes[channelIndex] === ARPEGGIO;
+
+				let result;
+				let semitoneOffset;
+
+				if (isArpeggioTable) {
+					const table = this.state.tables[tableIndex];
+					const rows = table?.rows ?? [];
+					const tableLength = rows.length;
+					const tableLoop =
+						table?.loop != null &&
+						table.loop >= 0 &&
+						table.loop < tableLength
+							? table.loop
+							: -1;
+					const pos = this.state.channelArpeggioPosition[channelIndex];
+
+					result = EffectAlgorithms.processArpeggioCounterTable(
+						this.state.channelArpeggioCounter[channelIndex],
+						this.state.channelArpeggioDelay[channelIndex],
+						pos,
+						tableLength,
+						tableLoop
+					);
+					semitoneOffset = tableLength > 0 ? (rows[pos] ?? 0) : 0;
+				} else {
+					result = EffectAlgorithms.processArpeggioCounter(
+						this.state.channelArpeggioCounter[channelIndex],
+						this.state.channelArpeggioDelay[channelIndex],
+						this.state.channelArpeggioPosition[channelIndex]
+					);
+					semitoneOffset = EffectAlgorithms.getArpeggioOffset(
+						result.position,
+						this.state.channelArpeggioSemitone1[channelIndex],
+						this.state.channelArpeggioSemitone2[channelIndex]
+					);
+				}
+
 				this.state.channelArpeggioCounter[channelIndex] = result.counter;
 				this.state.channelArpeggioPosition[channelIndex] = result.position;
 
 				const baseNote = this.state.channelBaseNotes[channelIndex];
-				const semitoneOffset = EffectAlgorithms.getArpeggioOffset(
-					result.position,
-					this.state.channelArpeggioSemitone1[channelIndex],
-					this.state.channelArpeggioSemitone2[channelIndex]
-				);
 				const arpeggioNote = baseNote + semitoneOffset;
 
 				const maxNote = this.state.currentTuningTable.length - 1;

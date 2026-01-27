@@ -4,7 +4,6 @@
 	import { menuItems } from './lib/config/app-menu';
 	import { handleFileImport } from './lib/services/file/file-import';
 	import { handleFileExport } from './lib/services/file/file-export';
-	import { exportToPSG } from './lib/services/file/psg-export';
 	import { Project, Table } from './lib/models/project';
 	import type { Song } from './lib/models/song';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
@@ -16,13 +15,13 @@
 	import { AudioService } from './lib/services/audio/audio-service';
 	import { ProjectService } from './lib/services/project/project-service';
 	import { AY_CHIP } from './lib/chips/ay';
-	import { applySchemaDefaults } from './lib/chips/base/schema';
 	import { getChipByType } from './lib/chips/registry';
 	import SongView from './lib/components/Song/SongView.svelte';
 	import { playbackStore } from './lib/stores/playback.svelte';
 	import { settingsStore } from './lib/stores/settings.svelte';
 	import SettingsModal from './lib/components/Settings/SettingsModal.svelte';
 	import AboutModal from './lib/components/Modal/AboutModal.svelte';
+	import EffectsModal from './lib/components/Modal/EffectsModal.svelte';
 	import { undoRedoStore } from './lib/stores/undo-redo.svelte';
 	import { editorStateStore } from './lib/stores/editor-state.svelte';
 	import { themeStore } from './lib/stores/theme.svelte';
@@ -321,6 +320,11 @@
 
 			if (data.action === 'about') {
 				await open(AboutModal, {});
+				return;
+			}
+
+			if (data.action === 'effects') {
+				await open(EffectsModal, {});
 				return;
 			}
 

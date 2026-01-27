@@ -136,6 +136,7 @@ export const menuItems: MenuItem[] = [
 	{
 		label: 'Help',
 		items: [
+			{ label: 'Effects', type: 'normal', action: 'effects' },
 			{ label: 'Documentation', type: 'normal' },
 			{ label: 'About', type: 'normal', action: 'about' }
 		]
