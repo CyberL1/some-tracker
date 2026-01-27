@@ -103,9 +103,9 @@
 	const isBuiltIn = $derived(selectedScript ? userScriptsStore.isBuiltIn(selectedScript.id) : false);
 </script>
 
-<div class="w-[450px]">
+<div class="flex max-h-[90vh] w-[450px] flex-col overflow-hidden">
 	<div
-		class="flex items-center justify-between border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		class="flex shrink-0 items-center justify-between border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">Apply Script</h2>
 		<div class="flex gap-1">
 			<button
@@ -123,15 +123,16 @@
 		</div>
 	</div>
 
-	{#if !hasSelection}
-		<div class="border-b border-[var(--color-app-border)] bg-amber-900/20 px-4 py-2">
-			<p class="text-xs text-amber-400">
-				Select a region in the pattern editor first to apply a script.
-			</p>
-		</div>
-	{/if}
+	<div class="min-h-0 flex-1 overflow-y-auto">
+		{#if !hasSelection}
+			<div class="shrink-0 border-b border-[var(--color-app-border)] bg-amber-900/20 px-4 py-2">
+				<p class="text-xs text-amber-400">
+					Select a region in the pattern editor first to apply a script.
+				</p>
+			</div>
+		{/if}
 
-	<div class="p-4">
+		<div class="p-4">
 		<div class="mb-2">
 			<input
 				type="text"
@@ -196,9 +197,10 @@
 			</div>
 		{/if}
 	</div>
+	</div>
 
 	<div
-		class="flex justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		class="flex shrink-0 justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<Button variant="secondary" onclick={handleCancel}>Cancel</Button>
 		<Button variant="primary" onclick={handleApply} disabled={!selectedScript || !hasSelection}>
 			Apply

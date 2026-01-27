@@ -49,15 +49,16 @@
 	const monoFont = $derived(settingsStore.state.patternEditorFontFamily || 'monospace');
 </script>
 
-<div class="w-[700px]">
+<div class="flex max-h-[90vh] w-[700px] flex-col overflow-hidden">
 	<div
-		class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		class="flex shrink-0 items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">
 			{isNew ? 'New Script' : 'Edit Script'}
 		</h2>
 	</div>
 
-	<div class="flex flex-col gap-3 p-4">
+	<div class="min-h-0 flex-1 overflow-y-auto">
+		<div class="flex flex-col gap-3 p-4">
 		{#if error}
 			<div class="rounded bg-red-900/20 px-3 py-2 text-xs text-red-400">
 				{error}
@@ -132,9 +133,10 @@ for i, row in ipairs(rows) do
 end</pre>
 		</div>
 	</div>
+	</div>
 
 	<div
-		class="flex justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		class="flex shrink-0 justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<Button variant="secondary" onclick={handleCancel}>Cancel</Button>
 		<Button variant="primary" onclick={handleSave}>Save</Button>
 	</div>

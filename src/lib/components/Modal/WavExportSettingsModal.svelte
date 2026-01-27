@@ -37,13 +37,13 @@
 	}
 </script>
 
-<div class="w-[500px]">
+<div class="flex max-h-[90vh] w-[500px] flex-col overflow-hidden">
 	<div
-		class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		class="flex shrink-0 items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">WAV Export Settings</h2>
 	</div>
 
-	<div class="max-h-[70vh] overflow-y-auto p-4">
+	<div class="min-h-0 flex-1 overflow-y-auto p-4">
 		<FormField id="sample-rate" label="Sample Rate">
 			<Select bind:value={settings.sampleRate} options={sampleRateOptions} />
 		</FormField>
@@ -113,7 +113,7 @@
 	</div>
 
 	<div
-		class="flex justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		class="flex shrink-0 justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<Button variant="secondary" onclick={handleCancel}>Cancel</Button>
 		<Button variant="primary" onclick={handleExport}>Export</Button>
 	</div>

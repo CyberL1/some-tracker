@@ -57,7 +57,7 @@
 	});
 </script>
 
-<div class="flex h-[600px] w-[600px] flex-col overflow-x-hidden">
+<div class="flex h-[600px] max-h-[90vh] w-[600px] flex-col overflow-x-hidden">
 	<div class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">Settings</h2>
 	</div>

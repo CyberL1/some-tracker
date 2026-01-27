@@ -129,13 +129,13 @@
 	];
 </script>
 
-<div class="flex max-h-[90vh] w-[700px] flex-col">
+<div class="flex h-[90vh] w-[700px] max-w-[90vw] flex-col overflow-hidden">
 	<div
-		class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+		class="flex shrink-0 items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">Effects Reference</h2>
 	</div>
 
-	<div class="overflow-y-auto p-6">
+	<div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-6">
 		<div class="mb-4 text-xs text-[var(--color-app-text-secondary)]">
 			<p class="mb-2">
 				Effects are entered in the effect column using the format:
@@ -246,7 +246,8 @@
 		</div>
 	</div>
 
-	<div class="border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
+	<div
+		class="shrink-0 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<div class="flex justify-end">
 			<Button variant="primary" onclick={handleClose}>Close</Button>
 		</div>
