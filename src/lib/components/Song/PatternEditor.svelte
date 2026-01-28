@@ -622,12 +622,30 @@
 
 	$effect(() => {
 		const unsubscribe = themeService.onColorChange(() => {
-			COLORS = getColors();
-			clearAllCaches();
-			if (ctx && canvas && renderer && textParser) {
-				setupCanvas();
-				draw();
-			}
+			requestAnimationFrame(() => {
+				COLORS = getColors();
+				clearAllCaches();
+				if (document.hidden) return;
+				if (ctx && canvas && renderer && textParser) {
+					textParser = new PatternEditorTextParser(
+						schema,
+						formatter,
+						COLORS,
+						ctx,
+						rowSegmentsCache,
+						cellPositionsCache
+					);
+					renderer = new PatternEditorRenderer({
+						ctx,
+						colors: COLORS,
+						canvasWidth,
+						lineHeight,
+						schema,
+						channelSeparatorWidth
+					});
+					draw();
+				}
+			});
 		});
 		return unsubscribe;
 	});
@@ -724,7 +742,7 @@
 		if (patternToDraw && patternToDraw.length > 0) {
 			let rowToUse: number | null = null;
 			const firstVisibleRow = visibleRows.find((r) => !r.isEmpty);
-			
+
 			if (
 				firstVisibleRow &&
 				firstVisibleRow.rowIndex >= 0 &&
@@ -986,7 +1004,8 @@
 				autoEnvStore.enabled &&
 				fieldInfoBeforeEdit &&
 				fieldInfoBeforeEdit.channelIndex >= 0 &&
-				(fieldInfoBeforeEdit.fieldType === 'note' || fieldInfoBeforeEdit.fieldKey === 'envelopeShape')
+				(fieldInfoBeforeEdit.fieldType === 'note' ||
+					fieldInfoBeforeEdit.fieldKey === 'envelopeShape')
 			) {
 				const autoEnvPattern = AutoEnvService.applyAutoEnvelope(
 					finalPattern,
@@ -1147,7 +1166,8 @@
 		const patternId = patternOrder[currentPatternOrderIndex];
 
 		for (const row of visibleRows) {
-			if (row.isEmpty || row.rowIndex < 0 || row.isGhost || row.patternIndex !== patternId) continue;
+			if (row.isEmpty || row.rowIndex < 0 || row.isGhost || row.patternIndex !== patternId)
+				continue;
 
 			const rowY = row.displayIndex * lineHeight;
 			const rowCenterY = rowY + lineHeight / 2;
