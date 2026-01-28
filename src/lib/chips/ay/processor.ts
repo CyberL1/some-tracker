@@ -43,13 +43,25 @@ type WorkletCommand =
 	| { type: 'init_instruments'; instruments: Instrument[] }
 	| { type: 'update_ay_frequency'; aymFrequency: number }
 	| { type: 'update_int_frequency'; intFrequency: number }
+	| { type: 'update_chip_variant'; chipVariant: string }
 	| { type: 'set_channel_mute'; channelIndex: number; muted: boolean }
-	| { type: 'change_pattern_during_playback'; row: number; patternOrderIndex?: number; pattern?: Pattern; speed?: number | null }
+	| {
+			type: 'change_pattern_during_playback';
+			row: number;
+			patternOrderIndex?: number;
+			pattern?: Pattern;
+			speed?: number | null;
+	  }
 	| { type: 'preview_note'; note: number; channel: number; rowData: Record<string, unknown> }
 	| { type: 'stop_preview'; channel: number };
 
 export class AYProcessor
-	implements ChipProcessor, SettingsSubscriber, TuningTableSupport, InstrumentSupport, PreviewNoteSupport
+	implements
+		ChipProcessor,
+		SettingsSubscriber,
+		TuningTableSupport,
+		InstrumentSupport,
+		PreviewNoteSupport
 {
 	chip: Chip;
 	audioNode: AudioWorkletNode | null = null;
@@ -76,6 +88,14 @@ export class AYProcessor
 			chipSettings.subscribe('interruptFrequency', (value) => {
 				if (typeof value === 'number') {
 					this.sendUpdateIntFrequency(value);
+				}
+			})
+		);
+
+		this.settingsUnsubscribers.push(
+			chipSettings.subscribe('chipVariant', (value) => {
+				if (typeof value === 'string') {
+					this.sendUpdateChipVariant(value);
 				}
 			})
 		);
@@ -200,6 +220,10 @@ export class AYProcessor
 		this.sendCommand({ type: 'update_int_frequency', intFrequency });
 	}
 
+	sendUpdateChipVariant(chipVariant: string): void {
+		this.sendCommand({ type: 'update_chip_variant', chipVariant });
+	}
+
 	updateParameter(parameter: string, value: unknown): void {
 		if (parameter.startsWith('channelMute_')) {
 			const channelIndex = parseInt(parameter.replace('channelMute_', ''), 10);
@@ -215,6 +239,9 @@ export class AYProcessor
 				break;
 			case 'interruptFrequency':
 				this.sendUpdateIntFrequency(value as number);
+				break;
+			case 'chipVariant':
+				this.sendUpdateChipVariant(value as string);
 				break;
 			default:
 				console.warn(`AY processor: unknown parameter "${parameter}"`);

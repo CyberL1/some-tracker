@@ -423,7 +423,7 @@ class AYAudioDriver {
 			const isMuted = state.channelMuted[channelIndex];
 			const isSoundEnabled = state.channelSoundEnabled[channelIndex];
 
-			if (isMuted || !isSoundEnabled) {
+			if (isMuted) {
 				registerState.channels[channelIndex].volume = 0;
 				registerState.channels[channelIndex].mixer.tone = false;
 				registerState.channels[channelIndex].mixer.noise = false;
@@ -431,9 +431,7 @@ class AYAudioDriver {
 				this.channelMixerState[channelIndex].tone = false;
 				this.channelMixerState[channelIndex].noise = false;
 				this.channelMixerState[channelIndex].envelope = false;
-				if (isMuted) {
-					state.channelEnvelopeEnabled[channelIndex] = false;
-				}
+				state.channelEnvelopeEnabled[channelIndex] = false;
 				continue;
 			}
 
@@ -546,24 +544,34 @@ class AYAudioDriver {
 				envelopeDisabledByOnOff
 			);
 
-			registerState.channels[channelIndex].mixer.tone = instrumentRow.tone;
-			registerState.channels[channelIndex].mixer.noise = instrumentRow.noise;
-			this.channelMixerState[channelIndex].tone = instrumentRow.tone;
-			this.channelMixerState[channelIndex].noise = instrumentRow.noise;
-
-			if (
-				instrumentRow.envelope &&
-				state.channelEnvelopeEnabled[channelIndex] &&
-				!envelopeDisabledByOnOff
-			) {
-				registerState.channels[channelIndex].mixer.envelope = true;
-				this.channelMixerState[channelIndex].envelope = true;
-			} else {
+			if (!isSoundEnabled) {
+				registerState.channels[channelIndex].volume = 0;
+				registerState.channels[channelIndex].mixer.tone = false;
+				registerState.channels[channelIndex].mixer.noise = false;
 				registerState.channels[channelIndex].mixer.envelope = false;
+				this.channelMixerState[channelIndex].tone = false;
+				this.channelMixerState[channelIndex].noise = false;
 				this.channelMixerState[channelIndex].envelope = false;
-			}
+			} else {
+				registerState.channels[channelIndex].mixer.tone = instrumentRow.tone;
+				registerState.channels[channelIndex].mixer.noise = instrumentRow.noise;
+				this.channelMixerState[channelIndex].tone = instrumentRow.tone;
+				this.channelMixerState[channelIndex].noise = instrumentRow.noise;
 
-			registerState.channels[channelIndex].volume = finalVolume;
+				if (
+					instrumentRow.envelope &&
+					state.channelEnvelopeEnabled[channelIndex] &&
+					!envelopeDisabledByOnOff
+				) {
+					registerState.channels[channelIndex].mixer.envelope = true;
+					this.channelMixerState[channelIndex].envelope = true;
+				} else {
+					registerState.channels[channelIndex].mixer.envelope = false;
+					this.channelMixerState[channelIndex].envelope = false;
+				}
+
+				registerState.channels[channelIndex].volume = finalVolume;
+			}
 
 			state.instrumentPositions[channelIndex]++;
 			if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {

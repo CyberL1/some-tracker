@@ -64,7 +64,8 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 				{ label: 'YM', value: 'YM' }
 			],
 			defaultValue: 'AY',
-			group: 'chip'
+			group: 'chip',
+			notifyAudioService: true
 		},
 		{
 			key: 'chipFrequency',

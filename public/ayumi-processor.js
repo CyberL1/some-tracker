@@ -76,6 +76,9 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			case 'update_int_frequency':
 				this.handleUpdateIntFrequency(data);
 				break;
+			case 'update_chip_variant':
+				this.handleUpdateChipVariant(data);
+				break;
 			case 'set_channel_mute':
 				this.handleSetChannelMute(data);
 				break;
@@ -103,7 +106,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const ayumiPtr = wasmModule.malloc(AYUMI_STRUCT_SIZE);
 
 			this.aymFrequency = this.state.aymFrequency ?? DEFAULT_AYM_FREQUENCY;
-			wasmModule.ayumi_configure(ayumiPtr, 0, this.aymFrequency, sampleRate);
+			const isYM = this.state.isYM ?? 0;
+			wasmModule.ayumi_configure(ayumiPtr, isYM, this.aymFrequency, sampleRate);
 
 			PAN_SETTINGS.forEach(({ channel, left, right }) => {
 				wasmModule.ayumi_set_pan(ayumiPtr, channel, left, right);
@@ -172,6 +176,11 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 	handleUpdateIntFrequency(data) {
 		this.state.setIntFrequency(data.intFrequency, sampleRate);
+	}
+
+	handleUpdateChipVariant(data) {
+		this.state.setChipVariant(data.chipVariant);
+		this.handleInit({ wasmBuffer: this.state.wasmBuffer });
 	}
 
 	handleSetChannelMute({ channelIndex, muted }) {

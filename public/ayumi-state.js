@@ -7,6 +7,7 @@ class AyumiState extends TrackerState {
 		this.wasmModule = null;
 		this.ayumiPtr = null;
 		this.aymFrequency = DEFAULT_AYM_FREQUENCY;
+		this.isYM = 0;
 		this.wasmBuffer = null;
 
 		this.instruments = [];
@@ -63,6 +64,10 @@ class AyumiState extends TrackerState {
 
 	setAymFrequency(frequency) {
 		this.aymFrequency = frequency;
+	}
+
+	setChipVariant(chipVariant) {
+		this.isYM = chipVariant === 'YM' ? 1 : 0;
 	}
 
 	setInstruments(instruments) {
