@@ -9,6 +9,8 @@ export class AudioService {
 	private _isPlaying = false;
 	public chipSettings: ChipSettings = new ChipSettings();
 	private _masterGainNode: GainNode | null = null;
+	private _playPatternRestoreOrder: number[] | null = null;
+	private _playPatternId: number | null = null;
 
 	//for example 1x FM chip processor, 2x AY chip processors for TSFM track
 	//they will all be mixed together in single audio context
@@ -98,12 +100,27 @@ export class AudioService {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.stop();
 		});
+
+		if (this._playPatternRestoreOrder) {
+			this.updateOrder(this._playPatternRestoreOrder);
+			this._playPatternRestoreOrder = null;
+			this._playPatternId = null;
+		}
 	}
 
 	updateOrder(order: number[]) {
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.updateOrder(order);
 		});
+	}
+
+	setPlayPatternRestoreOrder(order: number[], patternId: number) {
+		this._playPatternRestoreOrder = order;
+		this._playPatternId = patternId;
+	}
+
+	getPlayPatternId(): number | null {
+		return this._playPatternId;
 	}
 
 	updateTables(tables: Table[]) {

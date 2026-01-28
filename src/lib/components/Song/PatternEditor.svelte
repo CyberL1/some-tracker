@@ -77,7 +77,9 @@
 		onfocus,
 		onaction,
 		initAllChips,
+		initAllChipsForPlayPattern,
 		getSpeedForChip,
+		getSpeedForPlayPattern,
 		chip,
 		chipProcessor,
 		tuningTable,
@@ -93,7 +95,9 @@
 		onfocus?: () => void;
 		onaction?: (data: { action: string }) => void;
 		initAllChips?: () => void;
+		initAllChipsForPlayPattern?: () => void;
 		getSpeedForChip?: (chipIndex: number) => number | null;
+		getSpeedForPlayPattern?: (chipIndex: number) => number | null;
 		chip: Chip;
 		chipProcessor: ChipProcessor;
 		tuningTable: number[];
@@ -472,6 +476,26 @@
 			);
 		} catch (error) {
 			console.error('Error during playback from cursor:', error);
+			services.audioService.stop();
+		}
+	}
+
+	export function playPattern() {
+		if (!chipProcessor || !chipProcessor.isAudioNodeAvailable()) {
+			console.warn('Audio processor not available or not initialized');
+			return;
+		}
+
+		try {
+			if (!currentPattern) {
+				console.warn('No pattern selected');
+				return;
+			}
+
+			initAllChipsForPlayPattern?.();
+			services.audioService.playFromRow(0, 0, getSpeedForPlayPattern ?? getSpeedForChip);
+		} catch (error) {
+			console.error('Error during play pattern:', error);
 			services.audioService.stop();
 		}
 	}
@@ -2018,11 +2042,11 @@
 			lastPlaybackUpdate = now;
 
 			selectedRow = currentRow;
-			if (currentPatternOrderIndexUpdate !== undefined) {
-				// Always follow playback pattern changes, but reset manual change flag
-				// if playback has moved to a different pattern or enough time has passed
+			if (
+				currentPatternOrderIndexUpdate !== undefined &&
+				services.audioService.getPlayPatternId() === null
+			) {
 				if (currentPatternOrderIndexUpdate !== currentPatternOrderIndex) {
-					// Playback has moved to a different pattern - always follow
 					currentPatternOrderIndex = currentPatternOrderIndexUpdate;
 					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
 					userManuallyChangedPattern = false;
@@ -2030,7 +2054,6 @@
 					userManuallyChangedPattern &&
 					now - lastManualPatternChangeTime > MANUAL_PATTERN_CHANGE_TIMEOUT_MS
 				) {
-					// Enough time has passed since manual change - reset the flag
 					userManuallyChangedPattern = false;
 					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
 				}
@@ -2039,15 +2062,22 @@
 
 		const handlePatternRequest = (requestedOrderIndex: number) => {
 			const latestPatterns = patterns;
-			const latestPatternOrder = patternOrder;
+			const playPatternId = services.audioService.getPlayPatternId();
+			const patternId =
+				playPatternId !== null ? playPatternId : patternOrder[requestedOrderIndex];
 
-			if (requestedOrderIndex >= 0 && requestedOrderIndex < latestPatternOrder.length) {
-				const patternId = latestPatternOrder[requestedOrderIndex];
+			if (
+				playPatternId !== null ||
+				(requestedOrderIndex >= 0 && requestedOrderIndex < patternOrder.length)
+			) {
 				const requestedPattern =
 					latestPatterns.find((p) => p.id === patternId) ||
 					PatternService.createEmptyPattern(patternId);
 
-				chipProcessor.sendRequestedPattern(requestedPattern, requestedOrderIndex);
+				chipProcessor.sendRequestedPattern(
+					requestedPattern,
+					playPatternId !== null ? 0 : requestedOrderIndex
+				);
 			}
 		};
 

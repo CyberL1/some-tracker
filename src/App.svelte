@@ -279,6 +279,19 @@
 				return;
 			}
 
+			if (data.action === 'playPattern') {
+				if (playbackStore.isPlaying) {
+					playbackStore.isPlaying = false;
+					container.audioService.stop();
+				}
+
+				if (patternEditor) {
+					playbackStore.isPlaying = true;
+					patternEditor.playPattern();
+				}
+				return;
+			}
+
 			if (data.action === 'new-project') {
 				playbackStore.isPlaying = false;
 				container.audioService.stop();

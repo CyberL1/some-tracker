@@ -151,18 +151,23 @@
 		return lastSpeed !== null ? lastSpeed : song.initialSpeed;
 	}
 
-	function initAllChipsForPlayback() {
+	function initAllChips(playPattern: boolean) {
+		const patternId = patternOrder[sharedPatternOrderIndex];
+		const patternOrderIndexForInit = playPattern ? 0 : sharedPatternOrderIndex;
+
+		if (playPattern) {
+			services.audioService.setPlayPatternRestoreOrder([...patternOrder], patternId);
+			services.audioService.updateOrder([patternId]);
+		}
+
 		chipProcessors.forEach((chipProcessor, index) => {
 			const song = songs[index];
 			if (!song) return;
 
-			const patternId = patternOrder[sharedPatternOrderIndex];
 			const currentPattern = song.patterns.find((p) => p.id === patternId);
-			if (!currentPattern) {
-				return;
-			}
+			if (!currentPattern) return;
 
-			chipProcessor.sendInitPattern(currentPattern, sharedPatternOrderIndex);
+			chipProcessor.sendInitPattern(currentPattern, patternOrderIndexForInit);
 			chipProcessor.sendInitSpeed(song.initialSpeed);
 
 			//TODO: this should be generic
@@ -175,7 +180,25 @@
 			}
 		});
 
-		services.audioService.updateOrder(patternOrder);
+		if (!playPattern) {
+			services.audioService.updateOrder(patternOrder);
+		}
+	}
+
+	function initAllChipsForPlayback() {
+		initAllChips(false);
+	}
+
+	function initAllChipsForPlayPattern() {
+		initAllChips(true);
+	}
+
+	function getSpeedForPlayPattern(chipIndex: number): number | null {
+		const song = songs[chipIndex];
+		if (!song) return null;
+
+		const lastSpeed = findLastSpeedCommand(song, patternOrder, sharedPatternOrderIndex, 0);
+		return lastSpeed !== null ? lastSpeed : song.initialSpeed;
 	}
 
 	$effect(() => {
@@ -494,7 +517,9 @@
 								}}
 								{onaction}
 								initAllChips={initAllChipsForPlayback}
+								{initAllChipsForPlayPattern}
 								{getSpeedForChip}
+								{getSpeedForPlayPattern}
 								speed={song.initialSpeed}
 								tuningTable={song.tuningTable}
 								instruments={song.instruments}

@@ -6,6 +6,7 @@
 	import IconCarbonPauseFilled from '~icons/carbon/pause-filled';
 	import IconCarbonSkipBackFilled from '~icons/carbon/skip-back-filled';
 	import IconCarbonPlay from '~icons/carbon/play';
+	import IconCarbonRepeat from '~icons/carbon/repeat';
 	import IconCarbonChevronUp from '~icons/carbon/chevron-up';
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
 	import IconCarbonLayers from '~icons/carbon/layers';
@@ -91,12 +92,12 @@
 
 	function incrementStep() {
 		const current = editorState.step;
-			editorStateStore.setStep(current + 1);
+		editorStateStore.setStep(current + 1);
 	}
 
 	function decrementStep() {
 		const current = editorState.step;
-		if( current > 0 ) {
+		if (current > 0) {
 			editorStateStore.setStep(current - 1);
 		}
 	}
@@ -133,10 +134,10 @@
 			return () => document.removeEventListener('click', handleClickOutside);
 		}
 	});
-
 </script>
 
-<div class="flex w-full items-center border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-hover)] px-2 text-center">
+<div
+	class="flex w-full items-center border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-hover)] px-2 text-center">
 	{#each menuItems as item}
 		<MenuButton
 			label={item.label}
@@ -151,8 +152,11 @@
 	<div class="ml-auto flex items-center gap-3">
 		<div class="flex items-center gap-1.5">
 			<IconCarbonLayers class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
-			<label for="octave-input" class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Octave:</label>
-			<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
+			<label
+				for="octave-input"
+				class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Octave:</label>
+			<div
+				class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
 					bind:value={editorState.octave}
 					id="octave-input"
@@ -174,22 +178,27 @@
 						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-[var(--color-app-border)] transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={incrementOctave}
 						title="Increment octave">
-						<IconCarbonChevronUp class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
+						<IconCarbonChevronUp
+							class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 					<button
 						type="button"
 						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={decrementOctave}
 						title="Decrement octave">
-						<IconCarbonChevronDown class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
+						<IconCarbonChevronDown
+							class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 				</div>
 			</div>
 		</div>
 		<div class="flex items-center gap-1.5">
 			<IconCarbonArrowDown class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
-			<label for="step-input" class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Step:</label>
-			<div class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
+			<label
+				for="step-input"
+				class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Step:</label>
+			<div
+				class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
 					bind:value={editorState.step}
 					id="step-input"
@@ -217,14 +226,16 @@
 						class="flex h-3 w-4 cursor-pointer items-center justify-center border-b border-[var(--color-app-border)] transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={incrementStep}
 						title="Increment step">
-						<IconCarbonChevronUp class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
+						<IconCarbonChevronUp
+							class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 					<button
 						type="button"
 						class="flex h-3 w-4 cursor-pointer items-center justify-center transition-colors hover:bg-[var(--color-app-surface-hover)]"
 						onclick={decrementStep}
 						title="Decrement step">
-						<IconCarbonChevronDown class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
+						<IconCarbonChevronDown
+							class="h-2.5 w-2.5 text-[var(--color-app-text-muted)]" />
 					</button>
 				</div>
 			</div>
@@ -239,10 +250,12 @@
 							autoEnvStore.toggle();
 						}}
 						title="Auto Envelope" />
-					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Auto Env</span>
+					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]"
+						>Auto Env</span>
 				</label>
 				{#if autoEnvStore.enabled}
-					<div class="flex items-center gap-0.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
+					<div
+						class="flex items-center gap-0.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 						<Input
 							bind:value={autoEnvStore.numerator}
 							type="number"
@@ -283,13 +296,15 @@
 						<button
 							type="button"
 							class="cursor-pointer border-l border-[var(--color-app-border)] px-1.5 py-1 text-xs text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)]"
-							onclick={() => showAutoEnvPresets = !showAutoEnvPresets}
+							onclick={() => (showAutoEnvPresets = !showAutoEnvPresets)}
 							title="Show presets">
 							▾
 						</button>
 					</div>
 					{#if showAutoEnvPresets}
-						<div class="absolute left-0 top-full z-50 mt-1 flex flex-wrap gap-1 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] p-2 shadow-lg" style="width: 200px;">
+						<div
+							class="absolute top-full left-0 z-50 mt-1 flex flex-wrap gap-1 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] p-2 shadow-lg"
+							style="width: 200px;">
 							{#each AUTO_ENV_PRESETS as preset}
 								<button
 									type="button"
@@ -315,11 +330,12 @@
 							editorStateStore.setEnvelopeAsNote(!editorState.envelopeAsNote);
 						}}
 						title="Envelope as Note" />
-					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Env as Note</span>
+					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]"
+						>Env as Note</span>
 				</label>
 			</div>
 		{/if}
-		<div class="flex items-center border-l gap-1 border-[var(--color-app-border)] ">
+		<div class="flex items-center gap-1 border-l border-[var(--color-app-border)]">
 			{#if settings.volume === 0}
 				<IconCarbonVolumeMute class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
 			{:else if settings.volume < 50}
@@ -336,7 +352,9 @@
 				oninput={handleVolumeChange}
 				class="w-32 cursor-pointer"
 				title="Volume: {settings.volume}%" />
-			<span class="w-4 mr-1 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]">{settings.volume}</span>
+			<span
+				class="mr-1 w-4 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]"
+				>{settings.volume}</span>
 		</div>
 	</div>
 
@@ -370,6 +388,15 @@
 				onAction?.({ action: 'playFromCursor' });
 			}}>
 			<IconCarbonPlay class="h-4 w-4" />
+		</button>
+
+		<button
+			class="rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-active)] p-2 transition-colors hover:cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
+			title="Play pattern (loop)"
+			onclick={() => {
+				onAction?.({ action: 'playPattern' });
+			}}>
+			<IconCarbonRepeat class="h-4 w-4" />
 		</button>
 	</div>
 </div>
