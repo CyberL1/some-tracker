@@ -84,6 +84,14 @@ export const settingsItems: SettingsItem[] = [
 		min: 0,
 		max: 3,
 		step: 0.1
+	},
+	{
+		label: 'Decimal Row Numbers',
+		description: 'Display row numbers in decimal instead of hexadecimal',
+		type: 'toggle',
+		defaultValue: false,
+		setting: 'decimalRowNumbers',
+		category: 'appearance'
 	}
 ];
 

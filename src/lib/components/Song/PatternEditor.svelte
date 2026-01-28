@@ -132,6 +132,7 @@
 	});
 
 	let previousEnvelopeAsNote: boolean | undefined;
+	let previousDecimalRowNumbers: boolean | undefined;
 
 	$effect(() => {
 		if (chip.type === 'ay') {
@@ -157,6 +158,22 @@
 					}
 				});
 			}
+		}
+	});
+
+	$effect(() => {
+		const baseFormatter = formatter as { decimalRowNumbers?: boolean };
+		const newDecimalRowNumbers = settingsStore.state.decimalRowNumbers;
+
+		if (previousDecimalRowNumbers !== newDecimalRowNumbers) {
+			baseFormatter.decimalRowNumbers = newDecimalRowNumbers;
+			previousDecimalRowNumbers = newDecimalRowNumbers;
+			clearAllCaches();
+			untrack(() => {
+				if (ctx && renderer && textParser) {
+					draw();
+				}
+			});
 		}
 	});
 

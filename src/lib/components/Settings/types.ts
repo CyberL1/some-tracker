@@ -7,6 +7,7 @@ export interface Settings {
 	patternEditorFontFamily: string;
 	uiFontFamily: string;
 	channelSeparatorWidth: number;
+	decimalRowNumbers: boolean;
 }
 
 export interface SettingsItem {

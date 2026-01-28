@@ -8,6 +8,8 @@ import { EffectField } from '../../services/pattern/editing/effect-field';
 import { isPrimitive } from '../../utils/type-guards';
 
 export abstract class BaseFormatter implements PatternFormatter {
+	decimalRowNumbers?: boolean;
+
 	formatRow(
 		patternRow: GenericPatternRow,
 		channels: GenericRow[],
@@ -242,6 +244,9 @@ export abstract class BaseFormatter implements PatternFormatter {
 	}
 
 	protected getRowNumber(rowIndex: number): string {
+		if (this.decimalRowNumbers) {
+			return rowIndex.toString(10).padStart(3, '0');
+		}
 		return rowIndex.toString(16).toUpperCase().padStart(2, '0');
 	}
 

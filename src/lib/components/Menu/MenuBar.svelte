@@ -361,6 +361,15 @@
 	<div class="absolute top-3.5 left-1/2 flex -translate-x-1/2 -translate-y-1/2 gap-1">
 		<button
 			class="rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-active)] p-2 transition-colors hover:cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
+			title="Play pattern (loop)"
+			onclick={() => {
+				onAction?.({ action: 'playPattern' });
+			}}>
+			<IconCarbonRepeat class="h-4 w-4" />
+		</button>
+
+		<button
+			class="rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-active)] p-2 transition-colors hover:cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
 			title="Play from beginning"
 			onclick={() => {
 				onAction?.({ action: 'playFromBeginning' });
@@ -388,15 +397,6 @@
 				onAction?.({ action: 'playFromCursor' });
 			}}>
 			<IconCarbonPlay class="h-4 w-4" />
-		</button>
-
-		<button
-			class="rounded-sm border border-[var(--color-app-border)] bg-[var(--color-app-surface-active)] p-2 transition-colors hover:cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
-			title="Play pattern (loop)"
-			onclick={() => {
-				onAction?.({ action: 'playPattern' });
-			}}>
-			<IconCarbonRepeat class="h-4 w-4" />
 		</button>
 	</div>
 </div>
