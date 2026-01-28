@@ -25,11 +25,12 @@
 </script>
 
 <div class="flex h-full flex-col">
-	<div class="flex items-center justify-between border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)]">
+	<div
+		class="flex items-center justify-between border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)]">
 		<div class="flex">
 			{#each tabs as tab}
 				<button
-					class="group relative flex cursor-pointer text-sm items-center gap-2 px-4 py-1 transition-colors {activeTabId ===
+					class="group relative flex cursor-pointer items-center gap-2 px-4 py-1 text-sm transition-colors {activeTabId ===
 					tab.id
 						? 'text-[var(--color-app-text-primary)]'
 						: 'text-[var(--color-app-text-muted)] hover:text-[var(--color-app-text-secondary)]'}"
@@ -40,7 +41,9 @@
 					{/if}
 					<span>{tab.label}</span>
 					{#if activeTabId === tab.id}
-						<div class="absolute right-0 bottom-0 left-0 h-0.5 bg-[var(--color-app-primary)]"></div>
+						<div
+							class="absolute right-0 bottom-0 left-0 h-0.5 bg-[var(--color-app-primary)]">
+						</div>
 					{/if}
 				</button>
 			{/each}
@@ -52,7 +55,7 @@
 		{/if}
 	</div>
 
-	<div class="min-h-0 flex-1 overflow-hidden">
+	<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 		{@render children(activeTabId)}
 	</div>
 </div>

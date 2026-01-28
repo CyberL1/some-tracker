@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { ChipSetting } from '../../chips/base/schema';
 	import Input from '../Input/Input.svelte';
-	import Button from '../Button/Button.svelte';
 	import Select from '../AppLayout/Select.svelte';
 
 	let {
@@ -38,14 +37,16 @@
 {#if setting.type === 'text'}
 	<Input bind:value={value as string} />
 {:else if setting.type === 'toggle' && setting.options}
-	<Button
+	<button
+		type="button"
+		class="w-full cursor-pointer rounded border border-[var(--color-app-border)] bg-[var(--color-pattern-bg)] px-2 py-1 text-xs transition-colors hover:bg-[var(--color-pattern-selected)] focus:border-transparent focus:ring-1 focus:ring-blue-500 focus:outline-none"
 		onclick={() => {
 			const currentIndex = setting.options?.findIndex((opt) => opt.value === value) ?? 0;
 			const nextIndex = (currentIndex + 1) % (setting.options?.length ?? 1);
 			handleChange(setting.options?.[nextIndex]?.value);
 		}}>
 		{String(value)}
-	</Button>
+	</button>
 {:else if setting.type === 'select' && setting.options}
 	<Select bind:value={value as number} options={selectOptions} />
 {:else if setting.type === 'number'}
