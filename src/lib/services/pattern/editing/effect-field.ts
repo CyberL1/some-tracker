@@ -13,7 +13,12 @@ export class EffectField {
 		return PatternEffectHandling.formatEffectAsString(effectObj);
 	}
 
-	static parseValue(str: string): { effect: number; delay: number; parameter: number; tableIndex?: number } {
+	static parseValue(str: string): {
+		effect: number;
+		delay: number;
+		parameter: number;
+		tableIndex?: number;
+	} {
 		return PatternEffectHandling.parseEffectFromString(str);
 	}
 
@@ -21,7 +26,12 @@ export class EffectField {
 		value: unknown
 	): { effect: number; delay: number; parameter: number; tableIndex?: number } | null {
 		if (typeof value === 'object' && value !== null) {
-			return value as { effect: number; delay: number; parameter: number; tableIndex?: number };
+			return value as {
+				effect: number;
+				delay: number;
+				parameter: number;
+				tableIndex?: number;
+			};
 		}
 		return null;
 	}

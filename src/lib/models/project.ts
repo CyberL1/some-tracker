@@ -7,10 +7,7 @@ class Project {
 		public songs: Song[] = [],
 		public loopPointId: number = 0,
 		public patternOrder: number[] = [0],
-		public tables: Table[] = Array.from(
-			{ length: 35 },
-			(_, i) => new Table(i, [], 0, `Table ${(i + 1).toString(36).toUpperCase()}`)
-		)
+		public tables: Table[] = [new Table(0, [], 0, 'Table 1')]
 	) {}
 }
 
@@ -20,7 +17,12 @@ class Table {
 	loop: number;
 	name: string;
 
-	constructor(id: number, rows: number[], loop: number, name: string = `Table ${(id + 1).toString(36).toUpperCase()}`) {
+	constructor(
+		id: number,
+		rows: number[],
+		loop: number,
+		name: string = `Table ${(id + 1).toString(36).toUpperCase()}`
+	) {
 		this.id = id;
 		this.rows = rows;
 		this.loop = loop;

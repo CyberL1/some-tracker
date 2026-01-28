@@ -52,7 +52,7 @@
 	let activeEditorIndex = $state(0);
 	let songViewContainer: HTMLDivElement;
 	let patternEditors: PatternEditor[] = $state([]);
-	let rightPanelActiveTabId = $state('tables');
+	let rightPanelActiveTabId = $state('instruments');
 	let isRightPanelExpanded = $state(false);
 	let selectedColumn = $state(0);
 	let selectedFieldKey = $state<string | null>(null);
@@ -221,8 +221,8 @@
 	let patternOrderHeight = $state(PATTERN_EDITOR_CONSTANTS.DEFAULT_CANVAS_HEIGHT);
 
 	const rightPanelTabs = [
-		{ id: 'tables', label: 'Tables', icon: IconCarbonDataTable },
 		{ id: 'instruments', label: 'Instruments', icon: IconCarbonWaveform },
+		{ id: 'tables', label: 'Tables', icon: IconCarbonDataTable },
 		{ id: 'details', label: 'Details', icon: IconCarbonInformationSquare }
 	];
 

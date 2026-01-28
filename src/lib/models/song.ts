@@ -166,7 +166,7 @@ class Song {
 		this.initialSpeed = 3;
 		this.patterns = [new Pattern(0, 64, schema)];
 		this.tuningTable = PT3TuneTables[2];
-		this.instruments = [];
+		this.instruments = [new Instrument('01', [], 0, 'Instrument 01')];
 		this.chipVariant = 'AY';
 		this.interruptFrequency = 50;
 	}

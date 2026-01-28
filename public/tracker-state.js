@@ -21,6 +21,7 @@ class TrackerState {
 		this.channelPatternVolumes = Array(channelCount).fill(15);
 
 		this.tables = [];
+		this.tablesById = {};
 		this.channelTables = Array(channelCount).fill(-1);
 		this.tablePositions = Array(channelCount).fill(0);
 		this.tableCounters = Array(channelCount).fill(0);
@@ -137,6 +138,19 @@ class TrackerState {
 
 	setTables(tables) {
 		this.tables = tables;
+		this.tablesById = {};
+		if (tables) {
+			for (let i = 0; i < tables.length; i++) {
+				const t = tables[i];
+				if (t && t.id !== undefined) {
+					this.tablesById[t.id] = t;
+				}
+			}
+		}
+	}
+
+	getTable(id) {
+		return this.tablesById?.[id];
 	}
 
 	setIntFrequency(frequency, sampleRate) {

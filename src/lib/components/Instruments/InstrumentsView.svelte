@@ -6,19 +6,21 @@
 	import IconCarbonHexagonSolid from '~icons/carbon/hexagon-solid';
 	import IconCarbonHexagonOutline from '~icons/carbon/hexagon-outline';
 	import IconCarbonAdd from '~icons/carbon/add';
+	import IconCarbonCopy from '~icons/carbon/copy';
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
 	import IconCarbonMaximize from '~icons/carbon/maximize';
 	import IconCarbonMinimize from '~icons/carbon/minimize';
 	import Card from '../Card/Card.svelte';
-	import Input from '../Input/Input.svelte';
-	import { getContext, untrack } from 'svelte';
+	import EditableIdField from '../EditableIdField/EditableIdField.svelte';
+	import { getContext, tick, untrack } from 'svelte';
 	import type { AudioService } from '../../services/audio/audio-service';
 	import type { Chip } from '../../chips/types';
 	import {
 		isValidInstrumentId,
 		normalizeInstrumentId,
 		getNextAvailableInstrumentId,
-		isInstrumentIdInRange
+		isInstrumentIdInRange,
+		MAX_INSTRUMENT_ID_NUM
 	} from '../../utils/instrument-id';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 
@@ -43,6 +45,7 @@
 	let asHex = $state(false);
 	let selectedInstrumentIndex = $state(0);
 	let instrumentEditorRef: any = $state(null);
+	let instrumentListScrollRef: HTMLDivElement | null = $state(null);
 
 	$effect(() => {
 		if (instruments.length > 0 && instruments[selectedInstrumentIndex]) {
@@ -73,6 +76,24 @@
 		}
 	]);
 
+	function compareInstrumentIds(a: Instrument, b: Instrument): number {
+		return parseInt(a.id, 36) - parseInt(b.id, 36);
+	}
+
+	function sortInstrumentsAndSyncSelection(selectedId?: string): void {
+		if (songs.length === 0) return;
+		const list = songs[0].instruments;
+		const sorted = [...list].sort(compareInstrumentIds);
+		const needsSort = sorted.some((inst, i) => inst !== list[i]);
+		if (!needsSort) return;
+		songs[0].instruments = sorted;
+		songs = [...songs];
+		if (selectedId !== undefined) {
+			const newIndex = sorted.findIndex((inst) => inst.id === selectedId);
+			if (newIndex >= 0) selectedInstrumentIndex = newIndex;
+		}
+	}
+
 	function isInstrumentUsed(instrument: Instrument): boolean {
 		if (instrument.rows.length === 0) return false;
 		if (instrument.rows.length === 1) {
@@ -101,10 +122,11 @@
 		if (songs.length === 0) return;
 		const existingIds = songs[0].instruments.map((inst) => inst.id);
 		const newId = getNextAvailableInstrumentId(existingIds);
+		if (!newId) return;
 		const newInstrument = new InstrumentModel(newId, [], 0, `Instrument ${newId}`);
 		songs[0].instruments = [...songs[0].instruments, newInstrument];
 		songs = [...songs];
-		selectedInstrumentIndex = songs[0].instruments.length - 1;
+		sortInstrumentsAndSyncSelection(newId);
 		services.audioService.updateInstruments(songs[0].instruments);
 	}
 
@@ -117,6 +139,31 @@
 			selectedInstrumentIndex = songs[0].instruments.length - 1;
 		}
 		services.audioService.updateInstruments(songs[0].instruments);
+	}
+
+	async function copyInstrument(copiedIndex: number): Promise<void> {
+		if (songs.length === 0) return;
+		const instrument = songs[0].instruments[copiedIndex];
+		if (!instrument) return;
+		const existingIds = songs[0].instruments.map((inst) => inst.id);
+		const newId = getNextAvailableInstrumentId(existingIds);
+		if (!newId) return;
+		const copiedRows = instrument.rows.map((r) => new InstrumentRow({ ...r }));
+		const copy = new InstrumentModel(
+			newId,
+			copiedRows,
+			instrument.loop,
+			instrument.name + ' (Copy)'
+		);
+
+		songs[0].instruments = [...songs[0].instruments, copy];
+		songs = [...songs];
+		sortInstrumentsAndSyncSelection(newId);
+		services.audioService.updateInstruments(songs[0].instruments);
+		await tick();
+		instrumentListScrollRef
+			?.querySelector(`[data-instrument-index="${selectedInstrumentIndex}"]`)
+			?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
 	}
 
 	function updateInstrumentId(index: number, newId: string): void {
@@ -132,6 +179,7 @@
 		songs[0].instruments[index].id = normalizedId;
 		songs[0].instruments = [...songs[0].instruments];
 		songs = [...songs];
+		sortInstrumentsAndSyncSelection(normalizedId);
 		services.audioService.updateInstruments(songs[0].instruments);
 	}
 
@@ -177,6 +225,12 @@
 			selectedInstrumentIndex = 0;
 		}
 	});
+
+	$effect(() => {
+		const list = songs[0]?.instruments;
+		if (!list || list.length === 0) return;
+		sortInstrumentsAndSyncSelection(list[selectedInstrumentIndex]?.id);
+	});
 </script>
 
 <div class="flex h-full flex-col">
@@ -187,54 +241,39 @@
 		class="flex flex-col"
 		actions={cardActions}>
 		{#snippet children()}
-			<div class="border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)]">
-				<div class="flex items-center overflow-x-auto">
+			<div
+				class="border-b border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)]">
+				<div class="flex items-center overflow-x-auto" bind:this={instrumentListScrollRef}>
 					{#each instruments || [] as instrument, index}
 						{@const isUsed = isInstrumentUsed(instrument)}
 						{@const isSelected = selectedInstrumentIndex === index}
 						{@const isEditing = editingInstrumentId === index}
 						{#if isEditing}
 							<div
-								class="group relative flex shrink-0 flex-col items-center border-r border-[var(--color-app-border)] p-3 {isSelected
+								data-instrument-index={index}
+								class="group relative flex min-w-[6rem] shrink-0 flex-col items-center border-r border-[var(--color-app-border)] p-3 {isSelected
 									? 'bg-[var(--color-app-primary)]'
 									: isUsed
 										? 'bg-[var(--color-app-surface-secondary)]/40 hover:bg-[var(--color-app-surface-secondary)]/70'
 										: 'bg-[var(--color-app-background)]/60 hover:bg-[var(--color-app-background)]/80'}">
-								<div class="flex flex-col items-center gap-1">
-									<Input
-										class="w-12 text-center font-mono text-xs"
-										value={editingInstrumentIdValue}
-										oninput={(e) => {
-											const value = (
-												e.target as HTMLInputElement
-											).value.toUpperCase();
-											if (value.length <= 2 && /^[0-9A-Z]*$/.test(value)) {
-												editingInstrumentIdValue = value;
-											}
-										}}
-										onkeydown={(e) => {
-											if (e.key === 'Enter') {
-												finishEditingInstrumentId();
-											} else if (e.key === 'Escape') {
-												cancelEditingInstrumentId();
-											}
-										}}
-										onblur={finishEditingInstrumentId}
-										autofocus />
-									{#if editingInstrumentIdValue}
-										{@const error = getInstrumentIdError(
-											index,
-											editingInstrumentIdValue
-										)}
-										{#if error}
-											<span class="text-[0.6rem] text-red-400">{error}</span>
-										{/if}
-									{/if}
-								</div>
+								<EditableIdField
+									bind:value={editingInstrumentIdValue}
+									error={editingInstrumentIdValue
+										? getInstrumentIdError(index, editingInstrumentIdValue)
+										: null}
+									onCommit={finishEditingInstrumentId}
+									onCancel={cancelEditingInstrumentId}
+									maxLength={2}
+									inputFilter={(v) =>
+										v
+											.toUpperCase()
+											.slice(0, 2)
+											.replace(/[^0-9A-Z]/g, '')} />
 							</div>
 						{:else}
 							<div
-								class="group relative flex shrink-0 flex-col items-center border-r border-[var(--color-app-border)]">
+								data-instrument-index={index}
+								class="group relative flex min-w-[6rem] shrink-0 flex-col items-center border-r border-[var(--color-app-border)]">
 								<button
 									class="flex w-full shrink-0 cursor-pointer flex-col items-center p-3 {isSelected
 										? 'bg-[var(--color-app-primary)]'
@@ -260,24 +299,39 @@
 										{instrument.name}
 									</span>
 								</button>
-								{#if instruments.length > 1}
+								<div
+									class="absolute top-1 right-1 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
 									<button
-										class="absolute top-1 right-1 cursor-pointer rounded p-0.5 text-[var(--color-app-text-muted)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-400"
+										class="cursor-pointer rounded p-0.5 text-[var(--color-app-text-muted)] hover:text-[var(--color-app-text-primary)]"
 										onclick={(e) => {
 											e.stopPropagation();
-											removeInstrument(index);
+											copyInstrument(index);
 										}}
-										title="Remove instrument">
-										<IconCarbonTrashCan class="h-3 w-3" />
+										title="Copy instrument">
+										<IconCarbonCopy class="h-3 w-3" />
 									</button>
-								{/if}
+									{#if instruments.length > 1}
+										<button
+											class="cursor-pointer rounded p-0.5 text-[var(--color-app-text-muted)] hover:text-red-400"
+											onclick={(e) => {
+												e.stopPropagation();
+												removeInstrument(index);
+											}}
+											title="Remove instrument">
+											<IconCarbonTrashCan class="h-3 w-3" />
+										</button>
+									{/if}
+								</div>
 							</div>
 						{/if}
 					{/each}
 					<button
-						class="ml-2 flex shrink-0 items-center gap-1 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-3 py-2 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]"
+						class="ml-2 flex shrink-0 cursor-pointer items-center gap-1 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-3 py-2 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
 						onclick={addInstrument}
-						title="Add new instrument">
+						disabled={instruments.length >= MAX_INSTRUMENT_ID_NUM}
+						title={instruments.length >= MAX_INSTRUMENT_ID_NUM
+							? 'Maximum 1295 instruments (01–ZZ)'
+							: 'Add new instrument'}>
 						<IconCarbonAdd class="h-4 w-4" />
 						<span>Add</span>
 					</button>

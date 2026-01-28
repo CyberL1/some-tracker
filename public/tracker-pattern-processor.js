@@ -42,7 +42,7 @@ class TrackerPatternProcessor {
 				continue;
 			}
 
-			const table = this.state.tables[tableIndex];
+			const table = this.state.getTable(tableIndex);
 			if (!table || !table.rows || table.rows.length === 0) {
 				this.state.channelCurrentNotes[channelIndex] = baseNote;
 				continue;
@@ -165,7 +165,7 @@ class TrackerPatternProcessor {
 	}
 
 	_enableTable(channelIndex, tableIndex) {
-		if (this.state.tables[tableIndex]) {
+		if (this.state.getTable(tableIndex)) {
 			this.state.channelTables[channelIndex] = tableIndex;
 			this.state.tablePositions[channelIndex] = 0;
 			this.state.tableCounters[channelIndex] = 0;
@@ -330,7 +330,7 @@ class TrackerPatternProcessor {
 		const tableIndex = this.state.channelEffectTables[channelIndex];
 		if (tableIndex < 0) return 0;
 
-		const table = this.state.tables[tableIndex];
+		const table = this.state.getTable(tableIndex);
 		if (!table || !table.rows || table.rows.length === 0) return 0;
 
 		const position = this.state.channelEffectTablePositions[channelIndex];
@@ -341,7 +341,7 @@ class TrackerPatternProcessor {
 		const tableIndex = this.state.speedTable;
 		if (tableIndex < 0) return 0;
 
-		const table = this.state.tables[tableIndex];
+		const table = this.state.getTable(tableIndex);
 		if (!table || !table.rows || table.rows.length === 0) return 0;
 
 		const position = this.state.speedTablePosition;
@@ -352,7 +352,7 @@ class TrackerPatternProcessor {
 		const tableIndex = this.state.speedTable;
 		if (tableIndex < 0) return;
 
-		const table = this.state.tables[tableIndex];
+		const table = this.state.getTable(tableIndex);
 		if (!table || !table.rows || table.rows.length === 0) return;
 
 		this.state.speedTablePosition++;
@@ -386,7 +386,7 @@ class TrackerPatternProcessor {
 			if (tableIndex < 0) continue;
 			if (this.state.channelEffectTypes[channelIndex] === 'A'.charCodeAt(0)) continue;
 
-			const table = this.state.tables[tableIndex];
+			const table = this.state.getTable(tableIndex);
 			if (!table || !table.rows || table.rows.length === 0) continue;
 
 			this.state.channelEffectTableCounters[channelIndex]--;
@@ -505,20 +505,17 @@ class TrackerPatternProcessor {
 			if (this.state.channelArpeggioCounter[channelIndex] > 0) {
 				const tableIndex = this.state.channelEffectTables[channelIndex];
 				const isArpeggioTable =
-					tableIndex >= 0 &&
-					this.state.channelEffectTypes[channelIndex] === ARPEGGIO;
+					tableIndex >= 0 && this.state.channelEffectTypes[channelIndex] === ARPEGGIO;
 
 				let result;
 				let semitoneOffset;
 
 				if (isArpeggioTable) {
-					const table = this.state.tables[tableIndex];
+					const table = this.state.getTable(tableIndex);
 					const rows = table?.rows ?? [];
 					const tableLength = rows.length;
 					const tableLoop =
-						table?.loop != null &&
-						table.loop >= 0 &&
-						table.loop < tableLength
+						table?.loop != null && table.loop >= 0 && table.loop < tableLength
 							? table.loop
 							: -1;
 					const pos = this.state.channelArpeggioPosition[channelIndex];
@@ -583,7 +580,9 @@ class TrackerPatternProcessor {
 				);
 
 				if (!this.state.channelVibratoSliding) {
-					this.state.channelVibratoSliding = Array(this.state.channelVibratoCounter.length).fill(0);
+					this.state.channelVibratoSliding = Array(
+						this.state.channelVibratoCounter.length
+					).fill(0);
 				}
 				this.state.channelVibratoSliding[channelIndex] = offset;
 			}

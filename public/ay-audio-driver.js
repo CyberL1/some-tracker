@@ -120,7 +120,11 @@ class AYAudioDriver {
 	}
 
 	processPatternRow(state, pattern, rowIndex, patternRow, registerState) {
-		if (patternRow.noiseValue === null || patternRow.noiseValue === undefined || patternRow.noiseValue === 0) {
+		if (
+			patternRow.noiseValue === null ||
+			patternRow.noiseValue === undefined ||
+			patternRow.noiseValue === 0
+		) {
 			state.noiseBaseValue = state.noisePreviousValue;
 		} else if (patternRow.noiseValue === -1) {
 			state.noiseBaseValue = 0;
@@ -257,10 +261,7 @@ class AYAudioDriver {
 				state.envelopeArpeggioCounter = arpeggioState.counter;
 				state.envelopeArpeggioPosition = arpeggioState.position;
 			} else {
-				const arpeggioState = EffectAlgorithms.initArpeggio(
-					effect.parameter,
-					effect.delay
-				);
+				const arpeggioState = EffectAlgorithms.initArpeggio(effect.parameter, effect.delay);
 				state.envelopeArpeggioSemitone1 = arpeggioState.semitone1;
 				state.envelopeArpeggioSemitone2 = arpeggioState.semitone2;
 				state.envelopeArpeggioDelay = arpeggioState.delay;
@@ -341,7 +342,7 @@ class AYAudioDriver {
 		const tableIndex = state.envelopeEffectTable;
 		if (tableIndex < 0) return 0;
 
-		const table = state.tables[tableIndex];
+		const table = state.getTable(tableIndex);
 		if (!table || !table.rows || table.rows.length === 0) return 0;
 
 		const position = state.envelopeEffectTablePosition;
@@ -353,7 +354,7 @@ class AYAudioDriver {
 		if (tableIndex < 0) return;
 		if (state.envelopeEffectType === 'A'.charCodeAt(0)) return;
 
-		const table = state.tables[tableIndex];
+		const table = state.getTable(tableIndex);
 		if (!table || !table.rows || table.rows.length === 0) return;
 
 		state.envelopeEffectTableCounter--;

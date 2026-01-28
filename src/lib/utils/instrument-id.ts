@@ -13,24 +13,25 @@ export function instrumentIdToNumber(id: string): number {
 	return parseInt(id, 36);
 }
 
+export const MAX_INSTRUMENT_ID_NUM = 1295;
+
 export function numberToInstrumentId(num: number): string {
-	if (num < 0 || num > 1295) return '00';
+	if (num < 0 || num > MAX_INSTRUMENT_ID_NUM) return '00';
 	return num.toString(36).toUpperCase().padStart(2, '0');
 }
 
 export function getNextAvailableInstrumentId(existingIds: string[]): string {
 	const usedNumbers = new Set(existingIds.map((id) => instrumentIdToNumber(id)));
-	for (let i = 1; i <= 1295; i++) {
-		const candidate = numberToInstrumentId(i);
+	for (let i = 1; i <= MAX_INSTRUMENT_ID_NUM; i++) {
 		if (!usedNumbers.has(i)) {
-			return candidate;
+			return numberToInstrumentId(i);
 		}
 	}
-	return 'ZZ';
+	return '';
 }
 
 export function isInstrumentIdInRange(id: string): boolean {
 	if (!isValidInstrumentId(id)) return false;
 	const num = instrumentIdToNumber(id);
-	return num >= 1 && num <= 1295;
+	return num >= 1 && num <= MAX_INSTRUMENT_ID_NUM;
 }

@@ -26,9 +26,7 @@ export function isString(value: unknown): value is string {
 	return typeof value === 'string';
 }
 
-export function isPrimitive(
-	value: unknown
-): value is string | number | null | undefined {
+export function isPrimitive(value: unknown): value is string | number | null | undefined {
 	return value === null || value === undefined || typeof value !== 'object';
 }
 
@@ -42,4 +40,3 @@ export function toNumber(value: unknown, defaultValue: number = 0): number {
 	}
 	return defaultValue;
 }
-

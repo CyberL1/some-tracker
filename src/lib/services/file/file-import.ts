@@ -25,9 +25,7 @@ function reconstructProject(data: any): Project {
 		songs.length > 0 ? songs : [new Song()],
 		data.loopPointId || 0,
 		data.patternOrder || [0],
-		tables.length > 0
-			? tables
-			: Array.from({ length: 35 }, (_, i) => new Table(i, [], 0, `Table ${(i + 1).toString(36).toUpperCase()}`))
+		tables.length > 0 ? tables : [new Table(0, [], 0, 'Table 1')]
 	);
 }
 
@@ -44,13 +42,15 @@ function reconstructSong(data: any): Song {
 	const chip = data.chipType ? getChipByType(data.chipType) : null;
 	const schema = chip?.schema;
 	const song = new Song(schema);
-	song.patterns = data.patterns?.map((patternData: any) => reconstructPattern(patternData, schema)) || [
-		new Pattern(0, 64, schema)
-	];
+	song.patterns = data.patterns?.map((patternData: any) =>
+		reconstructPattern(patternData, schema)
+	) || [new Pattern(0, 64, schema)];
 	song.tuningTable = data.tuningTable || song.tuningTable;
 	song.initialSpeed = data.initialSpeed ?? 3;
-	song.instruments =
+	const instruments =
 		data.instruments?.map((instData: any) => reconstructInstrument(instData)) || [];
+	song.instruments =
+		instruments.length > 0 ? instruments : [new Instrument('01', [], 0, 'Instrument 01')];
 	song.chipType = data.chipType;
 	song.chipVariant = data.chipVariant;
 	song.chipFrequency = data.chipFrequency;
@@ -64,7 +64,11 @@ function reconstructPattern(data: any, schema?: ChipSchema): Pattern {
 	const channelLabels = schema?.channelLabels ?? ['A', 'B', 'C'];
 	if (data.channels) {
 		pattern.channels = data.channels.map((channelData: any, index: number) =>
-			reconstructChannel(channelData, channelLabels[index] ?? String.fromCharCode(65 + index), schema)
+			reconstructChannel(
+				channelData,
+				channelLabels[index] ?? String.fromCharCode(65 + index),
+				schema
+			)
 		);
 	}
 	if (data.patternRows && data.patternRows.length > 0) {

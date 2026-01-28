@@ -139,7 +139,7 @@ class VT2Converter {
 						toneAccumulation: line.toneAccumulation || false,
 						noiseAccumulation: line.noiseAccumulation || false,
 						envelopeAdd: line.noiseAdd,
-						envelopeAccumulation: line.noiseAccumulation || false,
+						envelopeAccumulation: line.noiseAccumulation || false
 					});
 				}),
 				loopPoint,
@@ -268,7 +268,7 @@ class VT2Converter {
 						envelopeAdd: line.noiseAdd,
 						envelopeAccumulation: line.noiseAccumulation || false,
 						toneAccumulation: line.toneAccumulation || false,
-						noiseAccumulation: line.noiseAccumulation || false,
+						noiseAccumulation: line.noiseAccumulation || false
 					});
 				}),
 				loopPoint,
@@ -623,7 +623,8 @@ class VT2Converter {
 					vt2Pattern.envelopeValues[rowIndex] || 0;
 
 				const noiseValue = vt2Pattern.noiseValues[rowIndex];
-				pattern.patternRows[rowIndex].noiseValue = noiseValue === 0 ? ZERO_VALUE : noiseValue;
+				pattern.patternRows[rowIndex].noiseValue =
+					noiseValue === 0 ? ZERO_VALUE : noiseValue;
 			}
 
 			for (let channelIndex = 0; channelIndex < 3; channelIndex++) {

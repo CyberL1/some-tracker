@@ -401,7 +401,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const tableNumber = typeof table === 'string' ? parseInt(table, 10) : table;
 			const tableIndex = tableNumber - 1;
 
-			if (this.state.tables && this.state.tables[tableIndex]) {
+			if (this.state.getTable && this.state.getTable(tableIndex)) {
 				this.state.channelTables[channel] = tableIndex;
 				this.state.tablePositions[channel] = 0;
 				this.state.tableCounters[channel] = 0;

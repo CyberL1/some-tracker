@@ -18,7 +18,7 @@ describe('ProjectService', () => {
 		name: 'AY-8910',
 		wasmUrl: '',
 		processorName: '',
-		processorMap: () => ({} as any),
+		processorMap: () => ({}) as any,
 		schema: {
 			chipType: CHIP_TYPE_AY,
 			template: '',
@@ -26,9 +26,9 @@ describe('ProjectService', () => {
 			globalFields: {},
 			channelLabels: ['A', 'B', 'C']
 		},
-		createConverter: () => ({} as any),
-		createFormatter: () => ({} as any),
-		createRenderer: () => ({} as any),
+		createConverter: () => ({}) as any,
+		createFormatter: () => ({}) as any,
+		createRenderer: () => ({}) as any,
 		instrumentEditor: {} as any
 	});
 
