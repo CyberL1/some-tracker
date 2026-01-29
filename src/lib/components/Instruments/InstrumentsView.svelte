@@ -22,9 +22,11 @@
 		isInstrumentIdInRange,
 		MAX_INSTRUMENT_ID_NUM
 	} from '../../utils/instrument-id';
+	import { migrateInstrumentIdInSong } from '../../services/project/id-migration';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 
 	const services: { audioService: AudioService } = getContext('container');
+	const requestPatternRedraw = getContext<() => void>('requestPatternRedraw');
 
 	let {
 		songs = [],
@@ -176,11 +178,14 @@
 		if (existingIds.includes(normalizedId)) {
 			return;
 		}
+		const oldId = songs[0].instruments[index].id;
+		migrateInstrumentIdInSong(songs[0], oldId, normalizedId);
 		songs[0].instruments[index].id = normalizedId;
 		songs[0].instruments = [...songs[0].instruments];
 		songs = [...songs];
 		sortInstrumentsAndSyncSelection(normalizedId);
 		services.audioService.updateInstruments(songs[0].instruments);
+		requestPatternRedraw?.();
 	}
 
 	let editingInstrumentId: number | null = $state(null);

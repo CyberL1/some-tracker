@@ -19,12 +19,10 @@
 	import IconCarbonDataTable from '~icons/carbon/data-table';
 	import IconCarbonWaveform from '~icons/carbon/waveform';
 	import IconCarbonInformationSquare from '~icons/carbon/information-square';
-	import IconCarbonMaximize from '~icons/carbon/maximize';
-	import IconCarbonMinimize from '~icons/carbon/minimize';
 	import IconCarbonChevronUp from '~icons/carbon/chevron-up';
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
-	import { getContext } from 'svelte';
+	import { getContext, setContext } from 'svelte';
 	import Input from '../Input/Input.svelte';
 	import { playbackStore } from '../../stores/playback.svelte';
 	import StatusBar from './StatusBar.svelte';
@@ -86,6 +84,10 @@
 	);
 
 	const services: { audioService: AudioService } = getContext('container');
+
+	setContext('requestPatternRedraw', () => {
+		patternEditors.forEach((editor) => editor?.requestRedraw?.());
+	});
 
 	let patternsRecord = $state<Record<number, Pattern>>({});
 
@@ -538,7 +540,7 @@
 			<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
 				{#snippet children(tabId)}
 					{#if tabId === 'tables'}
-						<TablesView bind:tables bind:isExpanded={isRightPanelExpanded} />
+						<TablesView bind:tables bind:isExpanded={isRightPanelExpanded} {songs} />
 					{:else if tabId === 'instruments'}
 						<InstrumentsView
 							{songs}

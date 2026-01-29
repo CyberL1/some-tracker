@@ -357,6 +357,14 @@
 		return selectedColumn;
 	}
 
+	export function requestRedraw(): void {
+		clearAllCaches();
+		lastVisibleRowsCache = null;
+		if (ctx && renderer && textParser) {
+			draw();
+		}
+	}
+
 	export function getSelectedFieldKey(): string | null {
 		if (patternOrder.length === 0) return null;
 		const pattern = currentPattern;

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Table } from '../../models/project';
+	import type { Song } from '../../models/song';
 	import { Table as TableModel } from '../../models/project';
+	import { migrateTableIdInSongs } from '../../services/project/id-migration';
 	import IconCarbonHexagonSolid from '~icons/carbon/hexagon-solid';
 	import IconCarbonHexagonOutline from '~icons/carbon/hexagon-outline';
 	import IconCarbonDataTable from '~icons/carbon/data-table';
@@ -23,13 +25,16 @@
 	} from '../../utils/table-id';
 
 	const services: { audioService: AudioService } = getContext('container');
+	const requestPatternRedraw = getContext<() => void>('requestPatternRedraw');
 
 	let {
 		tables = $bindable(),
-		isExpanded = $bindable(false)
+		isExpanded = $bindable(false),
+		songs = []
 	}: {
 		tables: Table[];
 		isExpanded: boolean;
+		songs?: Song[];
 	} = $props();
 
 	let asHex = $state(false);
@@ -69,10 +74,13 @@
 		if (newId < 0) return;
 		const existingIds = tables.map((t, i) => (i === index ? -1 : t.id));
 		if (existingIds.includes(newId)) return;
+		const oldId = tables[index].id;
+		migrateTableIdInSongs(songs, oldId, newId);
 		tables[index] = { ...tables[index], id: newId };
 		tables = [...tables];
 		sortTablesAndSyncSelection(newId);
 		services.audioService.updateTables(tables);
+		requestPatternRedraw?.();
 	}
 
 	function addTable(): void {
