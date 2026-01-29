@@ -143,6 +143,14 @@ export class AudioService {
 		});
 	}
 
+	removeChipProcessor(index: number): void {
+		if (index < 0 || index >= this.chipProcessors.length) return;
+		if (this._isPlaying) {
+			this.stop();
+		}
+		this.chipProcessors = this.chipProcessors.filter((_, i) => i !== index);
+	}
+
 	clearChipProcessors() {
 		if (this._isPlaying) {
 			this.stop();

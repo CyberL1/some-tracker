@@ -8,6 +8,7 @@
 	import type { Song } from './lib/models/song';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import ModalContainer from './lib/components/Modal/ModalContainer.svelte';
+	import ConfirmModal from './lib/components/Modal/ConfirmModal.svelte';
 	import ProgressModal from './lib/components/Modal/ProgressModal.svelte';
 	import WavExportSettingsModal from './lib/components/Modal/WavExportSettingsModal.svelte';
 	import { open } from './lib/services/modal/modal-service';
@@ -87,6 +88,7 @@
 	let songs = $state<Song[]>([]);
 	let patternOrder = $state<number[]>([]);
 	let tables = $state<Table[]>([]);
+	let activeSongIndex = $state(0);
 
 	let projectSettings = $state({
 		title: '',
@@ -311,6 +313,22 @@
 				return;
 			}
 
+			if (data.action === 'remove-song' && typeof (data as { songIndex?: number }).songIndex === 'number') {
+				const index = (data as { songIndex: number }).songIndex;
+				if (songs.length <= 1 || index < 0 || index >= songs.length) return;
+				const confirmed = await open(ConfirmModal, {
+					message: `Remove song (${index + 1})? This cannot be undone.`
+				});
+				if (!confirmed) return;
+				playbackStore.isPlaying = false;
+				container.audioService.stop();
+				songs = songs.filter((_, i) => i !== index);
+				container.audioService.removeChipProcessor(index);
+				activeSongIndex = Math.min(activeSongIndex, Math.max(0, songs.length - 1));
+				patternEditor?.resetToBeginning();
+				return;
+			}
+
 			if (data.action === 'new-song-ay') {
 				playbackStore.isPlaying = false;
 				container.audioService.stop();
@@ -462,6 +480,7 @@
 			bind:songs
 			bind:patternOrder
 			bind:patternEditor
+			bind:activeEditorIndex={activeSongIndex}
 			bind:tables
 			bind:projectSettings
 			onaction={handleMenuAction}

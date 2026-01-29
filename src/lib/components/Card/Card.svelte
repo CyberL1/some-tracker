@@ -39,7 +39,9 @@
 							onclick={action.onClick}
 							title={action.label}>
 							<action.icon class="h-3 w-3" />
-							<span class="font-medium">{action.label}</span>
+							{#if action.label}
+								<span class="font-medium">{action.label}</span>
+							{/if}
 						</button>
 					{/each}
 				</div>

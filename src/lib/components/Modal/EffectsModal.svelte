@@ -132,11 +132,11 @@
 <div class="flex h-[90vh] w-[700px] max-w-[90vw] flex-col overflow-hidden">
 	<div
 		class="flex shrink-0 items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
-		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">Effects Reference</h2>
+		<h2 class="font-bold text-[var(--color-app-text-primary)]">Effects Reference</h2>
 	</div>
 
 	<div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-6">
-		<div class="mb-4 text-xs text-[var(--color-app-text-secondary)]">
+		<div class="mb-4 text-[var(--color-app-text-secondary)]">
 			<p class="mb-2">
 				Effects are entered in the effect column using the format:
 				<code class="rounded bg-[var(--color-app-surface-secondary)] px-1 py-0.5 font-mono">
@@ -168,18 +168,18 @@
 					class="rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] p-4">
 					<div class="mb-2 flex items-center gap-2">
 						<code
-							class="rounded bg-[var(--color-app-surface)] px-2 py-1 font-mono text-sm font-bold text-[var(--color-app-text-primary)]">
+							class="rounded bg-[var(--color-app-surface)] px-2 py-1 font-mono font-bold text-[var(--color-app-text-primary)]">
 							{effect.code}
 						</code>
-						<h3 class="text-sm font-bold text-[var(--color-app-text-primary)]">
+						<h3 class="font-bold text-[var(--color-app-text-primary)]">
 							{effect.name}
 						</h3>
 					</div>
-					<p class="mb-3 text-xs text-[var(--color-app-text-secondary)]">
+					<p class="mb-3 text-[var(--color-app-text-secondary)]">
 						{effect.description}
 					</p>
 
-					<div class="mb-2 space-y-1 text-xs">
+					<div class="mb-2 space-y-1">
 						<div>
 							<span class="font-medium text-[var(--color-app-text-primary)]"
 								>Format:</span>
@@ -222,14 +222,12 @@
 
 		<div
 			class="mt-6 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] p-4">
-			<h3 class="mb-2 text-sm font-bold text-[var(--color-app-text-primary)]">
-				Envelope Effects
-			</h3>
-			<p class="mb-2 text-xs text-[var(--color-app-text-secondary)]">
+			<h3 class="mb-2 font-bold text-[var(--color-app-text-primary)]">Envelope Effects</h3>
+			<p class="mb-2 text-[var(--color-app-text-secondary)]">
 				Envelope effects use the same effect codes as regular effects but are entered in the
 				envelope effect column.
 			</p>
-			<p class="text-xs text-[var(--color-app-text-secondary)]">
+			<p class="text-[var(--color-app-text-secondary)]">
 				Format:
 				<code class="rounded bg-[var(--color-app-surface)] px-1 py-0.5 font-mono">
 					{#each getFormatSegments('AXYZ') as seg}

@@ -21,6 +21,7 @@
 	import IconCarbonInformationSquare from '~icons/carbon/information-square';
 	import IconCarbonChevronUp from '~icons/carbon/chevron-up';
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
+	import IconCarbonClose from '~icons/carbon/close';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
 	import { getContext, setContext } from 'svelte';
 	import Input from '../Input/Input.svelte';
@@ -35,6 +36,7 @@
 		patternEditor = $bindable(),
 		tables = $bindable(),
 		projectSettings = $bindable(),
+		activeEditorIndex = $bindable(0),
 		onaction
 	}: {
 		songs: Song[];
@@ -43,12 +45,12 @@
 		patternEditor?: PatternEditor | null;
 		tables: Table[];
 		projectSettings: Record<string, unknown>;
-		onaction?: (data: { action: string }) => void;
+		activeEditorIndex?: number;
+		onaction?: (data: { action: string; songIndex?: number }) => void;
 	} = $props();
 
 	let sharedPatternOrderIndex = $state(0);
 	let sharedSelectedRow = $state(0);
-	let activeEditorIndex = $state(0);
 	let songViewContainer: HTMLDivElement;
 	let patternEditors: PatternEditor[] = $state([]);
 	let rightPanelActiveTabId = $state('instruments');
@@ -419,6 +421,17 @@
 										</button>
 									</div>
 								</div>
+								{#if songs.length > 1}
+									<button
+										type="button"
+										disabled={playbackStore.isPlaying}
+										class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-[var(--color-pattern-note-off)] transition-colors hover:bg-[var(--color-app-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+										title="Remove song"
+										onclick={() =>
+											onaction?.({ action: 'remove-song', songIndex: i })}>
+										<IconCarbonClose class="h-3.5 w-3.5" />
+									</button>
+								{/if}
 							</div>
 						{/snippet}
 						<div class="flex flex-1 flex-col overflow-hidden">

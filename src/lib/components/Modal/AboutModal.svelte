@@ -15,19 +15,20 @@
 </script>
 
 <div class="flex w-[400px] flex-col">
-	<div class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
-		<h2 class="text-sm font-bold text-[var(--color-app-text-primary)]">About</h2>
+	<div
+		class="flex items-center gap-2 border-b border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-3 py-2">
+		<h2 class="font-bold text-[var(--color-app-text-primary)]">About</h2>
 	</div>
 
-	<div class="flex flex-col items-center gap-4 p-6">
-		<img src="logo.svg" alt="Bitphase Logo" class="h-24 w-24" />
+	<div class="flex flex-col items-center gap-3 p-4">
+		<img src="logo.svg" alt="Bitphase Logo" class="h-16 w-16" />
 
 		<div class="text-center">
-			<h1 class="text-2xl font-bold text-[var(--color-app-text-primary)]">Bitphase</h1>
-
+			<h1 class="text-lg font-bold text-[var(--color-app-text-primary)]">Bitphase</h1>
 		</div>
 
-		<div class="w-full space-y-2 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] p-4 text-xs">
+		<div
+			class="w-full space-y-2 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] p-3">
 			<div class="flex justify-between">
 				<span class="text-[var(--color-app-text-muted)]">Version:</span>
 				<span class="font-mono text-[var(--color-app-text-primary)]">{version}</span>
@@ -43,7 +44,7 @@
 		</div>
 
 		<div class="flex flex-col items-center gap-2">
-			<p class="text-center text-xs text-[var(--color-app-text-muted)]">
+			<p class="text-center text-[var(--color-app-text-muted)]">
 				Bitphase by Pator and contributors<br />
 				Ayumi emulator by Peter Sovietov
 			</p>
@@ -51,8 +52,7 @@
 				href="https://github.com/paator/bitphase"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-xs text-[var(--color-app-text-secondary)] hover:text-[var(--color-app-text-primary)] hover:underline"
-			>
+				class="text-[var(--color-app-text-secondary)] hover:text-[var(--color-app-text-primary)] hover:underline">
 				View on GitHub
 			</a>
 		</div>
