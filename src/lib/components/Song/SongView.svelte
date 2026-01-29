@@ -76,9 +76,6 @@
 	});
 
 	let patternLengthValue = $state('');
-	let isPatternLengthInputFocused = $state(false);
-	let isPatternLengthButtonAction = $state(false);
-	let isUserEditingPatternLength = $state(false);
 
 	const blurredContentClass = $derived(
 		isRightPanelExpanded ? 'pointer-events-none opacity-50 blur-sm' : ''
@@ -250,81 +247,28 @@
 		};
 	});
 
+	const currentPatternId = $derived(patternOrder[sharedPatternOrderIndex]);
 	const currentPatternLength = $derived.by(() => {
-		if (patternEditors.length === 0) return null;
-		const activeEditor = patternEditors[activeEditorIndex];
-		if (!activeEditor) return null;
-		return activeEditor.getCurrentPatternLength?.() ?? null;
-	});
-
-	let lastSyncedEditorIndex = $state(-1);
-	let lastSyncedPatternOrderIndex = $state(-1);
-	let expectedPatternLength = $state<number | null>(null);
-
-	function syncPatternLengthValue() {
-		if (
-			isPatternLengthInputFocused ||
-			isPatternLengthButtonAction ||
-			isUserEditingPatternLength
-		) {
-			return;
-		}
-		const activeEditor = patternEditors[activeEditorIndex];
-		if (!activeEditor) {
-			return;
-		}
-		const length = currentPatternLength;
-		if (length !== null) {
-			patternLengthValue = length.toString();
-		}
-	}
-
-	$effect(() => {
-		if (activeEditorIndex !== lastSyncedEditorIndex) {
-			lastSyncedEditorIndex = activeEditorIndex;
-			syncPatternLengthValue();
-		}
+		const song = songs[0];
+		if (!song?.patterns) return null;
+		const pattern = song.patterns.find((p) => p.id === currentPatternId);
+		return pattern?.length ?? null;
 	});
 
 	$effect(() => {
-		if (sharedPatternOrderIndex !== lastSyncedPatternOrderIndex) {
-			lastSyncedPatternOrderIndex = sharedPatternOrderIndex;
-			isPatternLengthInputFocused = false;
-			isPatternLengthButtonAction = false;
-			isUserEditingPatternLength = false;
-			expectedPatternLength = null;
-			syncPatternLengthValue();
-		}
+		const el = document.activeElement;
+		if (el?.id?.startsWith?.('pattern-length-input')) return;
+		patternLengthValue = currentPatternLength !== null ? currentPatternLength.toString() : '';
 	});
 
-	$effect(() => {
-		if (expectedPatternLength !== null && currentPatternLength === expectedPatternLength) {
-			isUserEditingPatternLength = false;
-			isPatternLengthButtonAction = false;
-			expectedPatternLength = null;
-		}
-	});
-
-	$effect(() => {
-		if (
-			currentPatternLength !== null &&
-			patternLengthValue === '' &&
-			!isPatternLengthInputFocused &&
-			!isPatternLengthButtonAction &&
-			!isUserEditingPatternLength
-		) {
-			syncPatternLengthValue();
-		}
-	});
-
-	function syncPatternLengthToAllSongs(patternId: number, newLength: number) {
+	function applyLengthToAllSongs(length: number) {
+		const patternId = patternOrder[sharedPatternOrderIndex];
 		for (let j = 0; j < songs.length; j++) {
-			if (j === activeEditorIndex) continue;
 			const song = songs[j];
 			const pattern = song.patterns.find((p) => p.id === patternId);
-			if (!pattern || pattern.length === newLength) continue;
+			if (!pattern || pattern.length === length) continue;
 			const schema = chipProcessors[j].chip.schema;
-			const resized = PatternService.resizePattern(pattern, newLength, schema);
+			const resized = PatternService.resizePattern(pattern, length, schema);
 			song.patterns = PatternService.updatePatternInArray(song.patterns, resized);
 		}
 		songs = [...songs];
@@ -332,83 +276,30 @@
 	}
 
 	function commitPatternLength() {
-		isPatternLengthInputFocused = false;
 		const length = parseInt(patternLengthValue, 10);
-		const activeEditor = patternEditors[activeEditorIndex];
-		if (!isNaN(length) && length >= 1 && length <= 256 && activeEditor) {
-			try {
-				activeEditor.resizePatternTo?.(length);
-				syncPatternLengthToAllSongs(patternOrder[sharedPatternOrderIndex], length);
-				expectedPatternLength = length;
-			} catch (error) {
-				console.error('Failed to resize pattern:', error);
-				const current = currentPatternLength;
-				if (current !== null) {
-					patternLengthValue = current.toString();
-				}
-				isUserEditingPatternLength = false;
-				expectedPatternLength = null;
-			}
+		if (!isNaN(length) && length >= 1 && length <= 256) {
+			applyLengthToAllSongs(length);
+			patternLengthValue = length.toString();
 		} else {
-			const current = currentPatternLength;
-			if (current !== null) {
-				patternLengthValue = current.toString();
-			}
-			isUserEditingPatternLength = false;
-			expectedPatternLength = null;
+			patternLengthValue =
+				currentPatternLength !== null ? currentPatternLength.toString() : '';
 		}
 	}
 
 	function incrementPatternLength() {
 		const current = parseInt(patternLengthValue, 10);
-		const activeEditor = patternEditors[activeEditorIndex];
-		if (isNaN(current) || current < 1 || current >= 256 || !activeEditor) {
-			return;
-		}
-		isPatternLengthButtonAction = true;
-		isUserEditingPatternLength = true;
+		if (isNaN(current) || current < 1 || current >= 256) return;
 		const newLength = current + 1;
-		try {
-			activeEditor.resizePatternTo?.(newLength);
-			syncPatternLengthToAllSongs(patternOrder[sharedPatternOrderIndex], newLength);
-			patternLengthValue = newLength.toString();
-			expectedPatternLength = newLength;
-		} catch (error) {
-			console.error('Failed to increment pattern length:', error);
-			const actual = currentPatternLength;
-			if (actual !== null) {
-				patternLengthValue = actual.toString();
-			}
-			isUserEditingPatternLength = false;
-			isPatternLengthButtonAction = false;
-			expectedPatternLength = null;
-		}
+		applyLengthToAllSongs(newLength);
+		patternLengthValue = newLength.toString();
 	}
 
 	function decrementPatternLength() {
 		const current = parseInt(patternLengthValue, 10);
-		const activeEditor = patternEditors[activeEditorIndex];
-		if (isNaN(current) || current <= 1 || current > 256 || !activeEditor) {
-			return;
-		}
-		isPatternLengthButtonAction = true;
-		isUserEditingPatternLength = true;
+		if (isNaN(current) || current <= 1 || current > 256) return;
 		const newLength = current - 1;
-		try {
-			activeEditor.resizePatternTo?.(newLength);
-			syncPatternLengthToAllSongs(patternOrder[sharedPatternOrderIndex], newLength);
-			patternLengthValue = newLength.toString();
-			expectedPatternLength = newLength;
-		} catch (error) {
-			console.error('Failed to decrement pattern length:', error);
-			const actual = currentPatternLength;
-			if (actual !== null) {
-				patternLengthValue = actual.toString();
-			}
-			isUserEditingPatternLength = false;
-			isPatternLengthButtonAction = false;
-			expectedPatternLength = null;
-		}
+		applyLengthToAllSongs(newLength);
+		patternLengthValue = newLength.toString();
 	}
 </script>
 
@@ -460,21 +351,15 @@
 											if (!playbackStore.isPlaying) {
 												activeEditorIndex = i;
 												patternEditor = patternEditors[i];
-												syncPatternLengthValue();
-												isPatternLengthInputFocused = true;
-												isUserEditingPatternLength = true;
 											}
 										}}
 										oninput={(e) => {
 											if (!playbackStore.isPlaying) {
-												isPatternLengthInputFocused = true;
-												isUserEditingPatternLength = true;
 												patternLengthValue = (e.target as HTMLInputElement)
 													.value;
 											}
 										}}
 										onblur={() => {
-											isPatternLengthInputFocused = false;
 											if (!playbackStore.isPlaying) {
 												commitPatternLength();
 											}
@@ -500,7 +385,6 @@
 												if (!playbackStore.isPlaying) {
 													activeEditorIndex = i;
 													patternEditor = patternEditors[i];
-													syncPatternLengthValue();
 													incrementPatternLength();
 												}
 											}}
@@ -516,7 +400,6 @@
 												if (!playbackStore.isPlaying) {
 													activeEditorIndex = i;
 													patternEditor = patternEditors[i];
-													syncPatternLengthValue();
 													decrementPatternLength();
 												}
 											}}
@@ -539,7 +422,6 @@
 								onfocus={() => {
 									activeEditorIndex = i;
 									patternEditor = patternEditors[i];
-									syncPatternLengthValue();
 								}}
 								{onaction}
 								initAllChips={initAllChipsForPlayback}

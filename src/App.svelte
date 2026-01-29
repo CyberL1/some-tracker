@@ -14,6 +14,7 @@
 	import { setContext } from 'svelte';
 	import { AudioService } from './lib/services/audio/audio-service';
 	import { ProjectService } from './lib/services/project/project-service';
+	import { PatternService } from './lib/services/pattern/pattern-service';
 	import { AY_CHIP } from './lib/chips/ay';
 	import { getChipByType } from './lib/chips/registry';
 	import SongView from './lib/components/Song/SongView.svelte';
@@ -315,6 +316,23 @@
 				container.audioService.stop();
 
 				const newSong = await projectService.createNewSong(AY_CHIP);
+				if (songs.length > 0 && patternOrder.length > 0) {
+					const firstPatternId = patternOrder[0];
+					const firstPattern = songs[0].patterns.find((p) => p.id === firstPatternId);
+					const refLength = firstPattern?.length ?? 64;
+					if (newSong.patterns[0].length !== refLength) {
+						const schema = container.audioService.chipProcessors[0].chip.schema;
+						const resized = PatternService.resizePattern(
+							newSong.patterns[0],
+							refLength,
+							schema
+						);
+						newSong.patterns = PatternService.updatePatternInArray(
+							newSong.patterns,
+							resized
+						);
+					}
+				}
 				songs = [...songs, newSong];
 
 				patternEditor?.resetToBeginning();
