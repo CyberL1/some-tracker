@@ -8,6 +8,7 @@ class AYChipRegisterState {
 		this.noise = 0;
 		this.envelopePeriod = 0;
 		this.envelopeShape = 0;
+		this.forceEnvelopeShapeWrite = false;
 	}
 
 	reset() {
@@ -19,6 +20,7 @@ class AYChipRegisterState {
 		this.noise = 0;
 		this.envelopePeriod = 0;
 		this.envelopeShape = 0;
+		this.forceEnvelopeShapeWrite = false;
 	}
 
 	copy() {
@@ -35,9 +37,9 @@ class AYChipRegisterState {
 		copy.noise = this.noise;
 		copy.envelopePeriod = this.envelopePeriod;
 		copy.envelopeShape = this.envelopeShape;
+		copy.forceEnvelopeShapeWrite = this.forceEnvelopeShapeWrite;
 		return copy;
 	}
 }
 
 export default AYChipRegisterState;
-

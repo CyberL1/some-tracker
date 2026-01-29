@@ -82,6 +82,31 @@
 		return parseInt(a.id, 36) - parseInt(b.id, 36);
 	}
 
+	function getAllInstrumentIds(): string[] {
+		const ids = new Set<string>();
+		for (const song of songs) {
+			for (const inst of song.instruments) ids.add(inst.id);
+		}
+		return [...ids];
+	}
+
+	function syncInstrumentOrderToOtherSongs(): void {
+		if (songs.length <= 1) return;
+		const orderById = songs[0].instruments.map((inst) => inst.id);
+		const orderSet = new Set(orderById);
+		for (let j = 1; j < songs.length; j++) {
+			const byId = new Map(songs[j].instruments.map((inst) => [inst.id, inst]));
+			const ordered = orderById
+				.map((id) => byId.get(id))
+				.filter((inst): inst is Instrument => inst !== undefined);
+			const extra = songs[j].instruments
+				.filter((inst) => !orderSet.has(inst.id))
+				.sort(compareInstrumentIds);
+			songs[j].instruments = [...ordered, ...extra];
+		}
+		songs = [...songs];
+	}
+
 	function sortInstrumentsAndSyncSelection(selectedId?: string): void {
 		if (songs.length === 0) return;
 		const list = songs[0].instruments;
@@ -89,7 +114,7 @@
 		const needsSort = sorted.some((inst, i) => inst !== list[i]);
 		if (!needsSort) return;
 		songs[0].instruments = sorted;
-		songs = [...songs];
+		syncInstrumentOrderToOtherSongs();
 		if (selectedId !== undefined) {
 			const newIndex = sorted.findIndex((inst) => inst.id === selectedId);
 			if (newIndex >= 0) selectedInstrumentIndex = newIndex;
@@ -114,19 +139,27 @@
 
 	function handleInstrumentChange(instrument: Instrument): void {
 		if (songs.length === 0) return;
-		songs[0].instruments[selectedInstrumentIndex] = { ...instrument };
-		songs[0].instruments = [...songs[0].instruments];
+		const id = instrument.id;
+		for (const song of songs) {
+			const idx = song.instruments.findIndex((inst) => inst.id === id);
+			if (idx >= 0) {
+				song.instruments[idx] = { ...instrument };
+				song.instruments = [...song.instruments];
+			}
+		}
 		songs = [...songs];
 		services.audioService.updateInstruments(songs[0].instruments);
 	}
 
 	function addInstrument(): void {
 		if (songs.length === 0) return;
-		const existingIds = songs[0].instruments.map((inst) => inst.id);
+		const existingIds = getAllInstrumentIds();
 		const newId = getNextAvailableInstrumentId(existingIds);
 		if (!newId) return;
 		const newInstrument = new InstrumentModel(newId, [], 0, `Instrument ${newId}`);
-		songs[0].instruments = [...songs[0].instruments, newInstrument];
+		for (const song of songs) {
+			song.instruments = [...song.instruments, newInstrument];
+		}
 		songs = [...songs];
 		sortInstrumentsAndSyncSelection(newId);
 		services.audioService.updateInstruments(songs[0].instruments);
@@ -134,11 +167,15 @@
 
 	function removeInstrument(index: number): void {
 		if (songs.length === 0) return;
-		if (songs[0].instruments.length <= 1) return;
-		songs[0].instruments = songs[0].instruments.filter((_, i) => i !== index);
+		const toRemove = songs[0].instruments[index];
+		if (!toRemove || songs[0].instruments.length <= 1) return;
+		const id = toRemove.id;
+		for (const song of songs) {
+			song.instruments = song.instruments.filter((inst) => inst.id !== id);
+		}
 		songs = [...songs];
 		if (selectedInstrumentIndex >= songs[0].instruments.length) {
-			selectedInstrumentIndex = songs[0].instruments.length - 1;
+			selectedInstrumentIndex = Math.max(0, songs[0].instruments.length - 1);
 		}
 		services.audioService.updateInstruments(songs[0].instruments);
 	}
@@ -147,7 +184,7 @@
 		if (songs.length === 0) return;
 		const instrument = songs[0].instruments[copiedIndex];
 		if (!instrument) return;
-		const existingIds = songs[0].instruments.map((inst) => inst.id);
+		const existingIds = getAllInstrumentIds();
 		const newId = getNextAvailableInstrumentId(existingIds);
 		if (!newId) return;
 		const copiedRows = instrument.rows.map((r) => new InstrumentRow({ ...r }));
@@ -158,7 +195,9 @@
 			instrument.name + ' (Copy)'
 		);
 
-		songs[0].instruments = [...songs[0].instruments, copy];
+		for (const song of songs) {
+			song.instruments = [...song.instruments, copy];
+		}
 		songs = [...songs];
 		sortInstrumentsAndSyncSelection(newId);
 		services.audioService.updateInstruments(songs[0].instruments);
@@ -174,14 +213,19 @@
 		if (!isValidInstrumentId(normalizedId) || !isInstrumentIdInRange(normalizedId)) {
 			return;
 		}
-		const existingIds = songs[0].instruments.map((inst, i) => (i === index ? '' : inst.id));
+		const oldId = songs[0].instruments[index].id;
+		const existingIds = getAllInstrumentIds().filter((id) => id !== oldId);
 		if (existingIds.includes(normalizedId)) {
 			return;
 		}
-		const oldId = songs[0].instruments[index].id;
-		migrateInstrumentIdInSong(songs[0], oldId, normalizedId);
-		songs[0].instruments[index].id = normalizedId;
-		songs[0].instruments = [...songs[0].instruments];
+		for (const song of songs) {
+			migrateInstrumentIdInSong(song, oldId, normalizedId);
+			const idx = song.instruments.findIndex((inst) => inst.id === oldId);
+			if (idx >= 0) {
+				song.instruments[idx] = { ...song.instruments[idx], id: normalizedId };
+				song.instruments = [...song.instruments];
+			}
+		}
 		songs = [...songs];
 		sortInstrumentsAndSyncSelection(normalizedId);
 		services.audioService.updateInstruments(songs[0].instruments);

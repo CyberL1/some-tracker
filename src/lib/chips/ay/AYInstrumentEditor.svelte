@@ -31,6 +31,7 @@
 		| 'tone'
 		| 'noise'
 		| 'envelope'
+		| 'retriggerEnvelope'
 		| 'toneAccumulation'
 		| 'noiseAccumulation'
 		| 'envelopeAccumulation'
@@ -40,7 +41,9 @@
 	function getGridButtonClass(isActive: boolean): string {
 		const baseClass =
 			'flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]';
-		return isActive ? `${baseClass} border-[var(--color-app-primary)] bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]` : baseClass;
+		return isActive
+			? `${baseClass} border-[var(--color-app-primary)] bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]`
+			: baseClass;
 	}
 
 	function formatNum(value: number): string {
@@ -65,7 +68,14 @@
 
 	function beginDragBoolean(
 		index: number,
-		field: 'tone' | 'noise' | 'envelope' | 'toneAccumulation' | 'noiseAccumulation' | 'envelopeAccumulation'
+		field:
+			| 'tone'
+			| 'noise'
+			| 'envelope'
+			| 'retriggerEnvelope'
+			| 'toneAccumulation'
+			| 'noiseAccumulation'
+			| 'envelopeAccumulation'
 	) {
 		isDragging = true;
 		dragType = field;
@@ -76,7 +86,14 @@
 
 	function dragOverBoolean(
 		index: number,
-		field: 'tone' | 'noise' | 'envelope' | 'toneAccumulation' | 'noiseAccumulation' | 'envelopeAccumulation'
+		field:
+			| 'tone'
+			| 'noise'
+			| 'envelope'
+			| 'retriggerEnvelope'
+			| 'toneAccumulation'
+			| 'noiseAccumulation'
+			| 'envelopeAccumulation'
 	) {
 		if (isDragging && dragValue !== null) {
 			updateRow(index, field, dragValue);
@@ -90,6 +107,7 @@
 						tone: false,
 						noise: false,
 						envelope: false,
+						retriggerEnvelope: false,
 						toneAdd: 0,
 						noiseAdd: 0,
 						envelopeAdd: 0,
@@ -148,7 +166,7 @@
 		let text = inputEl.value.trim();
 		const allowedPattern = asHex ? /[^0-9a-fA-F-]/g : /[^0-9-]/g;
 		text = text.replace(/\+/g, '').replace(allowedPattern, '');
-		
+
 		if (field === 'volume') {
 			if (asHex) {
 				if (text.length > 1) {
@@ -161,7 +179,7 @@
 				}
 			}
 		}
-		
+
 		if (text !== inputEl.value) inputEl.value = text;
 
 		let parsed: number | null = null;
@@ -191,24 +209,26 @@
 
 	function focusInputInRow(row: HTMLTableRowElement | null, currentInput?: HTMLInputElement) {
 		if (!row) return;
-		
+
 		let input: HTMLInputElement | null = null;
-		
+
 		if (currentInput) {
 			const currentCell = currentInput.closest('td');
 			if (currentCell) {
-				const cellIndex = Array.from(currentCell.parentElement?.children || []).indexOf(currentCell);
+				const cellIndex = Array.from(currentCell.parentElement?.children || []).indexOf(
+					currentCell
+				);
 				const targetCell = row.children[cellIndex] as HTMLTableCellElement | undefined;
 				if (targetCell) {
 					input = targetCell.querySelector('input[type="text"]');
 				}
 			}
 		}
-		
+
 		if (!input) {
 			input = row.querySelector('input[type="text"]');
 		}
-		
+
 		if (input) {
 			input.focus();
 			input.select();
@@ -224,12 +244,18 @@
 			const nextIndex = index + 1;
 			if (nextIndex < rows.length) {
 				const currentRow = inputEl.closest('tr');
-				focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null, inputEl);
+				focusInputInRow(
+					currentRow?.nextElementSibling as HTMLTableRowElement | null,
+					inputEl
+				);
 			} else if (nextIndex === rows.length) {
 				addRow();
 				setTimeout(() => {
 					const currentRow = inputEl.closest('tr');
-					focusInputInRow(currentRow?.nextElementSibling as HTMLTableRowElement | null, inputEl);
+					focusInputInRow(
+						currentRow?.nextElementSibling as HTMLTableRowElement | null,
+						inputEl
+					);
 				}, 0);
 			}
 			return;
@@ -240,7 +266,10 @@
 			const prevIndex = index - 1;
 			if (prevIndex >= 0) {
 				const currentRow = inputEl.closest('tr');
-				focusInputInRow(currentRow?.previousElementSibling as HTMLTableRowElement | null, inputEl);
+				focusInputInRow(
+					currentRow?.previousElementSibling as HTMLTableRowElement | null,
+					inputEl
+				);
 			}
 			return;
 		}
@@ -263,6 +292,7 @@
 				tone: false,
 				noise: false,
 				envelope: false,
+				retriggerEnvelope: false,
 				toneAdd: 0,
 				noiseAdd: 0,
 				envelopeAdd: 0,
@@ -428,14 +458,26 @@
 								class={isExpanded ? 'w-6 px-1.5' : 'w-4 px-0.5'}
 								bind:this={loopColumnRef}>{isExpanded ? 'loop' : 'lp'}</th>
 							<th
-								class={isExpanded ? 'w-12 px-1.5' : 'w-8 px-0.5 text-[0.65rem]'}
+								class={isExpanded
+									? 'w-12 min-w-12 px-1.5'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
 								title="Tone Generator">{isExpanded ? 'Tone' : 'T'}</th>
 							<th
-								class={isExpanded ? 'w-12 px-1.5' : 'w-8 px-0.5 text-[0.65rem]'}
+								class={isExpanded
+									? 'w-12 min-w-12 px-1.5'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
 								title="Noise Generator">{isExpanded ? 'Noise' : 'N'}</th>
 							<th
-								class={isExpanded ? 'w-12 px-1.5' : 'w-8 px-0.5 text-[0.65rem]'}
+								class={isExpanded
+									? 'w-12 min-w-12 px-1.5'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
 								title="Hardware Envelope">{isExpanded ? 'Env' : 'E'}</th>
+							<th
+								class={isExpanded
+									? 'w-12 min-w-12 px-1.5'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
+								title="Retrigger envelope when this row is played (only when envelope is on)"
+								>{isExpanded ? 'Retrig' : 'Rtr'}</th>
 							<th
 								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
 								title="Tone Offset">{isExpanded ? 'Tone+' : 'T+'}</th>
@@ -522,6 +564,8 @@
 								<th></th>
 								<th></th>
 								<th></th>
+								<th></th>
+								<th></th>
 							</tr>
 						{/if}
 					</thead>
@@ -576,7 +620,9 @@
 								</td>
 								<!-- Tone -->
 								<td
-									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.tone
+									class="{isExpanded
+										? 'w-12 min-w-12 px-1.5'
+										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.tone
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
 									tabindex="-1"
@@ -587,7 +633,9 @@
 								</td>
 								<!-- Noise -->
 								<td
-									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noise
+									class="{isExpanded
+										? 'w-12 min-w-12 px-1.5'
+										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.noise
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
 									tabindex="-1"
@@ -598,7 +646,9 @@
 								</td>
 								<!-- Envelope -->
 								<td
-									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.envelope
+									class="{isExpanded
+										? 'w-12 min-w-12 px-1.5'
+										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.envelope
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
 									tabindex="-1"
@@ -606,6 +656,21 @@
 									onmouseover={() => dragOverBoolean(index, 'envelope')}
 									onfocus={() => dragOverBoolean(index, 'envelope')}>
 									{row.envelope ? '✓' : ''}
+								</td>
+								<!-- Retrigger envelope -->
+								<td
+									class="{isExpanded
+										? 'w-12 min-w-12 px-1.5'
+										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {(row.retriggerEnvelope ??
+									false)
+										? 'bg-green-900/30 text-green-400'
+										: 'text-[var(--color-app-text-muted)]'}"
+									tabindex="-1"
+									title="Retrigger envelope when this row is played"
+									onmousedown={() => beginDragBoolean(index, 'retriggerEnvelope')}
+									onmouseover={() => dragOverBoolean(index, 'retriggerEnvelope')}
+									onfocus={() => dragOverBoolean(index, 'retriggerEnvelope')}>
+									{(row.retriggerEnvelope ?? false) ? '✓' : ''}
 								</td>
 								<!-- ToneAdd -->
 								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
@@ -663,7 +728,8 @@
 										value={formatNum(row.envelopeAdd ?? 0)}
 										onkeydown={(e) => handleNumericKeyDown(index, e)}
 										onfocus={(e) => (e.target as HTMLInputElement).select()}
-										oninput={(e) => updateNumericField(index, 'envelopeAdd', e)} />
+										oninput={(e) =>
+											updateNumericField(index, 'envelopeAdd', e)} />
 								</td>
 								<!-- Envelope Accumulation -->
 								<td
@@ -671,8 +737,10 @@
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
 									tabindex="-1"
-									onmousedown={() => beginDragBoolean(index, 'envelopeAccumulation')}
-									onmouseover={() => dragOverBoolean(index, 'envelopeAccumulation')}
+									onmousedown={() =>
+										beginDragBoolean(index, 'envelopeAccumulation')}
+									onmouseover={() =>
+										dragOverBoolean(index, 'envelopeAccumulation')}
 									onfocus={() => dragOverBoolean(index, 'envelopeAccumulation')}>
 									{row.envelopeAccumulation ? '↑' : ''}
 								</td>
@@ -709,7 +777,7 @@
 					</tbody>
 					<tfoot>
 						<tr>
-							<td colspan="12" class="px-2 py-1">
+							<td colspan="16" class="px-2 py-1">
 								<div class="flex items-center justify-center">
 									<button
 										class="flex cursor-pointer items-center justify-center rounded p-0.5 text-[var(--color-app-text-muted)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-green-400"
@@ -749,7 +817,8 @@
 					<tbody>
 						{#each rows as row, index}
 							<tr class="h-8">
-								<td class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 text-right"
+								<td
+									class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 text-right"
 									>{index}</td>
 								{#each VOLUME_VALUES as v}
 									{@render volumeCell(index, v, v === row.volume)}

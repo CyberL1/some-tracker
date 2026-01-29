@@ -215,7 +215,9 @@ class AYAudioDriver {
 				state.envelopeSlideDelayCounter = 0;
 				const finalEnvelopeValue = patternRow.envelopeValue;
 				registerState.envelopePeriod = finalEnvelopeValue;
-				registerState.envelopeShape = row.envelopeShape;
+				if (registerState.envelopeShape !== row.envelopeShape) {
+					registerState.envelopeShape = row.envelopeShape;
+				}
 				state.channelEnvelopeEnabled[channelIndex] = true;
 
 				const envelopeOnOffActive = state.envelopeOnOffCounter > 0;
@@ -570,6 +572,9 @@ class AYAudioDriver {
 				) {
 					registerState.channels[channelIndex].mixer.envelope = true;
 					this.channelMixerState[channelIndex].envelope = true;
+					if (instrumentRow.retriggerEnvelope) {
+						registerState.forceEnvelopeShapeWrite = true;
+					}
 				} else {
 					registerState.channels[channelIndex].mixer.envelope = false;
 					this.channelMixerState[channelIndex].envelope = false;

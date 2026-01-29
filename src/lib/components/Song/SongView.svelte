@@ -26,6 +26,7 @@
 	import Input from '../Input/Input.svelte';
 	import { playbackStore } from '../../stores/playback.svelte';
 	import StatusBar from './StatusBar.svelte';
+	import { PatternService } from '../../services/pattern/pattern-service';
 
 	let {
 		songs = $bindable(),
@@ -316,6 +317,20 @@
 		}
 	});
 
+	function syncPatternLengthToAllSongs(patternId: number, newLength: number) {
+		for (let j = 0; j < songs.length; j++) {
+			if (j === activeEditorIndex) continue;
+			const song = songs[j];
+			const pattern = song.patterns.find((p) => p.id === patternId);
+			if (!pattern || pattern.length === newLength) continue;
+			const schema = chipProcessors[j].chip.schema;
+			const resized = PatternService.resizePattern(pattern, newLength, schema);
+			song.patterns = PatternService.updatePatternInArray(song.patterns, resized);
+		}
+		songs = [...songs];
+		patternEditors.forEach((editor) => editor?.requestRedraw?.());
+	}
+
 	function commitPatternLength() {
 		isPatternLengthInputFocused = false;
 		const length = parseInt(patternLengthValue, 10);
@@ -323,6 +338,7 @@
 		if (!isNaN(length) && length >= 1 && length <= 256 && activeEditor) {
 			try {
 				activeEditor.resizePatternTo?.(length);
+				syncPatternLengthToAllSongs(patternOrder[sharedPatternOrderIndex], length);
 				expectedPatternLength = length;
 			} catch (error) {
 				console.error('Failed to resize pattern:', error);
@@ -354,6 +370,7 @@
 		const newLength = current + 1;
 		try {
 			activeEditor.resizePatternTo?.(newLength);
+			syncPatternLengthToAllSongs(patternOrder[sharedPatternOrderIndex], newLength);
 			patternLengthValue = newLength.toString();
 			expectedPatternLength = newLength;
 		} catch (error) {
@@ -379,6 +396,7 @@
 		const newLength = current - 1;
 		try {
 			activeEditor.resizePatternTo?.(newLength);
+			syncPatternLengthToAllSongs(patternOrder[sharedPatternOrderIndex], newLength);
 			patternLengthValue = newLength.toString();
 			expectedPatternLength = newLength;
 		} catch (error) {
@@ -424,85 +442,91 @@
 						icon={IconCarbonChip}
 						class="flex flex-col p-0">
 						{#snippet headerContent()}
-							{#if currentPatternLength !== null && activeEditorIndex === i}
-								<div class="flex items-center gap-1">
+							<div class="flex items-center gap-1">
+								<div
+									class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {playbackStore.isPlaying
+										? 'opacity-50'
+										: ''}">
+									<Input
+										value={patternLengthValue}
+										id="pattern-length-input-{i}"
+										type="number"
+										min="1"
+										max="256"
+										step="1"
+										disabled={playbackStore.isPlaying}
+										class="h-5 w-10 border-0 bg-transparent px-1 py-0 text-center font-mono text-xs leading-none focus:ring-0 disabled:cursor-not-allowed"
+										onfocus={() => {
+											if (!playbackStore.isPlaying) {
+												activeEditorIndex = i;
+												patternEditor = patternEditors[i];
+												syncPatternLengthValue();
+												isPatternLengthInputFocused = true;
+												isUserEditingPatternLength = true;
+											}
+										}}
+										oninput={(e) => {
+											if (!playbackStore.isPlaying) {
+												isPatternLengthInputFocused = true;
+												isUserEditingPatternLength = true;
+												patternLengthValue = (e.target as HTMLInputElement)
+													.value;
+											}
+										}}
+										onblur={() => {
+											isPatternLengthInputFocused = false;
+											if (!playbackStore.isPlaying) {
+												commitPatternLength();
+											}
+										}}
+										onkeydown={(e: KeyboardEvent) => {
+											if (playbackStore.isPlaying) {
+												e.preventDefault();
+												return;
+											}
+											if (e.key === 'Enter') {
+												e.preventDefault();
+												commitPatternLength();
+												(e.target as HTMLInputElement)?.blur();
+											}
+										}} />
 									<div
-										class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {playbackStore.isPlaying
-											? 'opacity-50'
-											: ''}">
-										<Input
-											value={patternLengthValue}
-											id="pattern-length-input-{i}"
-											type="number"
-											min="1"
-											max="256"
-											step="1"
+										class="flex flex-col border-l border-[var(--color-app-border)]">
+										<button
+											type="button"
 											disabled={playbackStore.isPlaying}
-											class="h-5 w-10 border-0 bg-transparent px-1 py-0 text-center font-mono text-xs leading-none focus:ring-0 disabled:cursor-not-allowed"
-											onfocus={() => {
+											class="flex h-2.5 w-3.5 cursor-pointer items-center justify-center border-b border-[var(--color-app-border)] transition-colors hover:bg-[var(--color-app-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+											onclick={() => {
 												if (!playbackStore.isPlaying) {
-													isPatternLengthInputFocused = true;
-													isUserEditingPatternLength = true;
+													activeEditorIndex = i;
+													patternEditor = patternEditors[i];
+													syncPatternLengthValue();
+													incrementPatternLength();
 												}
 											}}
-											oninput={(e) => {
+											title="Increment pattern length">
+											<IconCarbonChevronUp
+												class="h-2 w-2 text-[var(--color-app-text-muted)]" />
+										</button>
+										<button
+											type="button"
+											disabled={playbackStore.isPlaying}
+											class="flex h-2.5 w-3.5 cursor-pointer items-center justify-center transition-colors hover:bg-[var(--color-app-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+											onclick={() => {
 												if (!playbackStore.isPlaying) {
-													isPatternLengthInputFocused = true;
-													isUserEditingPatternLength = true;
-													patternLengthValue = (
-														e.target as HTMLInputElement
-													).value;
+													activeEditorIndex = i;
+													patternEditor = patternEditors[i];
+													syncPatternLengthValue();
+													decrementPatternLength();
 												}
 											}}
-											onblur={() => {
-												isPatternLengthInputFocused = false;
-												if (!playbackStore.isPlaying) {
-													commitPatternLength();
-												}
-											}}
-											onkeydown={(e: KeyboardEvent) => {
-												if (playbackStore.isPlaying) {
-													e.preventDefault();
-													return;
-												}
-												if (e.key === 'Enter') {
-													e.preventDefault();
-													commitPatternLength();
-													(e.target as HTMLInputElement)?.blur();
-												}
-											}} />
-										<div
-											class="flex flex-col border-l border-[var(--color-app-border)]">
-											<button
-												type="button"
-												disabled={playbackStore.isPlaying}
-												class="flex h-2.5 w-3.5 cursor-pointer items-center justify-center border-b border-[var(--color-app-border)] transition-colors hover:bg-[var(--color-app-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-												onclick={() => {
-													if (!playbackStore.isPlaying) {
-														incrementPatternLength();
-													}
-												}}
-												title="Increment pattern length">
-												<IconCarbonChevronUp
-													class="h-2 w-2 text-[var(--color-app-text-muted)]" />
-											</button>
-											<button
-												type="button"
-												disabled={playbackStore.isPlaying}
-												class="flex h-2.5 w-3.5 cursor-pointer items-center justify-center transition-colors hover:bg-[var(--color-app-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-												onclick={() => {
-													if (!playbackStore.isPlaying) {
-														decrementPatternLength();
-													}
-												}}
-												title="Decrement pattern length">
-												<IconCarbonChevronDown
-													class="h-2 w-2 text-[var(--color-app-text-muted)]" />
-											</button>
-										</div>
+											title="Decrement pattern length">
+											<IconCarbonChevronDown
+												class="h-2 w-2 text-[var(--color-app-text-muted)]" />
+										</button>
 									</div>
 								</div>
-							{/if}
+							</div>
 						{/snippet}
 						<div class="flex flex-1 flex-col overflow-hidden">
 							<PatternEditor

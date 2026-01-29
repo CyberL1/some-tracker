@@ -56,9 +56,10 @@ class AyumiEngine {
 			this.lastState.envelopePeriod = state.envelopePeriod;
 		}
 
-		if (state.envelopeShape !== this.lastState.envelopeShape) {
+		if (state.forceEnvelopeShapeWrite || state.envelopeShape !== this.lastState.envelopeShape) {
 			this.wasmModule.ayumi_set_envelope_shape(this.ayumiPtr, state.envelopeShape);
 			this.lastState.envelopeShape = state.envelopeShape;
+			state.forceEnvelopeShapeWrite = false;
 		}
 	}
 
@@ -82,4 +83,3 @@ class AyumiEngine {
 }
 
 export default AyumiEngine;
-

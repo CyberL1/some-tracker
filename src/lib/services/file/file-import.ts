@@ -158,7 +158,8 @@ function reconstructInstrumentRow(data: any): InstrumentRow {
 		amplitudeSliding: data.amplitudeSliding ?? false,
 		amplitudeSlideUp: data.amplitudeSlideUp ?? false,
 		toneAccumulation: data.toneAccumulation ?? false,
-		noiseAccumulation: data.noiseAccumulation ?? false
+		noiseAccumulation: data.noiseAccumulation ?? false,
+		retriggerEnvelope: data.retriggerEnvelope ?? false
 	});
 }
 
