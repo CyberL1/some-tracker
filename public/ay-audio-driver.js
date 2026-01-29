@@ -190,17 +190,21 @@ class AYAudioDriver {
 				state.channelInstruments[channelIndex] = instrumentIndex;
 				state.instrumentPositions[channelIndex] = 0;
 				this.resetInstrumentAccumulators(state, channelIndex);
+			} else {
+				state.channelInstruments[channelIndex] = -1;
 			}
-		}
-
-		if (state.channelInstruments[channelIndex] < 0) {
-			state.channelInstruments[channelIndex] = 0;
 		}
 	}
 
 	_processEnvelope(state, channelIndex, row, patternRow, registerState) {
 		if (!state.channelEnvelopeEnabled) return;
 		if (state.channelMuted[channelIndex]) return;
+		if (state.channelInstruments[channelIndex] < 0) {
+			state.channelEnvelopeEnabled[channelIndex] = false;
+			this.channelMixerState[channelIndex].envelope = false;
+			registerState.channels[channelIndex].mixer.envelope = false;
+			return;
+		}
 
 		if (row.envelopeShape !== 0 && row.envelopeShape !== 15) {
 			if (patternRow.envelopeValue >= 0) {
