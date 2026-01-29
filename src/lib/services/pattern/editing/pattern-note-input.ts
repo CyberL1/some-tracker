@@ -37,20 +37,17 @@ export class PatternNoteInput {
 		d: { noteName: NoteName.DSharp, octaveOffset: 0 },
 		c: { noteName: NoteName.E, octaveOffset: 0 },
 		v: { noteName: NoteName.F, octaveOffset: 0 },
-		f: { noteName: NoteName.FSharp, octaveOffset: 0 },
+		g: { noteName: NoteName.FSharp, octaveOffset: 0 },
 		b: { noteName: NoteName.G, octaveOffset: 0 },
-		g: { noteName: NoteName.GSharp, octaveOffset: 0 },
+		h: { noteName: NoteName.GSharp, octaveOffset: 0 },
 		n: { noteName: NoteName.A, octaveOffset: 0 },
-		h: { noteName: NoteName.ASharp, octaveOffset: 0 },
+		j: { noteName: NoteName.ASharp, octaveOffset: 0 },
 		m: { noteName: NoteName.B, octaveOffset: 0 },
 		',': { noteName: NoteName.C, octaveOffset: 1 },
-		j: { noteName: NoteName.CSharp, octaveOffset: 1 },
+		l: { noteName: NoteName.CSharp, octaveOffset: 1 },
 		'.': { noteName: NoteName.D, octaveOffset: 1 },
-		k: { noteName: NoteName.DSharp, octaveOffset: 1 },
-		'/': { noteName: NoteName.E, octaveOffset: 1 },
-		l: { noteName: NoteName.FSharp, octaveOffset: 1 },
-		';': { noteName: NoteName.GSharp, octaveOffset: 1 },
-		"'": { noteName: NoteName.ASharp, octaveOffset: 1 }
+		';': { noteName: NoteName.DSharp, octaveOffset: 1 },
+		'/': { noteName: NoteName.E, octaveOffset: 1 }
 	};
 
 	private static readonly LETTER_NOTE_MAP: Record<string, NoteName> = {
@@ -74,11 +71,7 @@ export class PatternNoteInput {
 		const keyboardNote = this.mapKeyboardKeyToNote(key);
 		if (keyboardNote) {
 			const noteStr = formatNoteFromEnum(keyboardNote.noteName, keyboardNote.octave);
-			let updatedPattern = PatternValueUpdates.updateFieldValue(
-				context,
-				fieldInfo,
-				noteStr
-			);
+			let updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, noteStr);
 			updatedPattern = this.autoEnterInstrument(context, fieldInfo, updatedPattern);
 			return { updatedPattern, shouldMoveNext: false };
 		}
@@ -92,11 +85,7 @@ export class PatternNoteInput {
 		if (this.LETTER_NOTE_MAP[upperKey]) {
 			const currentOctave = editorStateStore.get().octave;
 			const noteStr = formatNoteFromEnum(this.LETTER_NOTE_MAP[upperKey], currentOctave);
-			let updatedPattern = PatternValueUpdates.updateFieldValue(
-				context,
-				fieldInfo,
-				noteStr
-			);
+			let updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, noteStr);
 			updatedPattern = this.autoEnterInstrument(context, fieldInfo, updatedPattern);
 			return { updatedPattern, shouldMoveNext: false };
 		}
@@ -131,7 +120,11 @@ export class PatternNoteInput {
 		};
 
 		const updatedContext = { ...context, pattern };
-		return PatternValueUpdates.updateFieldValue(updatedContext, instrumentFieldInfo, instrumentValue);
+		return PatternValueUpdates.updateFieldValue(
+			updatedContext,
+			instrumentFieldInfo,
+			instrumentValue
+		);
 	}
 
 	static mapKeyboardKeyToNote(key: string): { noteName: NoteName; octave: number } | null {
