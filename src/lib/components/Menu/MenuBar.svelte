@@ -14,6 +14,8 @@
 	import IconCarbonVolumeMute from '~icons/carbon/volume-mute';
 	import IconCarbonVolumeDown from '~icons/carbon/volume-down';
 	import IconCarbonVolumeUp from '~icons/carbon/volume-up';
+	import IconCarbonAutomatic from '~icons/carbon/automatic';
+	import IconCarbonMusic from '~icons/carbon/music';
 	import { settingsStore } from '../../stores/settings.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
 	import Input from '../Input/Input.svelte';
@@ -149,12 +151,13 @@
 			onMenuClose={handleMenuClose} />
 	{/each}
 
-	<div class="ml-auto flex items-center gap-3">
-		<div class="flex items-center gap-1.5">
-			<IconCarbonLayers class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+	<div class="ml-auto flex items-center gap-1.5 min-[1880px]:gap-3">
+		<div class="flex items-center gap-1.5" title="Octave">
+			<IconCarbonLayers class="h-3.5 w-3.5 shrink-0 text-[var(--color-app-text-muted)]" />
 			<label
 				for="octave-input"
-				class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Octave:</label>
+				class="hidden text-xs font-medium text-[var(--color-app-text-tertiary)] min-[1880px]:inline"
+				>Octave:</label>
 			<div
 				class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
@@ -192,11 +195,12 @@
 				</div>
 			</div>
 		</div>
-		<div class="flex items-center gap-1.5">
-			<IconCarbonArrowDown class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+		<div class="flex items-center gap-1.5" title="Step">
+			<IconCarbonArrowDown class="h-3.5 w-3.5 shrink-0 text-[var(--color-app-text-muted)]" />
 			<label
 				for="step-input"
-				class="text-xs font-medium text-[var(--color-app-text-tertiary)]">Step:</label>
+				class="hidden text-xs font-medium text-[var(--color-app-text-tertiary)] min-[1880px]:inline"
+				>Step:</label>
 			<div
 				class="flex items-center rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)]">
 				<Input
@@ -241,8 +245,12 @@
 			</div>
 		</div>
 		{#if hasAYSong}
-			<div class="auto-env-presets-container relative flex items-center gap-1.5">
+			<div
+				class="auto-env-presets-container relative flex items-center gap-1.5"
+				title="Auto Envelope">
 				<label class="flex cursor-pointer items-center gap-1.5">
+					<IconCarbonAutomatic
+						class="h-3.5 w-3.5 shrink-0 text-[var(--color-app-text-muted)]" />
 					<Checkbox
 						showStatus={false}
 						checked={autoEnvStore.enabled}
@@ -250,7 +258,8 @@
 							autoEnvStore.toggle();
 						}}
 						title="Auto Envelope" />
-					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]"
+					<span
+						class="hidden text-xs font-medium text-[var(--color-app-text-tertiary)] min-[1880px]:inline"
 						>Auto Env</span>
 				</label>
 				{#if autoEnvStore.enabled}
@@ -321,8 +330,10 @@
 					{/if}
 				{/if}
 			</div>
-			<div class="flex items-center gap-1.5">
+			<div class="flex items-center gap-1.5" title="Envelope as Note">
 				<label class="flex cursor-pointer items-center gap-1.5">
+					<IconCarbonMusic
+						class="h-3.5 w-3.5 shrink-0 text-[var(--color-app-text-muted)]" />
 					<Checkbox
 						showStatus={false}
 						bind:checked={editorState.envelopeAsNote}
@@ -330,18 +341,24 @@
 							editorStateStore.setEnvelopeAsNote(!editorState.envelopeAsNote);
 						}}
 						title="Envelope as Note" />
-					<span class="text-xs font-medium text-[var(--color-app-text-tertiary)]"
+					<span
+						class="hidden text-xs font-medium text-[var(--color-app-text-tertiary)] min-[1880px]:inline"
 						>Env as Note</span>
 				</label>
 			</div>
 		{/if}
-		<div class="flex items-center gap-1 border-l border-[var(--color-app-border)]">
+		<div
+			class="flex items-center gap-1 border-l border-[var(--color-app-border)]"
+			title="Volume: {settings.volume}%">
 			{#if settings.volume === 0}
-				<IconCarbonVolumeMute class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+				<IconCarbonVolumeMute
+					class="h-3.5 w-3.5 shrink-0 text-[var(--color-app-text-muted)]" />
 			{:else if settings.volume < 50}
-				<IconCarbonVolumeDown class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+				<IconCarbonVolumeDown
+					class="h-3.5 w-3.5 shrink-0 text-[var(--color-app-text-muted)]" />
 			{:else}
-				<IconCarbonVolumeUp class="h-3.5 w-3.5 text-[var(--color-app-text-muted)]" />
+				<IconCarbonVolumeUp
+					class="h-3.5 w-3.5 shrink-0 text-[var(--color-app-text-muted)]" />
 			{/if}
 			<input
 				type="range"
@@ -350,10 +367,10 @@
 				step={1}
 				value={settings.volume}
 				oninput={handleVolumeChange}
-				class="w-32 cursor-pointer"
+				class="w-20 cursor-pointer min-[1880px]:w-32"
 				title="Volume: {settings.volume}%" />
 			<span
-				class="mr-1 w-4 text-right font-mono text-xs text-[var(--color-app-text-tertiary)]"
+				class="mr-1 hidden w-4 text-right font-mono text-xs text-[var(--color-app-text-tertiary)] min-[1880px]:inline"
 				>{settings.volume}</span>
 		</div>
 	</div>
