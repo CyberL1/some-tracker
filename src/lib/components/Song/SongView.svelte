@@ -261,6 +261,13 @@
 		patternLengthValue = currentPatternLength !== null ? currentPatternLength.toString() : '';
 	});
 
+	$effect(() => {
+		const len = currentPatternLength;
+		if (len !== null && sharedSelectedRow >= len) {
+			sharedSelectedRow = Math.max(0, len - 1);
+		}
+	});
+
 	function applyLengthToAllSongs(length: number) {
 		const patternId = patternOrder[sharedPatternOrderIndex];
 		for (let j = 0; j < songs.length; j++) {
@@ -272,6 +279,9 @@
 			song.patterns = PatternService.updatePatternInArray(song.patterns, resized);
 		}
 		songs = [...songs];
+		if (sharedSelectedRow >= length) {
+			sharedSelectedRow = Math.max(0, length - 1);
+		}
 		patternEditors.forEach((editor) => editor?.requestRedraw?.());
 	}
 

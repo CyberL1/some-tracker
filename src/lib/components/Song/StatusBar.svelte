@@ -109,11 +109,10 @@
 			for (let rowIdx = 0; rowIdx <= maxRow; rowIdx++) {
 				for (const channel of pattern.channels) {
 					const row = channel.rows[rowIdx];
-					if (row.effects[0] && row.effects[0].effect === SPEED_EFFECT_TYPE) {
-						const speedValue = row.effects[0].parameter;
-						if (speedValue > 0) {
-							currentSpeed = speedValue;
-						}
+					if (!row?.effects?.[0] || row.effects[0].effect !== SPEED_EFFECT_TYPE) continue;
+					const speedValue = row.effects[0].parameter;
+					if (speedValue > 0) {
+						currentSpeed = speedValue;
 					}
 				}
 
@@ -153,11 +152,10 @@
 
 		for (const channel of pattern.channels) {
 			const row = channel.rows[rowIdx];
-			if (row.effects[0] && row.effects[0].effect === SPEED_EFFECT_TYPE) {
-				const speedValue = row.effects[0].parameter;
-				if (speedValue > 0) {
-					rowSpeed = speedValue;
-				}
+			if (!row?.effects?.[0] || row.effects[0].effect !== SPEED_EFFECT_TYPE) continue;
+			const speedValue = row.effects[0].parameter;
+			if (speedValue > 0) {
+				rowSpeed = speedValue;
 			}
 		}
 

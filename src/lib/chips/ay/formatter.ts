@@ -14,6 +14,7 @@ export class AYFormatter extends BaseFormatter {
 		data: GenericRow | GenericPatternRow,
 		fields: Record<string, ChipField>
 	): string {
+		if (!data) return '';
 		let result = '';
 		let i = 0;
 

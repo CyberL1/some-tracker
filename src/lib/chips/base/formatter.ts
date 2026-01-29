@@ -85,6 +85,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 		data: GenericRow | GenericPatternRow,
 		fields: Record<string, ChipField>
 	): string {
+		if (!data) return '';
 		let result = '';
 		let i = 0;
 
