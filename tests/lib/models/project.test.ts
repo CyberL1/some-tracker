@@ -13,7 +13,7 @@ describe('Project', () => {
 			expect(project.songs).toHaveLength(0);
 			expect(project.loopPointId).toBe(0);
 			expect(project.patternOrder).toEqual([0]);
-			expect(project.tables).toHaveLength(35);
+			expect(project.tables).toHaveLength(1);
 		});
 
 		it('should create project with custom values', () => {

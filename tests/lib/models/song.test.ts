@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { Song, Pattern, Note, NoteName, Effect, EffectType, Instrument, InstrumentRow } from '../../../src/lib/models/song';
+import {
+	Song,
+	Pattern,
+	Note,
+	NoteName,
+	Effect,
+	EffectType,
+	Instrument,
+	InstrumentRow
+} from '../../../src/lib/models/song';
 import { AY_CHIP_SCHEMA } from '../../../src/lib/chips/ay/schema';
 
 describe('Song', () => {
@@ -11,7 +20,7 @@ describe('Song', () => {
 			expect(song.patterns).toHaveLength(1);
 			expect(song.patterns[0].id).toBe(0);
 			expect(song.tuningTable).toBeDefined();
-			expect(song.instruments).toHaveLength(0);
+			expect(song.instruments).toHaveLength(1);
 			expect(song.chipVariant).toBe('AY');
 			expect(song.interruptFrequency).toBe(50);
 		});
@@ -120,8 +129,24 @@ describe('Instrument', () => {
 	describe('constructor', () => {
 		it('should create instrument with specified values', () => {
 			const rows = [
-				new InstrumentRow({ tone: true, noise: false, envelope: false, toneAdd: 0, noiseAdd: 0, volume: 10, loop: false }),
-				new InstrumentRow({ tone: false, noise: true, envelope: false, toneAdd: 0, noiseAdd: 0, volume: 8, loop: true })
+				new InstrumentRow({
+					tone: true,
+					noise: false,
+					envelope: false,
+					toneAdd: 0,
+					noiseAdd: 0,
+					volume: 10,
+					loop: false
+				}),
+				new InstrumentRow({
+					tone: false,
+					noise: true,
+					envelope: false,
+					toneAdd: 0,
+					noiseAdd: 0,
+					volume: 8,
+					loop: true
+				})
 			];
 			const instrument = new Instrument('05', rows, 1);
 
@@ -170,4 +195,3 @@ describe('InstrumentRow', () => {
 		});
 	});
 });
-
