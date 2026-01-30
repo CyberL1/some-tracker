@@ -361,37 +361,98 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.previewActiveChannels.add(channel);
 		this.previewSampleCounters.set(channel, this.state.samplesPerTick);
 
-		if (note >= 0 && note < this.state.currentTuningTable.length) {
-			const toneValue = this.state.currentTuningTable[note];
-			this.registerState.channels[channel].tone = toneValue;
+		const instrumentId = rowData.instrument;
+		const hasValidInstrument =
+			instrumentId !== undefined &&
+			instrumentId !== null &&
+			instrumentId !== 0 &&
+			(this.state.instrumentIdToIndex.get(
+				typeof instrumentId === 'string' ? parseInt(instrumentId, 36) : instrumentId
+			) !== undefined);
+
+		if (!hasValidInstrument) {
+			this.state.channelInstruments[channel] = -1;
+			this.registerState.channels[channel].volume = 0;
+			this.registerState.channels[channel].mixer = {
+				tone: false,
+				noise: false,
+				envelope: false
+			};
+			this.state.channelBaseNotes[channel] = note;
+			if (this.ayumiEngine) {
+				this.ayumiEngine.applyRegisterState(this.registerState);
+			}
+			return;
 		}
 
-		const volume = this.getNumericValue(rowData.volume, 16, 0xf);
-		this.registerState.channels[channel].volume = volume;
-		this.registerState.channels[channel].mixer = {
-			tone: true,
-			noise: false,
-			envelope: false
-		};
+		const instrumentIdNumber =
+			typeof instrumentId === 'string' ? parseInt(instrumentId, 36) : instrumentId;
+		const instrumentIndex = this.state.instrumentIdToIndex.get(instrumentIdNumber);
+		const instrument =
+			instrumentIndex !== undefined ? this.state.instruments[instrumentIndex] : null;
+		const hasInstrument = instrument != null;
+		const instrumentHasTone =
+			hasInstrument &&
+			instrument.rows &&
+			instrument.rows.length > 0 &&
+			instrument.rows.some((row) => row.tone === true);
+		const instrumentHasEnvelope =
+			hasInstrument &&
+			instrument.rows &&
+			instrument.rows.length > 0 &&
+			instrument.rows.some((row) => row.envelope === true);
 
-		const instrumentId = rowData.instrument;
-		if (instrumentId !== undefined && instrumentId !== null) {
-			const instrumentIdNumber =
-				typeof instrumentId === 'string' ? parseInt(instrumentId, 10) : instrumentId;
-			const instrumentIndex = this.state.instrumentIdToIndex.get(instrumentIdNumber);
-
-			if (instrumentIndex !== undefined && this.state.instruments[instrumentIndex]) {
-				this.state.channelInstruments[channel] = instrumentIndex;
-				this.state.instrumentPositions[channel] = 0;
-				this.state.channelSoundEnabled[channel] = true;
-				this.state.channelCurrentNotes[channel] = note;
-				this.state.channelPatternVolumes[channel] = volume;
-				this.audioDriver.resetInstrumentAccumulators(this.state, channel);
-			} else {
-				this.state.channelInstruments[channel] = -1;
-			}
+		if (hasInstrument) {
+			this.state.channelInstruments[channel] = instrumentIndex;
+			this.state.instrumentPositions[channel] = 0;
+			this.state.channelSoundEnabled[channel] = true;
+			this.state.channelCurrentNotes[channel] = note;
+			this.audioDriver.resetInstrumentAccumulators(this.state, channel);
 		} else {
 			this.state.channelInstruments[channel] = -1;
+		}
+
+		const envelopeShape = this.getNumericValue(rowData.envelopeShape, 16, 0);
+		const envelopeValue = this.getNumericValue(rowData.envelopeValue, 16, -1);
+		const envelopeActive =
+			instrumentHasEnvelope &&
+			envelopeShape !== 0 &&
+			envelopeShape !== 15 &&
+			envelopeValue >= 0;
+
+		if (envelopeActive) {
+			this.state.envelopeBaseValue = envelopeValue;
+			this.state.envelopeSlideCurrent = 0;
+			this.state.envelopeSlideDelta = 0;
+			this.state.envelopeSlideDelay = 0;
+			this.state.envelopeSlideDelayCounter = 0;
+			this.registerState.envelopePeriod = envelopeValue;
+			this.registerState.envelopeShape = envelopeShape;
+			this.state.channelEnvelopeEnabled[channel] = true;
+		} else {
+			this.state.channelEnvelopeEnabled[channel] = false;
+		}
+
+		if (instrumentHasTone) {
+			if (note >= 0 && note < this.state.currentTuningTable.length) {
+				const toneValue = this.state.currentTuningTable[note];
+				this.registerState.channels[channel].tone = toneValue;
+			}
+			const volume = this.getNumericValue(rowData.volume, 16, 0xf);
+			this.state.channelPatternVolumes[channel] = volume;
+			this.registerState.channels[channel].volume = volume;
+			this.registerState.channels[channel].mixer = {
+				tone: true,
+				noise: false,
+				envelope: envelopeActive
+			};
+		} else {
+			this.registerState.channels[channel].volume = 0;
+			this.registerState.channels[channel].mixer = {
+				tone: false,
+				noise: false,
+				envelope: envelopeActive
+			};
 		}
 
 		this.state.channelBaseNotes[channel] = note;

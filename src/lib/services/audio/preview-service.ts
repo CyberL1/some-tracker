@@ -75,7 +75,48 @@ export class PreviewService {
 			}
 		}
 
+		if (schema.globalFields && currentRow >= 0 && currentRow < pattern.patternRows.length) {
+			for (const fieldKey of Object.keys(schema.globalFields)) {
+				if (fieldKey === 'envelopeValue') {
+					const envelopeValue = this.collectEnvelopeValueFromRows(
+						pattern,
+						channelIndex,
+						currentRow
+					);
+					if (envelopeValue !== undefined && envelopeValue !== null) {
+						result[fieldKey] = envelopeValue;
+					}
+				} else {
+					const globalRow = pattern.patternRows[currentRow];
+					const value = globalRow[fieldKey];
+					if (value !== undefined && value !== null) {
+						result[fieldKey] = value;
+					}
+				}
+			}
+		}
+
 		return result;
+	}
+
+	private collectEnvelopeValueFromRows(
+		pattern: Pattern,
+		channelIndex: number,
+		currentRow: number
+	): number | undefined {
+		for (let row = currentRow; row >= 0; row--) {
+			const globalRow = pattern.patternRows[row];
+			const raw = globalRow?.envelopeValue;
+			const envelopeValue =
+				typeof raw === 'number' ? raw : typeof raw === 'string' ? parseInt(raw, 16) : NaN;
+			if (envelopeValue < 0 || Number.isNaN(envelopeValue)) continue;
+			const channelRow = pattern.channels[channelIndex]?.rows[row];
+			const envelopeShape =
+				typeof channelRow?.envelopeShape === 'number' ? channelRow.envelopeShape : 0;
+			if (envelopeShape === 0 || envelopeShape === 15) continue;
+			return envelopeValue;
+		}
+		return undefined;
 	}
 
 	private isValidFieldValue(value: unknown): boolean {

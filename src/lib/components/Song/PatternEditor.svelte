@@ -1075,28 +1075,35 @@
 				moveColumn(1);
 			}
 
+			const shouldPreview =
+				fieldInfoBeforeEdit &&
+				(fieldInfoBeforeEdit.channelIndex >= 0 ||
+					fieldInfoBeforeEdit.fieldKey === 'envelopeValue');
+			const previewChannel =
+				fieldInfoBeforeEdit?.fieldKey === 'envelopeValue'
+					? 0
+					: fieldInfoBeforeEdit?.channelIndex ?? -1;
 			if (
 				!playbackStore.isPlaying &&
-				fieldInfoBeforeEdit &&
-				fieldInfoBeforeEdit.channelIndex >= 0
+				shouldPreview &&
+				previewChannel >= 0 &&
+				chipProcessor &&
+				'playPreviewNote' in chipProcessor &&
+				!pressedKeyChannels.has(event.key)
 			) {
-				if (
-					chipProcessor &&
-					'playPreviewNote' in chipProcessor &&
-					!pressedKeyChannels.has(event.key)
-				) {
-					const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
-					const isNoteField = fieldInfoBeforeEdit.fieldType === 'note';
-					previewService.playFromContext(
-						processor,
-						editingResult.updatedPattern,
-						fieldInfoBeforeEdit.channelIndex,
-						selectedRow,
-						schema,
-						isNoteField
-					);
-					pressedKeyChannels.set(event.key, fieldInfoBeforeEdit.channelIndex);
-				}
+				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+				const isNoteField =
+					fieldInfoBeforeEdit.fieldType === 'note' ||
+					fieldInfoBeforeEdit.fieldKey === 'envelopeValue';
+				previewService.playFromContext(
+					processor,
+					editingResult.updatedPattern,
+					previewChannel,
+					selectedRow,
+					schema,
+					isNoteField
+				);
+				pressedKeyChannels.set(event.key, previewChannel);
 			}
 
 			const step = editorStateStore.get().step;
@@ -1835,19 +1842,24 @@
 			recordPatternEdit(pattern, updatedPattern);
 			updatePatternInArray(updatedPattern);
 
-			if (!playbackStore.isPlaying && fieldInfo.channelIndex >= 0) {
-				if (chipProcessor && 'playPreviewNote' in chipProcessor) {
-					const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
-					const isNoteField = fieldInfo.fieldType === 'note';
-					previewService.playFromContext(
-						processor,
-						updatedPattern,
-						fieldInfo.channelIndex,
-						selectedRow,
-						schema,
-						isNoteField
-					);
-				}
+			const previewChannel =
+				fieldInfo.fieldKey === 'envelopeValue' ? 0 : fieldInfo.channelIndex;
+			const shouldPreview =
+				!playbackStore.isPlaying &&
+				previewChannel >= 0 &&
+				(fieldInfo.channelIndex >= 0 || fieldInfo.fieldKey === 'envelopeValue');
+			if (shouldPreview && chipProcessor && 'playPreviewNote' in chipProcessor) {
+				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
+				const isNoteField =
+					fieldInfo.fieldType === 'note' || fieldInfo.fieldKey === 'envelopeValue';
+				previewService.playFromContext(
+					processor,
+					updatedPattern,
+					previewChannel,
+					selectedRow,
+					schema,
+					isNoteField
+				);
 			}
 		}
 
