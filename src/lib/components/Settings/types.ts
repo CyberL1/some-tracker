@@ -16,7 +16,7 @@ export interface SettingsItem {
 	type: string;
 	defaultValue: any;
 	setting: keyof Settings;
-	category?: 'general' | 'keyboard' | 'appearance';
+	category?: 'general' | 'keyboard' | 'appearance' | 'ayYm';
 	min?: number;
 	max?: number;
 	step?: number;

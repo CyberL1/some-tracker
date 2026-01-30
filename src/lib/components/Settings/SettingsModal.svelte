@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { settingsItems, generalSettings, keyboardSettings } from '../../config/settings';
+	import {
+		settingsItems,
+		generalSettings,
+		keyboardSettings,
+		ayYmSettings
+	} from '../../config/settings';
 	import { settingsStore } from '../../stores/settings.svelte';
 	import type { Settings } from './types';
 	import Button from '../Button/Button.svelte';
@@ -27,7 +32,8 @@
 	const tabs = [
 		{ id: 'general', label: 'General' },
 		{ id: 'keyboard', label: 'Keyboard' },
-		{ id: 'appearance', label: 'Appearance' }
+		{ id: 'appearance', label: 'Appearance' },
+		{ id: 'ayYm', label: 'AY/YM' }
 	];
 
 	function handleSave() {
@@ -82,6 +88,10 @@
 						{/if}
 					{:else if tabId === 'appearance'}
 						<AppearanceSettings onCloseSettings={dismiss} bind:tempSettings />
+					{:else if tabId === 'ayYm'}
+						{#each ayYmSettings as item (item.setting)}
+							<SettingField {item} bind:tempSettings />
+						{/each}
 					{/if}
 				</div>
 			{/snippet}

@@ -23,7 +23,7 @@ export const settingsItems: SettingsItem[] = [
 		type: 'toggle',
 		defaultValue: false,
 		setting: 'envelopeAsNote',
-		category: 'general'
+		category: 'ayYm'
 	},
 	{
 		label: 'Auto-enter Instrument',
@@ -98,3 +98,4 @@ export const settingsItems: SettingsItem[] = [
 export const generalSettings = settingsItems.filter((item) => item.category === 'general');
 export const keyboardSettings = settingsItems.filter((item) => item.category === 'keyboard');
 export const appearanceSettings = settingsItems.filter((item) => item.category === 'appearance');
+export const ayYmSettings = settingsItems.filter((item) => item.category === 'ayYm');
