@@ -195,7 +195,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 			case 'hex':
 				return formatHex(value, field.length, field.allowZeroValue);
 			case 'symbol':
-				return formatSymbol(value, field.length);
+				return formatSymbol(value, field.length, field.allowZeroValue);
 			case 'note':
 				return this.formatNote(value, field);
 			default:
@@ -212,7 +212,7 @@ export abstract class BaseFormatter implements PatternFormatter {
 			case 'hex':
 				return parseHex(value, field.length, field.allowZeroValue);
 			case 'symbol':
-				return parseSymbol(value, field.length);
+				return parseSymbol(value, field.length, field.allowZeroValue);
 			case 'note':
 				return value;
 			default:

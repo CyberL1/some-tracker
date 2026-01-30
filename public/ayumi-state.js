@@ -12,7 +12,7 @@ class AyumiState extends TrackerState {
 
 		this.instruments = [];
 		this.instrumentIdToIndex = new Map();
-		this.channelInstruments = Array(3).fill(0);
+		this.channelInstruments = Array(3).fill(-1);
 		this.instrumentPositions = Array(3).fill(0);
 		this.channelInstrumentVolumes = Array(3).fill(0);
 		this.channelToneAccumulator = Array(3).fill(0);
@@ -88,7 +88,7 @@ class AyumiState extends TrackerState {
 
 	reset() {
 		super.reset();
-		this.channelInstruments.fill(0);
+		this.channelInstruments.fill(-1);
 		this.instrumentPositions.fill(0);
 		this.channelInstrumentVolumes.fill(0);
 		this.channelToneAccumulator.fill(0);

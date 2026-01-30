@@ -43,7 +43,7 @@
 		}
 
 		if (selectedFieldKey === 'instrument') {
-			return 'Instrument: Select an instrument number. Base 36: (00-99, AA-ZZ).';
+			return 'Instrument: Select an instrument number. Base 36: (01-ZZ). Empty (..) means no instrument.';
 		}
 
 		if (selectedFieldKey === 'volume') {

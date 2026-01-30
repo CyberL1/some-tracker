@@ -23,7 +23,8 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 			type: 'symbol',
 			length: 2,
 			color: 'patternInstrument',
-			selectable: 'character'
+			selectable: 'character',
+			allowZeroValue: false
 		},
 		envelopeShape: {
 			key: 'envelopeShape',

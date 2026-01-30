@@ -89,7 +89,8 @@ export class PatternDeleteHandler {
 			return null;
 		}
 
-		const replacementChar = field.length === 1 ? '.' : '0';
+		const replacementChar =
+			fieldInfo.fieldKey === 'instrument' || field.length === 1 ? '.' : '0';
 		const newStr = StringManipulation.replaceCharAtOffset(
 			currentStr,
 			fieldInfo.charOffset,

@@ -35,12 +35,13 @@ class DecFieldStrategy implements FieldStrategy {
 
 class SymbolFieldStrategy implements FieldStrategy {
 	format(value: number | string | null, length: number, allowZeroValue?: boolean): string {
-		return formatSymbol(value, length).replace(/\./g, '0');
+		const formatted = formatSymbol(value, length, allowZeroValue);
+		return allowZeroValue !== false ? formatted.replace(/\./g, '0') : formatted;
 	}
 
 	parse(value: string, length: number, allowZeroValue?: boolean): number | null {
 		if (value === '.'.repeat(length)) return null;
-		return parseSymbol(value, length);
+		return parseSymbol(value, length, allowZeroValue);
 	}
 }
 

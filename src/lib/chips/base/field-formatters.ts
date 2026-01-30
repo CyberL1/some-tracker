@@ -19,21 +19,31 @@ export function formatHex(
 	return num.toString(16).toUpperCase().padStart(digits, '0');
 }
 
-function normalizeSymbolValue(value: number | string | null | undefined): number | null {
+function normalizeSymbolValue(
+	value: number | string | null | undefined,
+	allowZeroValue?: boolean
+): number | null {
 	if (value === null || value === undefined) return null;
 	if (typeof value === 'string') {
-		if (value.toUpperCase() === 'OFF' || value === '00' || value === '0') return ZERO_VALUE;
+		if (value.toUpperCase() === 'OFF') return ZERO_VALUE;
+		if (allowZeroValue === false && (value === '00' || value === '0')) return null;
+		if (allowZeroValue !== false && (value === '00' || value === '0')) return ZERO_VALUE;
 		const parsed = parseInt(value, 36);
 		return isNaN(parsed) ? null : parsed;
 	}
 	return value;
 }
 
-export function formatSymbol(value: number | string | null | undefined, length: number): string {
-	const num = normalizeSymbolValue(value);
+export function formatSymbol(
+	value: number | string | null | undefined,
+	length: number,
+	allowZeroValue?: boolean
+): string {
+	const num = normalizeSymbolValue(value, allowZeroValue);
 
 	if (num === null || num === 0) return '.'.repeat(length);
-	if (num === ZERO_VALUE) return '0'.repeat(length);
+	if (num === ZERO_VALUE)
+		return allowZeroValue === false ? '.'.repeat(length) : '0'.repeat(length);
 
 	const base36 = num.toString(36).toUpperCase();
 	if (base36.length <= length) {
@@ -54,11 +64,16 @@ export function parseHex(value: string, length: number, allowZeroValue?: boolean
 	return parsed || 0;
 }
 
-export function parseSymbol(value: string, length: number): number {
+export function parseSymbol(
+	value: string,
+	length: number,
+	allowZeroValue?: boolean
+): number {
 	if (value === '.'.repeat(length)) return 0;
 
 	const cleaned = value.replace(/\./g, '').toUpperCase();
-	if (cleaned === 'OFF' || cleaned === '00' || cleaned === '0') return ZERO_VALUE;
+	if (cleaned === 'OFF') return ZERO_VALUE;
+	if (cleaned === '00' || cleaned === '0') return allowZeroValue === false ? 0 : ZERO_VALUE;
 
 	const parsed = parseInt(cleaned, 36);
 	return isNaN(parsed) ? 0 : parsed;
