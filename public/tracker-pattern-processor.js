@@ -263,12 +263,15 @@ class TrackerPatternProcessor {
 				const currentNote = this.state.channelBaseNotes[channelIndex];
 				const previousNote = this.state.channelPreviousNotes[channelIndex];
 
-				if (
+				const hasValidPrevious =
 					previousNote >= 0 &&
 					previousNote < this.state.currentTuningTable.length &&
 					currentNote >= 0 &&
-					currentNote < this.state.currentTuningTable.length
-				) {
+					currentNote < this.state.currentTuningTable.length;
+				const isPortamentoFromNothing =
+					previousNote === 0 && currentNote !== 0;
+
+				if (hasValidPrevious && !isPortamentoFromNothing) {
 					const previousTone = this.state.currentTuningTable[previousNote];
 					const currentTone = this.state.currentTuningTable[currentNote];
 					const delta = currentTone - previousTone;
