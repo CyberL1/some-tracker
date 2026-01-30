@@ -206,18 +206,32 @@ class AYAudioDriver {
 			return;
 		}
 
-		if (row.envelopeShape !== 0 && row.envelopeShape !== 15) {
-			if (patternRow.envelopeValue >= 0) {
-				state.envelopeBaseValue = patternRow.envelopeValue;
-				state.envelopeSlideCurrent = 0;
-				state.envelopeSlideDelta = 0;
-				state.envelopeSlideDelay = 0;
-				state.envelopeSlideDelayCounter = 0;
-				const finalEnvelopeValue = patternRow.envelopeValue;
-				registerState.envelopePeriod = finalEnvelopeValue;
-				if (registerState.envelopeShape !== row.envelopeShape) {
-					registerState.envelopeShape = row.envelopeShape;
-				}
+		const shapeSet = row.envelopeShape !== 0 && row.envelopeShape !== 15;
+		const envelopeValueNum =
+			patternRow.envelopeValue != null && patternRow.envelopeValue >= 0
+				? Number(patternRow.envelopeValue)
+				: null;
+
+		if (envelopeValueNum !== null && envelopeValueNum > 0) {
+			state.envelopeBaseValue = envelopeValueNum;
+			state.envelopeSlideCurrent = 0;
+			state.envelopeSlideDelta = 0;
+			state.envelopeSlideDelay = 0;
+			state.envelopeSlideDelayCounter = 0;
+			registerState.envelopePeriod = envelopeValueNum;
+		} else if (shapeSet && (envelopeValueNum === 0 || envelopeValueNum === null)) {
+			state.envelopeBaseValue = 0;
+			state.envelopeSlideCurrent = 0;
+			state.envelopeSlideDelta = 0;
+			state.envelopeSlideDelay = 0;
+			state.envelopeSlideDelayCounter = 0;
+			registerState.envelopePeriod = 0;
+		}
+
+		if (shapeSet) {
+			if (envelopeValueNum === null || envelopeValueNum >= 0) {
+				registerState.envelopeShape = row.envelopeShape;
+				registerState.forceEnvelopeShapeWrite = true;
 				state.channelEnvelopeEnabled[channelIndex] = true;
 
 				const envelopeOnOffActive = state.envelopeOnOffCounter > 0;
@@ -446,6 +460,9 @@ class AYAudioDriver {
 			const instrument = state.instruments[instrumentIndex];
 
 			if (!instrument || !instrument.rows || instrument.rows.length === 0) {
+				state.channelEnvelopeEnabled[channelIndex] = false;
+				registerState.channels[channelIndex].mixer.envelope = false;
+				this.channelMixerState[channelIndex].envelope = false;
 				continue;
 			}
 

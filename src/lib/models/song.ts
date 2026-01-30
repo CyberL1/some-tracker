@@ -1,4 +1,3 @@
-import { PT3TuneTables } from './pt3/tuning-tables';
 import type { ChipSchema, ChipField } from '../chips/base/schema';
 import { getDefaultForFieldType } from '../chips/base/schema';
 
@@ -165,9 +164,8 @@ class Song {
 		this.schema = schema;
 		this.initialSpeed = 3;
 		this.patterns = [new Pattern(0, 64, schema)];
-		this.tuningTable = PT3TuneTables[2];
+		this.tuningTable = [];
 		this.instruments = [new Instrument('01', [], 0, 'Instrument 01')];
-		this.chipVariant = 'AY';
 		this.interruptFrequency = 50;
 	}
 

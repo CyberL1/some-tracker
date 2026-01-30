@@ -172,12 +172,12 @@
 			chipProcessor.sendInitPattern(currentPattern, patternOrderIndexForInit);
 			chipProcessor.sendInitSpeed(song.initialSpeed);
 
-			//TODO: this should be generic
-			if (chipProcessor.chip.type === 'ay') {
-				const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
-				const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
-
+			const withTuningTables = chipProcessor as ChipProcessor & Partial<TuningTableSupport>;
+			const withInstruments = chipProcessor as ChipProcessor & Partial<InstrumentSupport>;
+			if ('sendInitTuningTable' in chipProcessor && withTuningTables.sendInitTuningTable) {
 				withTuningTables.sendInitTuningTable(song.tuningTable);
+			}
+			if ('sendInitInstruments' in chipProcessor && withInstruments.sendInitInstruments) {
 				withInstruments.sendInitInstruments(song.instruments);
 			}
 		});

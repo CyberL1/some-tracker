@@ -119,15 +119,16 @@
 
 	$effect(() => {
 		if (chipProcessor && chipProcessor.isAudioNodeAvailable()) {
-			if (chip.type === 'ay') {
-				const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
-				const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
-
+			const withTuningTables = chipProcessor as ChipProcessor & Partial<TuningTableSupport>;
+			const withInstruments = chipProcessor as ChipProcessor & Partial<InstrumentSupport>;
+			if ('sendInitTuningTable' in chipProcessor && withTuningTables.sendInitTuningTable) {
 				withTuningTables.sendInitTuningTable(tuningTable);
-				withInstruments.sendInitInstruments(instruments);
-				chipProcessor.sendInitTables(tables);
-				previewInitialized = true;
 			}
+			if ('sendInitInstruments' in chipProcessor && withInstruments.sendInitInstruments) {
+				withInstruments.sendInitInstruments(instruments);
+			}
+			chipProcessor.sendInitTables(tables);
+			previewInitialized = true;
 		}
 	});
 
@@ -135,9 +136,9 @@
 	let previousDecimalRowNumbers: boolean | undefined;
 
 	$effect(() => {
-		if (chip.type === 'ay') {
-			const ayFormatter = formatter as { tuningTable?: number[]; envelopeAsNote?: boolean };
-			ayFormatter.tuningTable = tuningTable;
+		const formatterWithOpts = formatter as { tuningTable?: number[]; envelopeAsNote?: boolean };
+		if ('envelopeAsNote' in formatterWithOpts) {
+			formatterWithOpts.tuningTable = tuningTable;
 			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
 
 			const result = EnvelopeModeService.handleModeChange(
@@ -146,7 +147,7 @@
 				newEnvelopeAsNote
 			);
 
-			ayFormatter.envelopeAsNote = newEnvelopeAsNote;
+			formatterWithOpts.envelopeAsNote = newEnvelopeAsNote;
 			previousEnvelopeAsNote = newEnvelopeAsNote;
 
 			if (result.shouldRedraw) {
@@ -551,11 +552,12 @@
 		chipProcessor.sendInitPattern(currentPattern, currentPatternOrderIndex);
 		chipProcessor.sendInitSpeed(speed);
 
-		if (chip.type === 'ay') {
-			const withTuningTables = chipProcessor as ChipProcessor & TuningTableSupport;
-			const withInstruments = chipProcessor as ChipProcessor & InstrumentSupport;
-
+		const withTuningTables = chipProcessor as ChipProcessor & Partial<TuningTableSupport>;
+		const withInstruments = chipProcessor as ChipProcessor & Partial<InstrumentSupport>;
+		if ('sendInitTuningTable' in chipProcessor && withTuningTables.sendInitTuningTable) {
 			withTuningTables.sendInitTuningTable(tuningTable);
+		}
+		if ('sendInitInstruments' in chipProcessor && withInstruments.sendInitInstruments) {
 			withInstruments.sendInitInstruments(instruments);
 		}
 	}
@@ -1088,14 +1090,14 @@
 				shouldPreview &&
 				previewChannel >= 0 &&
 				chipProcessor &&
-				'playPreviewNote' in chipProcessor &&
+				'playPreviewRow' in chipProcessor &&
 				!pressedKeyChannels.has(event.key)
 			) {
 				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
 				const isNoteField =
 					fieldInfoBeforeEdit.fieldType === 'note' ||
 					fieldInfoBeforeEdit.fieldKey === 'envelopeValue';
-				previewService.playFromContext(
+				const previewChannelResult = previewService.playFromContext(
 					processor,
 					editingResult.updatedPattern,
 					previewChannel,
@@ -1103,7 +1105,9 @@
 					schema,
 					isNoteField
 				);
-				pressedKeyChannels.set(event.key, previewChannel);
+				if (previewChannelResult !== undefined) {
+					pressedKeyChannels.set(event.key, previewChannelResult);
+				}
 			}
 
 			const step = editorStateStore.get().step;
@@ -1129,7 +1133,7 @@
 		if (channel !== undefined) {
 			if (chipProcessor && 'stopPreviewNote' in chipProcessor) {
 				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
-				previewService.stopNote(processor, channel);
+				previewService.stopNote(processor, channel === -1 ? undefined : channel);
 			}
 			pressedKeyChannels.delete(event.key);
 		}
@@ -1848,7 +1852,7 @@
 				!playbackStore.isPlaying &&
 				previewChannel >= 0 &&
 				(fieldInfo.channelIndex >= 0 || fieldInfo.fieldKey === 'envelopeValue');
-			if (shouldPreview && chipProcessor && 'playPreviewNote' in chipProcessor) {
+			if (shouldPreview && chipProcessor && 'playPreviewRow' in chipProcessor) {
 				const processor = chipProcessor as ChipProcessor & PreviewNoteSupport;
 				const isNoteField =
 					fieldInfo.fieldType === 'note' || fieldInfo.fieldKey === 'envelopeValue';

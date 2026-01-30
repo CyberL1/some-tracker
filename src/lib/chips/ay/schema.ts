@@ -1,10 +1,19 @@
 import type { ChipSchema } from '../base/schema';
+import { PT3TuneTables } from '../../models/pt3/tuning-tables';
 
 export const AY_CHIP_SCHEMA: ChipSchema = {
 	chipType: 'ay',
+	defaultTuningTable: PT3TuneTables[2],
+	defaultChipVariant: 'AY',
 	globalTemplate: '{envelopeValue} {envelopeEffect} {noiseValue}',
 	globalFields: {
-		envelopeValue: { key: 'envelopeValue', type: 'hex', length: 4, color: 'patternEnvelope' },
+		envelopeValue: {
+			key: 'envelopeValue',
+			type: 'hex',
+			length: 4,
+			color: 'patternEnvelope',
+			allowZeroValue: true
+		},
 		envelopeEffect: { key: 'envelopeEffect', type: 'hex', length: 4, color: 'patternEffect' },
 		noiseValue: {
 			key: 'noiseValue',

@@ -52,8 +52,8 @@ type WorkletCommand =
 			pattern?: Pattern;
 			speed?: number | null;
 	  }
-	| { type: 'preview_note'; note: number; channel: number; rowData: Record<string, unknown> }
-	| { type: 'stop_preview'; channel: number };
+	| { type: 'preview_row'; pattern: Pattern; rowIndex: number }
+	| { type: 'stop_preview'; channel?: number };
 
 export class AYProcessor
 	implements
@@ -270,16 +270,17 @@ export class AYProcessor
 		return this.audioNode !== null;
 	}
 
-	playPreviewNote(note: number, channel: number, rowData: Record<string, unknown>): void {
+	playPreviewRow(pattern: Pattern, rowIndex: number): void {
+		if (rowIndex < 0 || rowIndex >= pattern.length) return;
+		const patternCopy = structuredClone(pattern);
 		this.sendCommand({
-			type: 'preview_note',
-			note,
-			channel,
-			rowData
+			type: 'preview_row',
+			pattern: patternCopy,
+			rowIndex
 		});
 	}
 
-	stopPreviewNote(channel: number): void {
+	stopPreviewNote(channel?: number): void {
 		this.sendCommand({ type: 'stop_preview', channel });
 	}
 }

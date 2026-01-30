@@ -55,6 +55,12 @@ function reconstructSong(data: any): Song {
 	song.chipVariant = data.chipVariant;
 	song.chipFrequency = data.chipFrequency;
 	song.interruptFrequency = data.interruptFrequency ?? 50;
+	if (schema?.defaultTuningTable && !data.tuningTable) {
+		song.tuningTable = schema.defaultTuningTable;
+	}
+	if (schema?.defaultChipVariant !== undefined && data.chipVariant === undefined) {
+		song.chipVariant = schema.defaultChipVariant;
+	}
 	return song;
 }
 

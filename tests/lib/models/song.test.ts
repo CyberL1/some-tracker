@@ -19,9 +19,9 @@ describe('Song', () => {
 			expect(song.initialSpeed).toBe(3);
 			expect(song.patterns).toHaveLength(1);
 			expect(song.patterns[0].id).toBe(0);
-			expect(song.tuningTable).toBeDefined();
+			expect(song.tuningTable).toEqual([]);
 			expect(song.instruments).toHaveLength(1);
-			expect(song.chipVariant).toBe('AY');
+			expect(song.chipVariant).toBeUndefined();
 			expect(song.interruptFrequency).toBe(50);
 		});
 	});

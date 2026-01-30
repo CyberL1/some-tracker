@@ -92,6 +92,22 @@ describe('ProjectService', () => {
 			expect(project.songs[0].chipType).toBe(CHIP_TYPE_AY);
 		});
 
+		it('should apply chip schema defaultTuningTable and defaultChipVariant to song', async () => {
+			const defaultTuningTable = [1, 2, 3];
+			const defaultChipVariant = 'YM';
+			const mockChip = createMockChip();
+			mockChip.schema = {
+				...mockChip.schema,
+				defaultTuningTable,
+				defaultChipVariant
+			};
+
+			const project = await projectService.resetProject(mockChip);
+
+			expect(project.songs[0].tuningTable).toEqual(defaultTuningTable);
+			expect(project.songs[0].chipVariant).toBe(defaultChipVariant);
+		});
+
 		it('should always create a song with the chip schema', async () => {
 			const mockChip = createMockChip();
 

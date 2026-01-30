@@ -43,6 +43,6 @@ export interface InstrumentSupport {
 }
 
 export interface PreviewNoteSupport {
-	playPreviewNote(note: number, channel: number, rowData: Record<string, unknown>): void;
-	stopPreviewNote(channel: number): void;
+	playPreviewRow(pattern: Pattern, rowIndex: number): void;
+	stopPreviewNote(channel?: number): void;
 }

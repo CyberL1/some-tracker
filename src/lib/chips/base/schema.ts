@@ -36,6 +36,8 @@ export interface ChipSchema {
 	globalFields?: Record<string, ChipField>;
 	channelLabels?: string[];
 	settings?: ChipSetting[];
+	defaultTuningTable?: number[];
+	defaultChipVariant?: string;
 }
 
 export function applySchemaDefaults<T extends object>(target: T, schema: ChipSchema): void {
