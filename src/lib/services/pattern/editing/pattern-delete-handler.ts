@@ -5,6 +5,7 @@ import { PatternValueUpdates } from './pattern-value-updates';
 import { StringManipulation } from './string-manipulation';
 import { FieldStrategyFactory } from './field-strategies';
 import { EffectField } from './effect-field';
+import { settingsStore } from '../../../stores/settings.svelte';
 
 export class PatternDeleteHandler {
 	static handleDelete(
@@ -24,7 +25,24 @@ export class PatternDeleteHandler {
 			if (fieldInfo.isGlobal) {
 				return null;
 			}
-			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, '---');
+			let updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, '---');
+			if (settingsStore.get().autoEnterInstrument) {
+				const instrumentFieldDef = context.schema.fields?.instrument;
+				if (instrumentFieldDef) {
+					const instrumentFieldInfo: FieldInfo = {
+						fieldKey: 'instrument',
+						fieldType: instrumentFieldDef.type,
+						isGlobal: false,
+						channelIndex: fieldInfo.channelIndex,
+						charOffset: 0
+					};
+					updatedPattern = PatternValueUpdates.updateFieldValue(
+						{ ...context, pattern: updatedPattern },
+						instrumentFieldInfo,
+						0
+					);
+				}
+			}
 			return { updatedPattern, shouldMoveNext: false };
 		}
 

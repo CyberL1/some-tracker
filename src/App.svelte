@@ -317,7 +317,10 @@
 				return;
 			}
 
-			if (data.action === 'remove-song' && typeof (data as unknown as { songIndex?: number }).songIndex === 'number') {
+			if (
+				data.action === 'remove-song' &&
+				typeof (data as unknown as { songIndex?: number }).songIndex === 'number'
+			) {
 				const index = (data as unknown as { songIndex: number }).songIndex;
 				if (songs.length <= 1 || index < 0 || index >= songs.length) return;
 				const confirmed = await open(ConfirmModal, {

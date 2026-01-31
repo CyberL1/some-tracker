@@ -3,7 +3,6 @@
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
 	import IconCarbonDelete from '~icons/carbon/delete';
 	import IconCarbonAdd from '~icons/carbon/add';
-	import IconCarbonGrid from '~icons/carbon/grid';
 	import Input from '../Input/Input.svelte';
 	import { settingsStore } from '../../stores/settings.svelte';
 
@@ -42,16 +41,8 @@
 	let lastSyncedRows = $state([...table.rows]);
 	let lastSyncedLoop = $state(table.loop);
 
-	const userPrefersVisualGrid = $derived(settingsStore.get().showVisualGrid ?? true);
-
-	const showOffsetGrid = $derived(isExpanded && userPrefersVisualGrid);
-	const showOctaveGrid = $derived(isExpanded && userPrefersVisualGrid);
-
-	function getGridButtonClass(isActive: boolean): string {
-		const baseClass =
-			'flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]';
-		return isActive ? `${baseClass} border-[var(--color-app-primary)] bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]` : baseClass;
-	}
+	const showOffsetGrid = $derived(isExpanded);
+	const showOctaveGrid = $derived(isExpanded);
 
 	function initRowRepresentations() {
 		rows = ensureNonEmptyRows(rows);
@@ -312,17 +303,6 @@
 	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
 		<span class="text-xs text-[var(--color-app-text-muted)]">Name:</span>
 		<Input class="w-48 text-xs" bind:value={name} />
-		{#if isExpanded}
-			<button
-				class="ml-4 {getGridButtonClass(showOffsetGrid || showOctaveGrid)}"
-				onclick={() => {
-					settingsStore.set('showVisualGrid', !userPrefersVisualGrid);
-				}}
-				title="Toggle visual grids (offset and octave)">
-				<IconCarbonGrid class="h-3.5 w-3.5" />
-				<span>Visual Grid</span>
-			</button>
-		{/if}
 	</div>
 
 	<div class="flex items-start gap-2 overflow-x-auto">

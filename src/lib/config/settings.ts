@@ -10,14 +10,6 @@ export const settingsItems: SettingsItem[] = [
 		category: 'general'
 	},
 	{
-		label: 'Show Visual Grid',
-		description: 'Show offset and octave grids in table editor when expanded',
-		type: 'toggle',
-		defaultValue: true,
-		setting: 'showVisualGrid',
-		category: 'general'
-	},
-	{
 		label: 'Envelope as Note',
 		description: 'Enable envelope input as note for AY chips',
 		type: 'toggle',

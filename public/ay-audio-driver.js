@@ -460,14 +460,25 @@ class AYAudioDriver {
 			const instrument = state.instruments[instrumentIndex];
 
 			if (!instrument || !instrument.rows || instrument.rows.length === 0) {
-				state.channelEnvelopeEnabled[channelIndex] = false;
+				registerState.channels[channelIndex].volume = 15;
+				registerState.channels[channelIndex].mixer.tone = true;
+				registerState.channels[channelIndex].mixer.noise = false;
 				registerState.channels[channelIndex].mixer.envelope = false;
+				this.channelMixerState[channelIndex].tone = true;
+				this.channelMixerState[channelIndex].noise = false;
 				this.channelMixerState[channelIndex].envelope = false;
+				state.channelEnvelopeEnabled[channelIndex] = false;
 				continue;
 			}
 
 			const instrumentRow = instrument.rows[state.instrumentPositions[channelIndex]];
 			if (!instrumentRow) {
+				registerState.channels[channelIndex].mixer.tone = false;
+				registerState.channels[channelIndex].mixer.noise = false;
+				registerState.channels[channelIndex].mixer.envelope = false;
+				this.channelMixerState[channelIndex].tone = false;
+				this.channelMixerState[channelIndex].noise = false;
+				this.channelMixerState[channelIndex].envelope = false;
 				state.instrumentPositions[channelIndex]++;
 				if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {
 					if (instrument.loop > 0 && instrument.loop < instrument.rows.length) {

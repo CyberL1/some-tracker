@@ -61,7 +61,9 @@
 				type={item.type || 'normal'}
 				action={item.action}
 				items={item.items || []}
-				shortcut={item.action ? ShortcutString.toDisplay(keybindingsStore.getShortcut(item.action)) : item.shortcut}
+				shortcut={item.action
+					? ShortcutString.toDisplay(keybindingsStore.getShortcut(item.action))
+					: item.shortcut}
 				disabled={item.disabled}
 				onAction={handleAction}
 				onMenuOpen={handleMenuOpen}

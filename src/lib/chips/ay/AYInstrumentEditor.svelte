@@ -5,7 +5,6 @@
 	import IconCarbonAdd from '~icons/carbon/add';
 	import IconCarbonVolumeUp from '~icons/carbon/volume-up';
 	import IconCarbonArrowsVertical from '~icons/carbon/arrows-vertical';
-	import IconCarbonGrid from '~icons/carbon/grid';
 	import IconCarbonChartWinLoss from '~icons/carbon/chart-win-loss';
 	import IconCarbonWaveform from '~icons/carbon/waveform';
 	import IconCarbonActivity from '~icons/carbon/activity';
@@ -27,8 +26,7 @@
 	} = $props();
 
 	const VOLUME_VALUES = Array.from({ length: 16 }, (_, i) => i);
-	const userPrefersVisualGrid = $derived(settingsStore.get().showVisualGrid ?? true);
-	const showVolumeGrid = $derived(isExpanded && userPrefersVisualGrid);
+	const showVolumeGrid = $derived(isExpanded);
 
 	let isDragging = $state(false);
 	let dragType:
@@ -42,14 +40,6 @@
 		| 'envelopeAccumulation'
 		| null = $state(null);
 	let dragValue: boolean | null = $state(null);
-
-	function getGridButtonClass(isActive: boolean): string {
-		const baseClass =
-			'flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]';
-		return isActive
-			? `${baseClass} border-[var(--color-app-primary)] bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]`
-			: baseClass;
-	}
 
 	function formatNum(value: number): string {
 		if (asHex) {
@@ -109,14 +99,14 @@
 		return rowsArray.length === 0
 			? [
 					{
-						tone: false,
+						tone: true,
 						noise: false,
 						envelope: false,
 						retriggerEnvelope: false,
 						toneAdd: 0,
 						noiseAdd: 0,
 						envelopeAdd: 0,
-						volume: 0,
+						volume: 15,
 						loop: false,
 						amplitudeSliding: false,
 						amplitudeSlideUp: false,
@@ -413,17 +403,6 @@
 	<div class="mt-2 mb-2 ml-2 flex items-center gap-2">
 		<span class="text-xs text-[var(--color-app-text-muted)]">Name:</span>
 		<Input class="w-48 text-xs" bind:value={name} />
-		{#if isExpanded}
-			<button
-				class="ml-4 {getGridButtonClass(showVolumeGrid)}"
-				onclick={() => {
-					settingsStore.set('showVisualGrid', !userPrefersVisualGrid);
-				}}
-				title="Toggle volume grid">
-				<IconCarbonGrid class="h-3.5 w-3.5" />
-				<span>Volume Grid</span>
-			</button>
-		{/if}
 	</div>
 
 	<div class="flex items-start gap-2 overflow-x-auto">
