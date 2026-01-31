@@ -44,6 +44,7 @@ type WorkletCommand =
 	| { type: 'update_ay_frequency'; aymFrequency: number }
 	| { type: 'update_int_frequency'; intFrequency: number }
 	| { type: 'update_chip_variant'; chipVariant: string }
+	| { type: 'update_stereo_layout'; stereoLayout: string }
 	| { type: 'set_channel_mute'; channelIndex: number; muted: boolean }
 	| {
 			type: 'change_pattern_during_playback';
@@ -96,6 +97,14 @@ export class AYProcessor
 			chipSettings.subscribe('chipVariant', (value) => {
 				if (typeof value === 'string') {
 					this.sendUpdateChipVariant(value);
+				}
+			})
+		);
+
+		this.settingsUnsubscribers.push(
+			chipSettings.subscribe('stereoLayout', (value) => {
+				if (typeof value === 'string') {
+					this.sendUpdateStereoLayout(value);
 				}
 			})
 		);
@@ -224,6 +233,10 @@ export class AYProcessor
 		this.sendCommand({ type: 'update_chip_variant', chipVariant });
 	}
 
+	sendUpdateStereoLayout(stereoLayout: string): void {
+		this.sendCommand({ type: 'update_stereo_layout', stereoLayout });
+	}
+
 	updateParameter(parameter: string, value: unknown): void {
 		if (parameter.startsWith('channelMute_')) {
 			const channelIndex = parseInt(parameter.replace('channelMute_', ''), 10);
@@ -242,6 +255,9 @@ export class AYProcessor
 				break;
 			case 'chipVariant':
 				this.sendUpdateChipVariant(value as string);
+				break;
+			case 'stereoLayout':
+				this.sendUpdateStereoLayout(value as string);
 				break;
 			default:
 				console.warn(`AY processor: unknown parameter "${parameter}"`);

@@ -9,11 +9,9 @@ const AYUMI_STRUCT_SIZE = 22904;
 const AYUMI_STRUCT_LEFT_OFFSET = 22888;
 const AYUMI_STRUCT_RIGHT_OFFSET = 22896;
 const DEFAULT_AYM_FREQUENCY = 1773400;
-const PAN_SETTINGS = [
-	{ channel: 0, left: 0.35, right: 0 },
-	{ channel: 1, left: 0.5, right: 0 },
-	{ channel: 2, left: 0.75, right: 0 }
-];
+
+type PanSetting = { channel: number; pan: number; isEqp: number };
+type GetPanSettingsForLayout = (layout: string) => PanSetting[];
 
 export class AYChipRenderer implements ChipRenderer {
 	private async loadWasmModule(
@@ -31,7 +29,11 @@ export class AYChipRenderer implements ChipRenderer {
 		return { wasm: result.instance.exports as any, wasmBuffer };
 	}
 
-	private initializeAyumi(wasm: any, song: any): number {
+	private initializeAyumi(
+		wasm: any,
+		song: any,
+		getPanSettingsForLayout: GetPanSettingsForLayout
+	): number {
 		const chipFrequency = song.chipFrequency || DEFAULT_AYM_FREQUENCY;
 		const ayumiPtr = wasm.malloc(AYUMI_STRUCT_SIZE);
 		if (!ayumiPtr) {
@@ -41,8 +43,10 @@ export class AYChipRenderer implements ChipRenderer {
 		const isYM = song.chipType === 'ay' && song.chipVariant === 'YM' ? 1 : 0;
 		wasm.ayumi_configure(ayumiPtr, isYM, chipFrequency, SAMPLE_RATE);
 
-		PAN_SETTINGS.forEach(({ channel, left, right }) => {
-			wasm.ayumi_set_pan(ayumiPtr, channel, left, right);
+		const stereoLayout = (song as { stereoLayout?: string }).stereoLayout ?? 'ABC';
+		const panSettings = getPanSettingsForLayout(stereoLayout);
+		panSettings.forEach(({ channel, pan, isEqp }) => {
+			wasm.ayumi_set_pan(ayumiPtr, channel, pan, isEqp);
 		});
 
 		return ayumiPtr;
@@ -251,7 +255,10 @@ export class AYChipRenderer implements ChipRenderer {
 		}
 
 		const { wasm, wasmBuffer } = await this.loadWasmModule(onProgress);
-		const ayumiPtr = this.initializeAyumi(wasm, song);
+		const { getPanSettingsForLayout } = await import(
+			/* @vite-ignore */ import.meta.env.BASE_URL + 'ayumi-constants.js'
+		);
+		const ayumiPtr = this.initializeAyumi(wasm, song, getPanSettingsForLayout);
 		const {
 			AyumiState,
 			TrackerPatternProcessor,

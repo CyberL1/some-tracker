@@ -2,7 +2,7 @@ import {
 	AYUMI_STRUCT_SIZE,
 	AYUMI_STRUCT_LEFT_OFFSET,
 	AYUMI_STRUCT_RIGHT_OFFSET,
-	PAN_SETTINGS,
+	getPanSettingsForLayout,
 	DEFAULT_AYM_FREQUENCY
 } from './ayumi-constants.js';
 import AyumiState from './ayumi-state.js';
@@ -31,6 +31,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.lastPositionUpdateTime = 0;
 		this.positionUpdateThrottleMs = 16;
 		this.pendingPositionUpdate = null;
+		this.stereoLayout = 'ABC';
 	}
 
 	async handleMessage(event) {
@@ -79,6 +80,9 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			case 'update_chip_variant':
 				this.handleUpdateChipVariant(data);
 				break;
+			case 'update_stereo_layout':
+				this.handleUpdateStereoLayout(data);
+				break;
 			case 'set_channel_mute':
 				this.handleSetChannelMute(data);
 				break;
@@ -109,9 +113,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			const isYM = this.state.isYM ?? 0;
 			wasmModule.ayumi_configure(ayumiPtr, isYM, this.aymFrequency, sampleRate);
 
-			PAN_SETTINGS.forEach(({ channel, left, right }) => {
-				wasmModule.ayumi_set_pan(ayumiPtr, channel, left, right);
-			});
+			this.applyPanSettings(wasmModule, ayumiPtr);
 
 			this.state.setWasmModule(wasmModule, ayumiPtr, wasmBuffer);
 			this.state.updateSamplesPerTick(sampleRate);
@@ -201,6 +203,21 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	handleUpdateChipVariant(data) {
 		this.state.setChipVariant(data.chipVariant);
 		this.handleInit({ wasmBuffer: this.state.wasmBuffer });
+	}
+
+	applyPanSettings(wasmModule, ayumiPtr) {
+		if (!wasmModule || !ayumiPtr) return;
+		const settings = getPanSettingsForLayout(this.stereoLayout);
+		settings.forEach(({ channel, pan, isEqp }) => {
+			wasmModule.ayumi_set_pan(ayumiPtr, channel, pan, isEqp);
+		});
+	}
+
+	handleUpdateStereoLayout({ stereoLayout }) {
+		this.stereoLayout = stereoLayout || 'ABC';
+		if (this.state.wasmModule && this.state.ayumiPtr) {
+			this.applyPanSettings(this.state.wasmModule, this.state.ayumiPtr);
+		}
 	}
 
 	handleSetChannelMute({ channelIndex, muted }) {

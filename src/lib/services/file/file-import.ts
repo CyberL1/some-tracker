@@ -52,14 +52,20 @@ function reconstructSong(data: any): Song {
 	song.instruments =
 		instruments.length > 0 ? instruments : [new Instrument('01', [], 0, 'Instrument 01')];
 	song.chipType = data.chipType;
-	song.chipVariant = data.chipVariant;
-	song.chipFrequency = data.chipFrequency;
-	song.interruptFrequency = data.interruptFrequency ?? 50;
+	const songRecord = song as unknown as Record<string, unknown>;
+	schema?.settings
+		?.filter((s) => s.group === 'chip' && s.key)
+		.forEach((s) => {
+			songRecord[s.key] = data[s.key] ?? s.defaultValue;
+		});
+	if (songRecord.interruptFrequency === undefined) {
+		songRecord.interruptFrequency = 50;
+	}
 	if (schema?.defaultTuningTable && !data.tuningTable) {
 		song.tuningTable = schema.defaultTuningTable;
 	}
-	if (schema?.defaultChipVariant !== undefined && data.chipVariant === undefined) {
-		song.chipVariant = schema.defaultChipVariant;
+	if (schema?.defaultChipVariant !== undefined && songRecord.chipVariant === undefined) {
+		songRecord.chipVariant = schema.defaultChipVariant;
 	}
 	return song;
 }

@@ -105,6 +105,20 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 			defaultValue: 50,
 			group: 'chip',
 			notifyAudioService: true
+		},
+		{
+			key: 'stereoLayout',
+			label: 'Stereo',
+			type: 'toggle',
+			options: [
+				{ label: 'ABC', value: 'ABC' },
+				{ label: 'ACB', value: 'ACB' },
+				{ label: 'CAB', value: 'CAB' },
+				{ label: 'Mono', value: 'mono' }
+			],
+			defaultValue: 'ABC',
+			group: 'chip',
+			notifyAudioService: true
 		}
 	]
 };

@@ -146,7 +146,7 @@
 			settings
 				.filter((s) => s.group === 'chip' && s.notifyAudioService)
 				.forEach((s) => {
-					const value = firstSong[s.key];
+					const value = firstSong[s.key] ?? s.defaultValue;
 					if (value !== undefined) {
 						container.audioService.chipSettings.set(s.key, value);
 					}
