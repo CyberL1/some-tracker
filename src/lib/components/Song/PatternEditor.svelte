@@ -1490,13 +1490,18 @@
 	}
 
 	function deleteSelection(): void {
-		if (!hasSelection()) return;
-
 		const patternId = patternOrder[currentPatternOrderIndex];
 		const originalPattern = findOrCreatePattern(patternId);
 		let pattern = originalPattern;
 
-		const bounds = getSelectionBounds();
+		const bounds = hasSelection()
+			? getSelectionBounds()
+			: {
+					minRow: selectedRow,
+					maxRow: selectedRow,
+					minCol: selectedColumn,
+					maxCol: selectedColumn
+				};
 		if (!bounds) return;
 
 		const { minRow, maxRow, minCol, maxCol } = bounds;
