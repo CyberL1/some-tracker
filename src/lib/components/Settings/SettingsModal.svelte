@@ -2,7 +2,6 @@
 	import {
 		settingsItems,
 		generalSettings,
-		keyboardSettings,
 		ayYmSettings
 	} from '../../config/settings';
 	import { settingsStore } from '../../stores/settings.svelte';
@@ -12,6 +11,7 @@
 	import { open } from '../../services/modal/modal-service';
 	import { TabView } from '../TabView';
 	import AppearanceSettings from './AppearanceSettings.svelte';
+	import KeyboardSettings from './KeyboardSettings.svelte';
 	import SettingField from './SettingField.svelte';
 
 	let { resolve, dismiss, onCloseRef, initialTabId } = $props<{
@@ -78,14 +78,7 @@
 							<SettingField {item} bind:tempSettings />
 						{/each}
 					{:else if tabId === 'keyboard'}
-						{#each keyboardSettings as item (item.setting)}
-							<SettingField {item} bind:tempSettings />
-						{/each}
-						{#if keyboardSettings.length === 0}
-							<p class="text-sm text-[var(--color-app-text-muted)]">
-								No keyboard settings available yet.
-							</p>
-						{/if}
+						<KeyboardSettings />
 					{:else if tabId === 'appearance'}
 						<AppearanceSettings onCloseSettings={dismiss} bind:tempSettings />
 					{:else if tabId === 'ayYm'}

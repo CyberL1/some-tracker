@@ -3,6 +3,8 @@
 	import MenuPanelButton from './MenuPanelButton.svelte';
 	import type { MenuItem } from './types';
 	import { setContext } from 'svelte';
+	import { keybindingsStore } from '../../stores/keybindings.svelte';
+	import { ShortcutString } from '../../utils/shortcut-string';
 
 	let { isFirst, items, onAction, onMenuOpen, onMenuClose } = $props<{
 		isFirst: boolean;
@@ -59,7 +61,7 @@
 				type={item.type || 'normal'}
 				action={item.action}
 				items={item.items || []}
-				shortcut={item.shortcut}
+				shortcut={item.action ? ShortcutString.toDisplay(keybindingsStore.getShortcut(item.action)) : item.shortcut}
 				disabled={item.disabled}
 				onAction={handleAction}
 				onMenuOpen={handleMenuOpen}

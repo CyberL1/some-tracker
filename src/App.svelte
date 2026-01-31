@@ -34,8 +34,12 @@
 	import { tick } from 'svelte';
 
 	import { userScriptsStore } from './lib/stores/user-scripts.svelte';
+	import { keybindingsStore } from './lib/stores/keybindings.svelte';
+	import { ShortcutString } from './lib/utils/shortcut-string';
+	import { ACTION_APPLY_SCRIPT } from './lib/config/keybindings';
 
 	settingsStore.init();
+	keybindingsStore.init();
 	editorStateStore.init();
 	themeStore.init(themeService);
 	userScriptsStore.init();
@@ -377,7 +381,7 @@
 				return;
 			}
 
-			if (data.action === 'apply-script') {
+			if (data.action === ACTION_APPLY_SCRIPT) {
 				const hasSelection = patternEditor?.hasSelection?.() ?? false;
 				const result = await open(UserScriptsModal, { hasSelection });
 				if (result && patternEditor?.applyScript) {
@@ -463,9 +467,19 @@
 	setContext('container', container);
 
 	function handleGlobalKeyDown(event: KeyboardEvent) {
-		if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 's') {
+		if (event.defaultPrevented) return;
+		const target = event.target as HTMLElement;
+		if (
+			target?.closest?.('input, textarea') ||
+			target?.getAttribute?.('contenteditable') === 'true'
+		) {
+			return;
+		}
+		const shortcut = ShortcutString.fromEvent(event);
+		const action = keybindingsStore.getActionForShortcut(shortcut);
+		if (action === ACTION_APPLY_SCRIPT) {
 			event.preventDefault();
-			handleMenuAction({ action: 'apply-script' });
+			handleMenuAction({ action: ACTION_APPLY_SCRIPT });
 		}
 	}
 </script>

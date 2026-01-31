@@ -2,6 +2,23 @@ import type { Pattern } from '../../models/song';
 import type { NavigationState, NavigationContext } from './pattern-navigation';
 import { PatternNavigationService } from './pattern-navigation';
 import { ProgressiveSelectionService } from './progressive-selection-service';
+import { ShortcutString } from '../../utils/shortcut-string';
+import { keybindingsStore } from '../../stores/keybindings.svelte';
+import {
+	PATTERN_EDITOR_ACTION_IDS,
+	ACTION_UNDO,
+	ACTION_REDO,
+	ACTION_COPY,
+	ACTION_CUT,
+	ACTION_PASTE,
+	ACTION_PASTE_WITHOUT_ERASING,
+	ACTION_SELECT_ALL,
+	ACTION_INCREMENT_VALUE,
+	ACTION_DECREMENT_VALUE,
+	ACTION_TRANSPOSE_OCTAVE_UP,
+	ACTION_TRANSPOSE_OCTAVE_DOWN,
+	ACTION_APPLY_SCRIPT
+} from '../../config/keybindings';
 
 export interface PatternKeyboardShortcutsContext {
 	isPlaying: boolean;
@@ -48,6 +65,75 @@ export interface KeyboardShortcutResult {
 	shouldPreventDefault: boolean;
 }
 
+function dispatchCommandAction(
+	action: string,
+	ctx: PatternKeyboardShortcutsContext
+): boolean {
+	switch (action) {
+		case ACTION_UNDO:
+			ctx.onUndo();
+			return true;
+		case ACTION_REDO:
+			ctx.onRedo();
+			return true;
+		case ACTION_COPY:
+			ctx.onCopy();
+			return true;
+		case ACTION_CUT:
+			ctx.onCut();
+			return true;
+		case ACTION_PASTE:
+			ctx.onPaste();
+			return true;
+		case ACTION_PASTE_WITHOUT_ERASING:
+			ctx.onPasteWithoutErasing();
+			return true;
+		case ACTION_SELECT_ALL:
+			if (!ctx.isPlaying) {
+				const result = ProgressiveSelectionService.selectAll(
+					ctx.pattern,
+					ctx.selectedColumn,
+					ctx.selectionStartRow,
+					ctx.selectionStartColumn,
+					ctx.selectionEndRow,
+					ctx.selectionEndColumn,
+					ctx.navigationContext.getCellPositions,
+					ctx.getPatternRowData,
+					ctx.navigationContext.schema
+				);
+				ctx.onSelectProgressive(
+					result.startRow,
+					result.endRow,
+					result.startColumn,
+					result.endColumn
+				);
+			}
+			return true;
+		case ACTION_INCREMENT_VALUE:
+			if (!ctx.isPlaying) {
+				ctx.onIncrementFieldValue(1, ctx.selectionStartRow !== null);
+			}
+			return true;
+		case ACTION_DECREMENT_VALUE:
+			if (!ctx.isPlaying) {
+				ctx.onIncrementFieldValue(-1, ctx.selectionStartRow !== null);
+			}
+			return true;
+		case ACTION_TRANSPOSE_OCTAVE_UP:
+			if (!ctx.isPlaying) {
+				ctx.onIncrementFieldValue(1, true);
+			}
+			return true;
+		case ACTION_TRANSPOSE_OCTAVE_DOWN:
+			if (!ctx.isPlaying) {
+				ctx.onIncrementFieldValue(-1, true);
+			}
+			return true;
+		default:
+			return false;
+	}
+}
+
 export class PatternKeyboardShortcutsService {
 	static handleKeyDown(
 		event: KeyboardEvent,
@@ -56,57 +142,18 @@ export class PatternKeyboardShortcutsService {
 		const isModifier = event.shiftKey;
 		const key = event.key.toLowerCase();
 
-		if ((event.ctrlKey || event.metaKey) && !event.shiftKey && key === 'z') {
-			shortcutsContext.onUndo();
-			return { handled: true, shouldPreventDefault: true };
-		}
-
-		if (((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'z') || ((event.ctrlKey || event.metaKey) && key === 'y')) {
-			shortcutsContext.onRedo();
-			return { handled: true, shouldPreventDefault: true };
-		}
-
-		if ((event.ctrlKey || event.metaKey) && key === 'c') {
-			shortcutsContext.onCopy();
-			return { handled: true, shouldPreventDefault: true };
-		}
-
-		if ((event.ctrlKey || event.metaKey) && key === 'x') {
-			shortcutsContext.onCut();
-			return { handled: true, shouldPreventDefault: true };
-		}
-
-		if ((event.ctrlKey || event.metaKey) && event.shiftKey && key === 'v') {
-			shortcutsContext.onPasteWithoutErasing();
-			return { handled: true, shouldPreventDefault: true };
-		}
-
-		if ((event.ctrlKey || event.metaKey) && key === 'v') {
-			shortcutsContext.onPaste();
-			return { handled: true, shouldPreventDefault: true };
-		}
-
-		if ((event.ctrlKey || event.metaKey) && !event.shiftKey && key === 'a') {
-			if (!shortcutsContext.isPlaying) {
-				const result = ProgressiveSelectionService.selectAll(
-					shortcutsContext.pattern,
-					shortcutsContext.selectedColumn,
-					shortcutsContext.selectionStartRow,
-					shortcutsContext.selectionStartColumn,
-					shortcutsContext.selectionEndRow,
-					shortcutsContext.selectionEndColumn,
-					shortcutsContext.navigationContext.getCellPositions,
-					shortcutsContext.getPatternRowData,
-					shortcutsContext.navigationContext.schema
-				);
-				shortcutsContext.onSelectProgressive(
-					result.startRow,
-					result.endRow,
-					result.startColumn,
-					result.endColumn
-				);
+		const shortcut = ShortcutString.fromEvent(event);
+		const action = keybindingsStore.getActionForShortcut(shortcut);
+		if (action !== null) {
+			if (action === ACTION_APPLY_SCRIPT) {
+				return { handled: false, shouldPreventDefault: false };
 			}
-			return { handled: true, shouldPreventDefault: true };
+			if (PATTERN_EDITOR_ACTION_IDS.has(action)) {
+				const result = dispatchCommandAction(action, shortcutsContext);
+				if (result) {
+					return { handled: true, shouldPreventDefault: true };
+				}
+			}
 		}
 
 		if ((event.ctrlKey || event.metaKey) && !isModifier) {
