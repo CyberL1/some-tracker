@@ -8,7 +8,7 @@
 	}: HTMLInputAttributes & { showStatus?: boolean } = $props();
 </script>
 
-<label for={rest.id} class="flex cursor-pointer items-center gap-2 {rest.class}">
+<label for={rest.id} class="flex cursor-pointer items-center gap-2 select-none {rest.class}">
 	<input
 		id={rest.id}
 		type="checkbox"
