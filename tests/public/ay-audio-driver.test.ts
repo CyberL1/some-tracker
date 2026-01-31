@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import AYAudioDriver from '../../public/ay-audio-driver.js';
 import AyumiState from '../../public/ayumi-state.js';
 
