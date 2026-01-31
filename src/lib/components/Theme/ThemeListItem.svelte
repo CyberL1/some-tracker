@@ -31,20 +31,20 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="flex items-center gap-3 rounded border p-3 transition-colors cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
+	class="flex items-center gap-2 rounded border p-2 transition-colors cursor-pointer hover:bg-[var(--color-app-surface-hover)]"
 	class:border-[var(--color-app-primary)]={isActive}
 	class:border-[var(--color-app-border)]={!isActive}
 	onclick={onSelect}
 >
-	<input type="radio" checked={isActive} onchange={onSelect} class="cursor-pointer" />
+	<input type="radio" checked={isActive} onchange={onSelect} class="cursor-pointer size-3.5" />
 
-	<div class="flex gap-1">
+	<div class="flex gap-0.5">
 		{#each previewColors as color}
-			<div class="h-6 w-6 rounded border border-[var(--color-app-border)]" style="background-color: {color}"></div>
+			<div class="h-4 w-4 rounded border border-[var(--color-app-border)]" style="background-color: {color}"></div>
 		{/each}
 	</div>
 
-	<span class="flex-1 text-sm text-[var(--color-app-text-primary)]">{theme.name}</span>
+	<span class="flex-1 text-xs text-[var(--color-app-text-primary)]">{theme.name}</span>
 
 	{#if onExport}
 		<button
@@ -53,10 +53,10 @@
 				e.stopPropagation();
 				onExport?.();
 			}}
-			class="cursor-pointer rounded p-1  text-[var(--color-app-text-primary)]"
+			class="cursor-pointer rounded p-0.5 text-[var(--color-app-text-primary)]"
 			title="Export theme"
 		>
-			<IconCarbonDownload class="h-4 w-4" />
+			<IconCarbonDownload class="h-3.5 w-3.5" />
 		</button>
 	{/if}
 
@@ -67,10 +67,10 @@
 				e.stopPropagation();
 				onEdit?.();
 			}}
-			class="cursor-pointer rounded p-1  text-[var(--color-app-text-primary)]"
+			class="cursor-pointer rounded p-0.5 text-[var(--color-app-text-primary)]"
 			title="Edit theme"
 		>
-			<IconCarbonEdit class="h-4 w-4" />
+			<IconCarbonEdit class="h-3.5 w-3.5" />
 		</button>
 	{/if}
 
@@ -81,10 +81,10 @@
 				e.stopPropagation();
 				onDelete?.();
 			}}
-			class="cursor-pointer rounded p-1 text-[var(--color-pattern-note-off)]"
+			class="cursor-pointer rounded p-0.5 text-[var(--color-pattern-note-off)]"
 			title="Delete theme"
 		>
-			<IconCarbonTrashCan class="h-4 w-4" />
+			<IconCarbonTrashCan class="h-3.5 w-3.5" />
 		</button>
 	{/if}
 </div>

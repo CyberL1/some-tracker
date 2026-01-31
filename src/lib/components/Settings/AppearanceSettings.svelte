@@ -187,7 +187,7 @@
 		</div>
 	</div>
 
-	<div class="flex flex-col gap-2">
+	<div class="flex flex-col gap-1.5">
 		{#each allThemes as theme (theme.id)}
 			<ThemeListItem
 				{theme}
