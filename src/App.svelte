@@ -313,8 +313,8 @@
 				return;
 			}
 
-			if (data.action === 'remove-song' && typeof (data as { songIndex?: number }).songIndex === 'number') {
-				const index = (data as { songIndex: number }).songIndex;
+			if (data.action === 'remove-song' && typeof (data as unknown as { songIndex?: number }).songIndex === 'number') {
+				const index = (data as unknown as { songIndex: number }).songIndex;
 				if (songs.length <= 1 || index < 0 || index >= songs.length) return;
 				const confirmed = await open(ConfirmModal, {
 					message: `Remove song (${index + 1})? This cannot be undone.`

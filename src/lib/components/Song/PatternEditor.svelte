@@ -23,7 +23,6 @@
 		type VisibleRowsCache
 	} from '../../services/pattern/pattern-visible-rows';
 	import { PatternEditingService } from '../../services/pattern/pattern-editing';
-	import { PatternNoteInput } from '../../services/pattern/editing/pattern-note-input';
 	import { PreviewService } from '../../services/audio/preview-service';
 	import { PatternEditorRenderer } from '../../ui-rendering/pattern-editor-renderer';
 	import { PatternEditorTextParser } from '../../ui-rendering/pattern-editor-text-parser';
@@ -1084,7 +1083,7 @@
 			const previewChannel =
 				fieldInfoBeforeEdit?.fieldKey === 'envelopeValue'
 					? 0
-					: fieldInfoBeforeEdit?.channelIndex ?? -1;
+					: (fieldInfoBeforeEdit?.channelIndex ?? -1);
 			if (
 				!playbackStore.isPlaying &&
 				shouldPreview &&

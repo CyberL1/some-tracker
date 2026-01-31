@@ -75,8 +75,9 @@
 			{/if}
 
 			<div>
-				<label class="mb-1 block text-xs text-[var(--color-app-text-tertiary)]">Name</label>
+				<label for="script-name" class="mb-1 block text-xs text-[var(--color-app-text-tertiary)]">Name</label>
 				<input
+					id="script-name"
 					type="text"
 					bind:value={name}
 					placeholder="Script name"
@@ -84,9 +85,10 @@
 			</div>
 
 			<div>
-				<label class="mb-1 block text-xs text-[var(--color-app-text-tertiary)]"
+				<label for="script-description" class="mb-1 block text-xs text-[var(--color-app-text-tertiary)]"
 					>Description</label>
 				<input
+					id="script-description"
 					type="text"
 					bind:value={description}
 					placeholder="What does this script do?"
@@ -94,8 +96,9 @@
 			</div>
 
 			<div>
-				<label class="mb-1 block text-xs text-[var(--color-app-text-tertiary)]">Code</label>
+				<label for="script-code" class="mb-1 block text-xs text-[var(--color-app-text-tertiary)]">Code</label>
 				<textarea
+					id="script-code"
 					bind:value={code}
 					placeholder="-- Your Lua script here"
 					rows="12"
