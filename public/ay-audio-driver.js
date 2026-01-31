@@ -669,21 +669,51 @@ class AYAudioDriver {
 
 	processEnvelopeArpeggio(state) {
 		if (state.envelopeArpeggioCounter > 0) {
-			const result = EffectAlgorithms.processArpeggioCounter(
-				state.envelopeArpeggioCounter,
-				state.envelopeArpeggioDelay,
-				state.envelopeArpeggioPosition
-			);
+			const tableIndex = state.envelopeEffectTable;
+			const ARPEGGIO = 'A'.charCodeAt(0);
+			const isArpeggioTable =
+				tableIndex >= 0 && state.envelopeEffectType === ARPEGGIO;
+
+			let result;
+			let semitoneOffset;
+
+			if (isArpeggioTable) {
+				const table = state.getTable(tableIndex);
+				const rows = table?.rows ?? [];
+				const tableLength = rows.length;
+				const tableLoop =
+					table?.loop != null && table.loop >= 0 && table.loop < tableLength
+						? table.loop
+						: -1;
+				const pos = state.envelopeEffectTablePosition;
+
+				result = EffectAlgorithms.processArpeggioCounterTable(
+					state.envelopeArpeggioCounter,
+					state.envelopeArpeggioDelay,
+					pos,
+					tableLength,
+					tableLoop
+				);
+				state.envelopeEffectTablePosition = result.position;
+				semitoneOffset = tableLength > 0 ? (rows[pos] ?? 0) : 0;
+			} else {
+				result = EffectAlgorithms.processArpeggioCounter(
+					state.envelopeArpeggioCounter,
+					state.envelopeArpeggioDelay,
+					state.envelopeArpeggioPosition
+				);
+				semitoneOffset = EffectAlgorithms.getArpeggioOffset(
+					result.position,
+					state.envelopeArpeggioSemitone1,
+					state.envelopeArpeggioSemitone2
+				);
+			}
+
 			state.envelopeArpeggioCounter = result.counter;
 			state.envelopeArpeggioPosition = result.position;
 
 			const baseEnvelopePeriod = state.envelopeBaseValue;
 			if (baseEnvelopePeriod > 0) {
-				const semitoneOffset = EffectAlgorithms.getArpeggioOffset(
-					result.position,
-					state.envelopeArpeggioSemitone1,
-					state.envelopeArpeggioSemitone2
-				);
 
 				const baseNoteIndex = this.envelopePeriodToNote(
 					baseEnvelopePeriod,
