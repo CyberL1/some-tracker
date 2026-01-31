@@ -6,6 +6,11 @@
 	import IconCarbonVolumeUp from '~icons/carbon/volume-up';
 	import IconCarbonArrowsVertical from '~icons/carbon/arrows-vertical';
 	import IconCarbonGrid from '~icons/carbon/grid';
+	import IconCarbonChartWinLoss from '~icons/carbon/chart-win-loss';
+	import IconCarbonWaveform from '~icons/carbon/waveform';
+	import IconCarbonActivity from '~icons/carbon/activity';
+	import IconCarbonRepeat from '~icons/carbon/repeat';
+	import IconCarbonArrowUp from '~icons/carbon/arrow-up';
 	import Input from '../../components/Input/Input.svelte';
 	import { settingsStore } from '../../stores/settings.svelte';
 
@@ -452,99 +457,136 @@
 					class="table-fixed border-collapse bg-[var(--color-app-surface)] font-mono text-xs select-none">
 					<thead>
 						<tr>
-							<th class={isExpanded ? 'px-2 py-1.5' : 'px-1 py-1'}>row</th>
+							<th class={isExpanded ? 'w-14 min-w-14 px-2 py-1.5' : 'px-1 py-1'}
+								>row</th>
 							<th class={isExpanded ? 'w-8 px-1.5' : 'w-6 px-0.5'}></th>
 							<th
 								class={isExpanded ? 'w-6 px-1.5' : 'w-4 px-0.5'}
 								bind:this={loopColumnRef}>{isExpanded ? 'loop' : 'lp'}</th>
 							<th
 								class={isExpanded
-									? 'w-12 min-w-12 px-1.5'
+									? 'w-8 min-w-8 px-1'
 									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
-								title="Tone Generator">{isExpanded ? 'Tone' : 'T'}</th>
-							<th
-								class={isExpanded
-									? 'w-12 min-w-12 px-1.5'
-									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
-								title="Noise Generator">{isExpanded ? 'Noise' : 'N'}</th>
-							<th
-								class={isExpanded
-									? 'w-12 min-w-12 px-1.5'
-									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
-								title="Hardware Envelope">{isExpanded ? 'Env' : 'E'}</th>
-							<th
-								class={isExpanded
-									? 'w-12 min-w-12 px-1.5'
-									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
-								title="Retrigger envelope when this row is played (only when envelope is on)"
-								>{isExpanded ? 'Retrig' : 'Rtr'}</th>
-							<th
-								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
-								title="Tone Offset">{isExpanded ? 'Tone+' : 'T+'}</th>
-							<th
-								class={isExpanded ? 'w-16 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
-								title="Tone Accumulation">
-								{#if isExpanded}
-									<div class="flex items-center justify-center gap-0.5">
-										<span>Tone</span>
-										<span class="text-[0.6rem]">↑</span>
-									</div>
-								{:else}
-									T↑
-								{/if}
-							</th>
-							<th
-								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
-								title="Noise Offset">{isExpanded ? 'Noise+' : 'N+'}</th>
-							<th
-								class={isExpanded ? 'w-16 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
-								title="Noise Accumulation">
-								{#if isExpanded}
-									<div class="flex items-center justify-center gap-0.5">
-										<span>Noise</span>
-										<span class="text-[0.6rem]">↑</span>
-									</div>
-								{:else}
-									N↑
-								{/if}
-							</th>
-							<th
-								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
-								title="Envelope Offset">{isExpanded ? 'Env+' : 'E+'}</th>
-							<th
-								class={isExpanded ? 'w-16 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
-								title="Envelope Accumulation">
-								{#if isExpanded}
-									<div class="flex items-center justify-center gap-0.5">
-										<span>Env</span>
-										<span class="text-[0.6rem]">↑</span>
-									</div>
-								{:else}
-									E↑
-								{/if}
-							</th>
-							<th
-								class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5 text-[0.65rem]'}
-								title="Volume Level">
-								<div
-									class="flex items-center justify-center {isExpanded
-										? 'gap-1'
-										: 'gap-0.5'}">
-									<IconCarbonVolumeUp
-										class={isExpanded ? 'h-3 w-3' : 'h-2.5 w-2.5'} />
-									{#if isExpanded}<span>Vol</span>{/if}
+								title="Tone Generator">
+								<div class="flex items-center justify-center">
+									<IconCarbonChartWinLoss
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
 								</div>
 							</th>
 							<th
-								class={isExpanded ? 'w-14 px-1.5' : 'w-10 px-0.5 text-[0.65rem]'}
+								class={isExpanded
+									? 'w-8 min-w-8 px-1'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
+								title="Noise Generator">
+								<div class="flex items-center justify-center">
+									<IconCarbonWaveform
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-8 min-w-8 px-1'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
+								title="Hardware Envelope">
+								<div class="flex items-center justify-center">
+									<IconCarbonActivity
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-8 min-w-8 px-1'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
+								title="Retrigger envelope when this row is played (only when envelope is on)">
+								<div class="flex items-center justify-center">
+									<IconCarbonRepeat
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-16 min-w-16 px-1.5'
+									: 'w-12 px-0.5 text-[0.65rem]'}
+								title="Tone Offset">
+								<div class="flex items-center justify-center gap-0.5">
+									<IconCarbonChartWinLoss
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+									<span>+</span>
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-8 min-w-8 px-1'
+									: 'w-10 px-0.5 text-[0.65rem]'}
+								title="Tone Accumulation">
+								<div class="flex items-center justify-center gap-0.5">
+									<IconCarbonChartWinLoss
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+									<span>↑</span>
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-16 min-w-16 px-1.5'
+									: 'w-12 px-0.5 text-[0.65rem]'}
+								title="Noise Offset">
+								<div class="flex items-center justify-center gap-0.5">
+									<IconCarbonWaveform
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+									<span>+</span>
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-8 min-w-8 px-1'
+									: 'w-10 px-0.5 text-[0.65rem]'}
+								title="Noise Accumulation">
+								<div class="flex items-center justify-center gap-0.5">
+									<IconCarbonWaveform
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+									<span>↑</span>
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-16 min-w-16 px-1.5'
+									: 'w-12 px-0.5 text-[0.65rem]'}
+								title="Envelope Offset">
+								<div class="flex items-center justify-center gap-0.5">
+									<IconCarbonActivity
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+									<span>+</span>
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-8 min-w-8 px-1'
+									: 'w-10 px-0.5 text-[0.65rem]'}
+								title="Envelope Accumulation">
+								<div class="flex items-center justify-center gap-0.5">
+									<IconCarbonActivity
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+									<span>↑</span>
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-12 min-w-12 px-1'
+									: 'w-12 px-0.5 text-[0.65rem]'}
+								title="Volume Level">
+								<div class="flex items-center justify-center">
+									<IconCarbonVolumeUp
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
+								</div>
+							</th>
+							<th
+								class={isExpanded
+									? 'w-8 min-w-8 px-1'
+									: 'w-8 min-w-8 px-0.5 text-[0.65rem]'}
 								title="Amplitude Slide: ↑ up / ↓ down / blank off">
-								<div
-									class="flex items-center justify-center {isExpanded
-										? 'gap-1'
-										: 'gap-0.5'}">
+								<div class="flex items-center justify-center">
 									<IconCarbonArrowsVertical
-										class={isExpanded ? 'h-3 w-3' : 'h-2.5 w-2.5'} />
-									{#if isExpanded}<span>Slide</span>{/if}
+										class={isExpanded ? 'h-3.5 w-3.5' : 'h-3 w-3'} />
 								</div>
 							</th>
 						</tr>
@@ -574,7 +616,7 @@
 							<tr class={isExpanded ? 'h-8' : 'h-7'}>
 								<td
 									class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] {isExpanded
-										? 'px-2 py-1.5'
+										? 'w-14 min-w-14 px-2 py-1.5'
 										: 'px-1 py-1 text-[0.65rem]'} text-right">{index}</td>
 								<td
 									class="border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] {isExpanded
@@ -594,7 +636,7 @@
 											<IconCarbonTrashCan
 												class={isExpanded
 													? 'h-3.5 w-3.5'
-													: 'h-2.5 w-2.5'} />
+													: 'h-3 w-3'} />
 										</button>
 										{#if index < rows.length - 1}
 											<button
@@ -607,7 +649,7 @@
 												<IconCarbonDelete
 													class={isExpanded
 														? 'h-3.5 w-3.5'
-														: 'h-2.5 w-2.5'} />
+														: 'h-3 w-3'} />
 											</button>
 										{/if}
 									</div>
@@ -621,7 +663,7 @@
 								<!-- Tone -->
 								<td
 									class="{isExpanded
-										? 'w-12 min-w-12 px-1.5'
+										? 'w-8 min-w-8 px-1'
 										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.tone
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
@@ -634,7 +676,7 @@
 								<!-- Noise -->
 								<td
 									class="{isExpanded
-										? 'w-12 min-w-12 px-1.5'
+										? 'w-8 min-w-8 px-1'
 										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.noise
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
@@ -647,7 +689,7 @@
 								<!-- Envelope -->
 								<td
 									class="{isExpanded
-										? 'w-12 min-w-12 px-1.5'
+										? 'w-8 min-w-8 px-1'
 										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.envelope
 										? 'bg-green-900/30 text-green-400'
 										: 'text-[var(--color-app-text-muted)]'}"
@@ -660,7 +702,7 @@
 								<!-- Retrigger envelope -->
 								<td
 									class="{isExpanded
-										? 'w-12 min-w-12 px-1.5'
+										? 'w-8 min-w-8 px-1'
 										: 'w-8 min-w-8 px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {(row.retriggerEnvelope ??
 									false)
 										? 'bg-green-900/30 text-green-400'
@@ -673,7 +715,7 @@
 									{(row.retriggerEnvelope ?? false) ? '✓' : ''}
 								</td>
 								<!-- ToneAdd -->
-								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+								<td class={isExpanded ? 'w-16 min-w-16 px-1.5' : 'w-12 px-0.5'}>
 									<input
 										type="text"
 										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
@@ -686,7 +728,9 @@
 								</td>
 								<!-- Tone Accumulation -->
 								<td
-									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.toneAccumulation
+									class="{isExpanded
+										? 'w-8 min-w-8 px-1'
+										: 'px-1.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.toneAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
 									tabindex="-1"
@@ -696,7 +740,7 @@
 									{row.toneAccumulation ? '↑' : ''}
 								</td>
 								<!-- NoiseAdd -->
-								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+								<td class={isExpanded ? 'w-16 min-w-16 px-1.5' : 'w-12 px-0.5'}>
 									<input
 										type="text"
 										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
@@ -709,7 +753,9 @@
 								</td>
 								<!-- Noise Accumulation -->
 								<td
-									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.noiseAccumulation
+									class="{isExpanded
+										? 'w-8 min-w-8 px-1'
+										: 'px-1.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.noiseAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
 									tabindex="-1"
@@ -719,7 +765,7 @@
 									{row.noiseAccumulation ? '↑' : ''}
 								</td>
 								<!-- EnvelopeAdd -->
-								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+								<td class={isExpanded ? 'w-16 min-w-16 px-1.5' : 'w-12 px-0.5'}>
 									<input
 										type="text"
 										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
@@ -733,7 +779,9 @@
 								</td>
 								<!-- Envelope Accumulation -->
 								<td
-									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.envelopeAccumulation
+									class="{isExpanded
+										? 'w-8 min-w-8 px-1'
+										: 'px-1.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.envelopeAccumulation
 										? 'bg-[var(--color-app-primary)]/30 text-[var(--color-app-primary)]'
 										: 'text-[var(--color-app-text-muted)]'}"
 									tabindex="-1"
@@ -745,7 +793,7 @@
 									{row.envelopeAccumulation ? '↑' : ''}
 								</td>
 								<!-- Volume -->
-								<td class={isExpanded ? 'w-16 px-1.5' : 'w-12 px-0.5'}>
+								<td class={isExpanded ? 'w-12 min-w-12 px-1.5' : 'w-12 px-0.5'}>
 									<input
 										type="text"
 										class="w-full min-w-0 overflow-x-auto rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface)] {isExpanded
@@ -758,7 +806,7 @@
 								</td>
 								<!-- Amplitude Slide (merged: off/up/down) -->
 								<td
-									class="cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-1.5 text-center {row.amplitudeSliding &&
+									class="w-8 min-w-8 {isExpanded ? 'px-1' : 'px-0.5'} cursor-pointer border border-[var(--color-app-border)] bg-[var(--color-app-surface)] text-center {row.amplitudeSliding &&
 									row.amplitudeSlideUp
 										? 'bg-green-900/30 text-green-400'
 										: row.amplitudeSliding
@@ -770,7 +818,7 @@
 											? 'Slide up'
 											: 'Slide down'
 										: 'No slide'}>
-									{row.amplitudeSliding ? (row.amplitudeSlideUp ? '↑' : '↓') : ''}
+									<span class="inline-block min-w-[1ch]">{row.amplitudeSliding ? (row.amplitudeSlideUp ? '↑' : '↓') : ''}</span>
 								</td>
 							</tr>
 						{/each}

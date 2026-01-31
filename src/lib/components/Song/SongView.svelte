@@ -465,7 +465,7 @@
 		<div
 			class="relative z-10 h-full shrink-0 border-l border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] transition-all duration-300 {isRightPanelExpanded
 				? 'w-[1200px]'
-				: 'w-[30rem]'}">
+				: 'w-[32rem]'}">
 			<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
 				{#snippet children(tabId)}
 					{#if tabId === 'tables'}
