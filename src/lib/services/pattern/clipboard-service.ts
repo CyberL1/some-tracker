@@ -3,6 +3,10 @@ import { PatternFieldDetection } from './editing/pattern-field-detection';
 import { PatternValueUpdates } from './editing/pattern-value-updates';
 import type { EditingContext } from './editing/editing-context';
 import { clipboardStore, type ClipboardCell } from '../../stores/clipboard.svelte';
+import {
+	envelopePeriodToNoteString,
+	noteStringToEnvelopePeriod
+} from '../../utils/envelope-note-conversion';
 
 export interface ClipboardContext {
 	pattern: Pattern;
@@ -18,6 +22,8 @@ export interface ClipboardContext {
 	getCellPositions: (rowString: string, row: number) => any[];
 	getPatternRowData: (pattern: Pattern, row: number) => string;
 	createEditingContext: (pattern: Pattern, row: number, col: number) => EditingContext;
+	tuningTable?: number[];
+	getOctave?: () => number;
 }
 
 export class ClipboardService {
@@ -142,7 +148,15 @@ export class ClipboardService {
 			if (targetCol < 0 || targetCol >= cellPositions.length) continue;
 
 			const cell = cellPositions[targetCol];
-			if (!cell.fieldKey || cell.fieldKey !== clipCell.fieldKey) continue;
+			if (!cell.fieldKey) continue;
+
+			const pasteValue = this.getPasteValue(
+				clipCell,
+				cell.fieldKey,
+				context.tuningTable,
+				context.getOctave
+			);
+			if (pasteValue === null) continue;
 
 			const editingContext = createEditingContext(pattern, targetRow, targetCol);
 			const fieldInfo = PatternFieldDetection.detectFieldAtCursor(editingContext);
@@ -151,13 +165,43 @@ export class ClipboardService {
 			pattern = PatternValueUpdates.updateFieldValue(
 				{ ...editingContext, pattern },
 				fieldInfo,
-				clipCell.value as string | number
+				pasteValue as string | number
 			);
 		}
 
 		if (pattern !== originalPattern) {
 			onPatternUpdate(pattern);
 		}
+	}
+
+	private static getPasteValue(
+		clipCell: ClipboardCell,
+		targetFieldKey: string,
+		tuningTable: number[] | undefined,
+		getOctave: (() => number) | undefined
+	): string | number | null {
+		if (clipCell.fieldKey === targetFieldKey) {
+			return clipCell.value as string | number;
+		}
+		if (
+			clipCell.fieldKey === 'envelopeValue' &&
+			targetFieldKey === 'note' &&
+			tuningTable?.length
+		) {
+			const period = typeof clipCell.value === 'number' ? clipCell.value : 0;
+			const noteStr = envelopePeriodToNoteString(period, tuningTable);
+			return noteStr ?? '---';
+		}
+		if (
+			clipCell.fieldKey === 'note' &&
+			targetFieldKey === 'envelopeValue' &&
+			tuningTable?.length &&
+			getOctave
+		) {
+			const noteStr = typeof clipCell.value === 'string' ? clipCell.value : '---';
+			return noteStringToEnvelopePeriod(noteStr, tuningTable, getOctave());
+		}
+		return null;
 	}
 
 	private static isEmptyValue(value: unknown, fieldType: string, fieldKey: string): boolean {
@@ -223,7 +267,15 @@ export class ClipboardService {
 			if (targetCol < 0 || targetCol >= cellPositions.length) continue;
 
 			const cell = cellPositions[targetCol];
-			if (!cell.fieldKey || cell.fieldKey !== clipCell.fieldKey) continue;
+			if (!cell.fieldKey) continue;
+
+			const pasteValue = this.getPasteValue(
+				clipCell,
+				cell.fieldKey,
+				context.tuningTable,
+				context.getOctave
+			);
+			if (pasteValue === null) continue;
 
 			const editingContext = createEditingContext(pattern, targetRow, targetCol);
 			const fieldInfo = PatternFieldDetection.detectFieldAtCursor(editingContext);
@@ -232,7 +284,7 @@ export class ClipboardService {
 			pattern = PatternValueUpdates.updateFieldValue(
 				{ ...editingContext, pattern },
 				fieldInfo,
-				clipCell.value as string | number
+				pasteValue as string | number
 			);
 		}
 

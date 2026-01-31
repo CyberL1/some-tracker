@@ -1458,9 +1458,12 @@
 					segments,
 					converter,
 					formatter,
-					schema
+					schema,
+					tuningTable
 				};
-			}
+			},
+			tuningTable,
+			getOctave: () => editorStateStore.get().octave
 		};
 	}
 
