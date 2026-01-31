@@ -46,7 +46,9 @@ export class ShortcutString {
 		const keyPart = segments[segments.length - 1];
 		const displayKey =
 			ShortcutString.KEY_DISPLAY_NAMES[keyPart] ??
-			(keyPart.length === 1 && keyPart >= 'a' && keyPart <= 'z' ? keyPart.toUpperCase() : keyPart);
+			(keyPart.length === 1 && keyPart >= 'a' && keyPart <= 'z'
+				? keyPart.toUpperCase()
+				: keyPart);
 		segments[segments.length - 1] = displayKey;
 		return segments.join('+');
 	}

@@ -66,10 +66,7 @@ export interface KeyboardShortcutResult {
 	shouldPreventDefault: boolean;
 }
 
-function dispatchCommandAction(
-	action: string,
-	ctx: PatternKeyboardShortcutsContext
-): boolean {
+function dispatchCommandAction(action: string, ctx: PatternKeyboardShortcutsContext): boolean {
 	switch (action) {
 		case ACTION_UNDO:
 			ctx.onUndo();
@@ -112,12 +109,12 @@ function dispatchCommandAction(
 			return true;
 		case ACTION_INCREMENT_VALUE:
 			if (!ctx.isPlaying) {
-				ctx.onIncrementFieldValue(1, ctx.selectionStartRow !== null);
+				ctx.onIncrementFieldValue(1, false);
 			}
 			return true;
 		case ACTION_DECREMENT_VALUE:
 			if (!ctx.isPlaying) {
-				ctx.onIncrementFieldValue(-1, ctx.selectionStartRow !== null);
+				ctx.onIncrementFieldValue(-1, false);
 			}
 			return true;
 		case ACTION_TRANSPOSE_OCTAVE_UP:
