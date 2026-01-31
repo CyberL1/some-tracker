@@ -459,19 +459,38 @@ class AYAudioDriver {
 			const instrumentIndex = state.channelInstruments[channelIndex];
 			const instrument = state.instruments[instrumentIndex];
 
-			if (!instrument || !instrument.rows || instrument.rows.length === 0) {
-				registerState.channels[channelIndex].volume = 15;
-				registerState.channels[channelIndex].mixer.tone = true;
+			if (instrumentIndex < 0 || !instrument) {
+				registerState.channels[channelIndex].volume = 0;
+				registerState.channels[channelIndex].mixer.tone = false;
 				registerState.channels[channelIndex].mixer.noise = false;
 				registerState.channels[channelIndex].mixer.envelope = false;
-				this.channelMixerState[channelIndex].tone = true;
+				this.channelMixerState[channelIndex].tone = false;
 				this.channelMixerState[channelIndex].noise = false;
 				this.channelMixerState[channelIndex].envelope = false;
 				state.channelEnvelopeEnabled[channelIndex] = false;
 				continue;
 			}
 
-			const instrumentRow = instrument.rows[state.instrumentPositions[channelIndex]];
+			const hasRows = instrument.rows && instrument.rows.length > 0;
+			const defaultInstrumentRow = {
+				tone: true,
+				noise: false,
+				envelope: false,
+				retriggerEnvelope: false,
+				toneAdd: 0,
+				noiseAdd: 0,
+				envelopeAdd: 0,
+				volume: 15,
+				amplitudeSliding: false,
+				amplitudeSlideUp: false,
+				toneAccumulation: false,
+				noiseAccumulation: false,
+				envelopeAccumulation: false
+			};
+			const effectiveRows = hasRows ? instrument.rows : [defaultInstrumentRow];
+			const effectiveRowsLength = effectiveRows.length;
+			const effectiveLoop = hasRows ? instrument.loop : 0;
+			const instrumentRow = effectiveRows[state.instrumentPositions[channelIndex] % effectiveRowsLength];
 			if (!instrumentRow) {
 				registerState.channels[channelIndex].mixer.tone = false;
 				registerState.channels[channelIndex].mixer.noise = false;
@@ -480,9 +499,9 @@ class AYAudioDriver {
 				this.channelMixerState[channelIndex].noise = false;
 				this.channelMixerState[channelIndex].envelope = false;
 				state.instrumentPositions[channelIndex]++;
-				if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {
-					if (instrument.loop > 0 && instrument.loop < instrument.rows.length) {
-						state.instrumentPositions[channelIndex] = instrument.loop;
+				if (state.instrumentPositions[channelIndex] >= effectiveRowsLength) {
+					if (effectiveLoop > 0 && effectiveLoop < effectiveRowsLength) {
+						state.instrumentPositions[channelIndex] = effectiveLoop;
 					} else {
 						state.instrumentPositions[channelIndex] = 0;
 					}
@@ -498,9 +517,9 @@ class AYAudioDriver {
 
 			if (noteTone === 0) {
 				state.instrumentPositions[channelIndex]++;
-				if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {
-					if (instrument.loop > 0 && instrument.loop < instrument.rows.length) {
-						state.instrumentPositions[channelIndex] = instrument.loop;
+				if (state.instrumentPositions[channelIndex] >= effectiveRowsLength) {
+					if (effectiveLoop > 0 && effectiveLoop < effectiveRowsLength) {
+						state.instrumentPositions[channelIndex] = effectiveLoop;
 					} else {
 						state.instrumentPositions[channelIndex] = 0;
 					}
@@ -612,9 +631,9 @@ class AYAudioDriver {
 			}
 
 			state.instrumentPositions[channelIndex]++;
-			if (state.instrumentPositions[channelIndex] >= instrument.rows.length) {
-				if (instrument.loop > 0 && instrument.loop < instrument.rows.length) {
-					state.instrumentPositions[channelIndex] = instrument.loop;
+			if (state.instrumentPositions[channelIndex] >= effectiveRowsLength) {
+				if (effectiveLoop > 0 && effectiveLoop < effectiveRowsLength) {
+					state.instrumentPositions[channelIndex] = effectiveLoop;
 				} else {
 					state.instrumentPositions[channelIndex] = 0;
 				}
