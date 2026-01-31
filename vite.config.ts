@@ -28,7 +28,13 @@ export default defineConfig({
 	],
 	assetsInclude: ['**/*.wasm'],
 	build: {
-		target: 'esnext'
+		target: 'esnext',
+		rollupOptions: {
+			external: (id) =>
+				id === 'ayumi-constants.js' ||
+				id.endsWith('/ayumi-constants.js') ||
+				id === '/ayumi-constants.js'
+		}
 	},
 	define: {
 		'import.meta.env.VITE_COMMIT_HASH': JSON.stringify(getGitCommitHash()),
