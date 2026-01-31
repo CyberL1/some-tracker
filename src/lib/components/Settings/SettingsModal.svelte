@@ -5,7 +5,7 @@
 		ayYmSettings
 	} from '../../config/settings';
 	import { settingsStore } from '../../stores/settings.svelte';
-	import type { Settings } from './types';
+	import type { Settings, SettingsTabState } from './types';
 	import Button from '../Button/Button.svelte';
 	import ConfirmModal from '../Modal/ConfirmModal.svelte';
 	import { open } from '../../services/modal/modal-service';
@@ -24,10 +24,14 @@
 	const currentSettings = settingsStore.get();
 	let tempSettings = $state<Settings>({ ...currentSettings });
 	let activeTabId = $state(initialTabId || 'general');
+	let keyboardTabState = $state<SettingsTabState | null>(null);
 
 	const hasUnsavedChanges = $derived(
-		settingsItems.some((item) => tempSettings[item.setting] !== currentSettings[item.setting])
+		settingsItems.some((item) => tempSettings[item.setting] !== currentSettings[item.setting]) ||
+			(keyboardTabState?.hasUnsavedValue ?? false)
 	);
+
+	const hasTabConflicts = $derived(keyboardTabState?.hasConflictsValue ?? false);
 
 	const tabs = [
 		{ id: 'general', label: 'General' },
@@ -37,6 +41,7 @@
 	];
 
 	function handleSave() {
+		if (hasTabConflicts) return;
 		for (const item of settingsItems) {
 			settingsStore.set(item.setting, tempSettings[item.setting]);
 		}
@@ -49,6 +54,7 @@
 				message: 'You have unsaved changes. Are you sure you want to close settings?'
 			});
 			if (confirmed) {
+				keyboardTabState?.revert();
 				dismiss?.();
 			}
 		} else {
@@ -78,7 +84,7 @@
 							<SettingField {item} bind:tempSettings />
 						{/each}
 					{:else if tabId === 'keyboard'}
-						<KeyboardSettings />
+						<KeyboardSettings registerState={(state) => (keyboardTabState = state)} />
 					{:else if tabId === 'appearance'}
 						<AppearanceSettings onCloseSettings={dismiss} bind:tempSettings />
 					{:else if tabId === 'ayYm'}
@@ -94,6 +100,8 @@
 	<div
 		class="flex shrink-0 justify-end gap-2 border-t border-[var(--color-app-border)] bg-[var(--color-app-surface)] px-4 py-3">
 		<Button variant="secondary" onclick={handleDismiss}>Dismiss</Button>
-		<Button variant="primary" onclick={handleSave}>Save</Button>
+		<Button variant="primary" onclick={handleSave} disabled={hasTabConflicts}>
+			Save
+		</Button>
 	</div>
 </div>

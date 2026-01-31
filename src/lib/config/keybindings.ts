@@ -14,6 +14,8 @@ export const ACTION_DECREMENT_VALUE = 'decrement-value';
 export const ACTION_TRANSPOSE_OCTAVE_UP = 'transpose-octave-up';
 export const ACTION_TRANSPOSE_OCTAVE_DOWN = 'transpose-octave-down';
 export const ACTION_APPLY_SCRIPT = 'apply-script';
+export const ACTION_TOGGLE_PLAYBACK = 'toggle-playback';
+export const ACTION_PLAY_FROM_ROW = 'play-from-row';
 
 export interface BindableAction {
 	id: string;
@@ -29,7 +31,7 @@ export const BINDABLE_ACTIONS: BindableAction[] = [
 	{ id: ACTION_PASTE, label: 'Paste', defaultShortcut: 'Mod+V' },
 	{ id: ACTION_PASTE_WITHOUT_ERASING, label: 'Magic paste', defaultShortcut: 'Mod+Shift+V' },
 	{ id: ACTION_SELECT_ALL, label: 'Select All', defaultShortcut: 'Mod+A' },
-	{ id: ACTION_INCREMENT_VALUE, label: 'Increment Value', defaultShortcut: '+' },
+	{ id: ACTION_INCREMENT_VALUE, label: 'Increment Value', defaultShortcut: '=' },
 	{ id: ACTION_DECREMENT_VALUE, label: 'Decrement Value', defaultShortcut: '-' },
 	{ id: ACTION_TRANSPOSE_OCTAVE_UP, label: 'Transpose Octave Up', defaultShortcut: 'Shift++' },
 	{
@@ -37,11 +39,15 @@ export const BINDABLE_ACTIONS: BindableAction[] = [
 		label: 'Transpose Octave Down',
 		defaultShortcut: 'Shift+-'
 	},
+	{ id: ACTION_TOGGLE_PLAYBACK, label: 'Play / Pause', defaultShortcut: ' ' },
+	{ id: ACTION_PLAY_FROM_ROW, label: 'Play from row (hold)', defaultShortcut: 'Enter' },
 	{ id: ACTION_APPLY_SCRIPT, label: 'Apply Script...', defaultShortcut: 'Mod+Shift+S' }
 ];
 
 export const PATTERN_EDITOR_ACTION_IDS = new Set(
-	BINDABLE_ACTIONS.filter((a) => a.id !== ACTION_APPLY_SCRIPT).map((a) => a.id)
+	BINDABLE_ACTIONS.filter(
+		(a) => a.id !== ACTION_APPLY_SCRIPT && a.id !== ACTION_PLAY_FROM_ROW
+	).map((a) => a.id)
 );
 
 const DISABLED_GETTERS: Partial<Record<string, () => boolean>> = {

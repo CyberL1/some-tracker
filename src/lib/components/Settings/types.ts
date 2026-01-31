@@ -22,3 +22,9 @@ export interface SettingsItem {
 	step?: number;
 	options?: { value: string; label: string }[];
 }
+
+export interface SettingsTabState {
+	hasUnsavedValue: boolean;
+	hasConflictsValue: boolean;
+	revert: () => void;
+}

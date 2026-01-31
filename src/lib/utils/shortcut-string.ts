@@ -32,6 +32,10 @@ export class ShortcutString {
 		return parts.join('+');
 	}
 
+	private static readonly KEY_DISPLAY_NAMES: Record<string, string> = {
+		' ': 'Space'
+	};
+
 	static toDisplay(shortcut: string): string {
 		const isMac =
 			typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
@@ -40,11 +44,11 @@ export class ShortcutString {
 			.replace(/\bAlt\b/g, isMac ? 'Option' : 'Alt');
 		const segments = result.split('+');
 		const keyPart = segments[segments.length - 1];
-		if (keyPart.length === 1 && keyPart >= 'a' && keyPart <= 'z') {
-			segments[segments.length - 1] = keyPart.toUpperCase();
-			result = segments.join('+');
-		}
-		return result;
+		const displayKey =
+			ShortcutString.KEY_DISPLAY_NAMES[keyPart] ??
+			(keyPart.length === 1 && keyPart >= 'a' && keyPart <= 'z' ? keyPart.toUpperCase() : keyPart);
+		segments[segments.length - 1] = displayKey;
+		return segments.join('+');
 	}
 
 	static normalizeForComparison(shortcut: string): string {

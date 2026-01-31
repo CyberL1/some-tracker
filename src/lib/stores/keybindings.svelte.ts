@@ -9,6 +9,25 @@ const defaults: Record<string, string> = Object.fromEntries(
 
 let overridesState = $state<Record<string, string>>({});
 
+const conflictingActionIds = $derived.by(() => {
+	const byShortcut = new Map<string, string[]>();
+	for (const action of BINDABLE_ACTIONS) {
+		const shortcut = ShortcutString.normalizeForComparison(
+			overridesState[action.id] ?? defaults[action.id] ?? ''
+		);
+		const list = byShortcut.get(shortcut) ?? [];
+		list.push(action.id);
+		byShortcut.set(shortcut, list);
+	}
+	const ids = new Set<string>();
+	for (const list of byShortcut.values()) {
+		if (list.length > 1) {
+			for (const id of list) ids.add(id);
+		}
+	}
+	return ids;
+});
+
 function loadOverrides(): Record<string, string> {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
@@ -60,5 +79,9 @@ export const keybindingsStore = {
 			}
 		}
 		return null;
+	},
+
+	get conflictingActionIds(): Set<string> {
+		return conflictingActionIds;
 	}
 };

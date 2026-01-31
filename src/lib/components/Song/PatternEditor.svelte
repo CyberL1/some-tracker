@@ -66,6 +66,9 @@
 	import { PatternTemplateParser } from '../../services/pattern/editing/pattern-template-parsing';
 	import { ContextMenu } from '../Menu';
 	import { editMenuItems } from '../../config/app-menu';
+	import { ACTION_PLAY_FROM_ROW } from '../../config/keybindings';
+	import { keybindingsStore } from '../../stores/keybindings.svelte';
+	import { ShortcutString } from '../../utils/shortcut-string';
 
 	let {
 		patterns = $bindable(),
@@ -988,8 +991,16 @@
 		};
 	}
 
+	function isPlayFromRowShortcut(event: KeyboardEvent): boolean {
+		const fromEvent = ShortcutString.normalizeForComparison(ShortcutString.fromEvent(event));
+		const shortcut = ShortcutString.normalizeForComparison(
+			keybindingsStore.getShortcut(ACTION_PLAY_FROM_ROW)
+		);
+		return fromEvent === shortcut;
+	}
+
 	function handleKeyDown(event: KeyboardEvent) {
-		if (event.key === 'Enter' && !event.repeat && !isEnterKeyHeld) {
+		if (isPlayFromRowShortcut(event) && !event.repeat && !isEnterKeyHeld) {
 			event.preventDefault();
 			isEnterKeyHeld = true;
 			playFromCursor();
@@ -1122,7 +1133,7 @@
 	}
 
 	function handleKeyUp(event: KeyboardEvent) {
-		if (event.key === 'Enter' && isEnterKeyHeld) {
+		if (isPlayFromRowShortcut(event) && isEnterKeyHeld) {
 			isEnterKeyHeld = false;
 			pausePlayback();
 			return;

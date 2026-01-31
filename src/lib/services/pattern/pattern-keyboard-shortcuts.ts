@@ -17,7 +17,8 @@ import {
 	ACTION_DECREMENT_VALUE,
 	ACTION_TRANSPOSE_OCTAVE_UP,
 	ACTION_TRANSPOSE_OCTAVE_DOWN,
-	ACTION_APPLY_SCRIPT
+	ACTION_APPLY_SCRIPT,
+	ACTION_TOGGLE_PLAYBACK
 } from '../../config/keybindings';
 
 export interface PatternKeyboardShortcutsContext {
@@ -129,6 +130,13 @@ function dispatchCommandAction(
 				ctx.onIncrementFieldValue(-1, true);
 			}
 			return true;
+		case ACTION_TOGGLE_PLAYBACK:
+			if (ctx.isPlaying) {
+				ctx.onPausePlayback();
+			} else {
+				ctx.onTogglePlayback();
+			}
+			return true;
 		default:
 			return false;
 	}
@@ -169,13 +177,6 @@ export class PatternKeyboardShortcutsService {
 		}
 
 		switch (event.key) {
-			case ' ':
-				if (shortcutsContext.isPlaying) {
-					shortcutsContext.onPausePlayback();
-				} else {
-					shortcutsContext.onTogglePlayback();
-				}
-				return { handled: true, shouldPreventDefault: true };
 			case 'ArrowUp':
 				if (!shortcutsContext.isPlaying) {
 					if (event.shiftKey) {
