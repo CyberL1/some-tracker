@@ -36,9 +36,6 @@ export class ProjectService {
 		if (schema.defaultTuningTable) {
 			song.tuningTable = schema.defaultTuningTable;
 		}
-		if (schema.defaultTuningTableSource !== undefined) {
-			song.tuningTableSource = schema.defaultTuningTableSource as Song['tuningTableSource'];
-		}
 		if (schema.defaultChipVariant !== undefined) {
 			song.chipVariant = schema.defaultChipVariant;
 		}

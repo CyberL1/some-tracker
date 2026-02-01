@@ -272,12 +272,8 @@ class TrackerPatternProcessor {
 					previousNote === 0 && currentNote !== 0;
 
 				if (hasValidPrevious && !isPortamentoFromNothing) {
-					const previousTone = Math.round(
-						this.state.currentTuningTable[previousNote] / 16
-					);
-					const currentTone = Math.round(
-						this.state.currentTuningTable[currentNote] / 16
-					);
+					const previousTone = this.state.currentTuningTable[previousNote];
+					const currentTone = this.state.currentTuningTable[currentNote];
 					const delta = currentTone - previousTone;
 
 					const currentSliding = this.state.channelToneSliding

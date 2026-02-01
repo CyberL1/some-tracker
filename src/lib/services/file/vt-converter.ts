@@ -9,12 +9,7 @@ import {
 	Instrument,
 	InstrumentRow
 } from '../../models/song';
-import {
-	getTuningTableForSource,
-	type TuningTableSource
-} from '../../models/pt3/tuning-tables';
-import { getChipByType } from '../../chips/registry';
-import { getDefaultSettingValue } from '../../chips/base/schema';
+import { PT3TuneTables } from '../../models/pt3/tuning-tables';
 
 interface VT2Module {
 	title: string;
@@ -107,8 +102,7 @@ class VT2Converter {
 			return this.convertTurboSoundModules(moduleSections);
 		}
 
-		const defaultChipFrequency = this.getDefaultChipFrequency();
-		const module = this.parseModule(lines, defaultChipFrequency);
+		const module = this.parseModule(lines);
 		const tables = this.parseTables(lines);
 		const samples = this.parseSamples(lines);
 		const patterns = this.parsePatterns(lines);
@@ -154,32 +148,18 @@ class VT2Converter {
 			);
 		});
 
-		const tuningTableSource = this.getTuningTableSourceFromNoteTable(module.noteTable);
-		const tuningTable = getTuningTableForSource(
-			tuningTableSource,
-			module.chipFrequency
-		);
+		const tuningTable =
+			module.noteTable >= 0 && module.noteTable < PT3TuneTables.length
+				? PT3TuneTables[module.noteTable]
+				: PT3TuneTables[2];
 
 		return this.convertSingleChip(
 			module,
 			patterns,
 			convertedInstruments,
 			convertedTables,
-			tuningTable,
-			tuningTableSource
+			tuningTable
 		);
-	}
-
-	private getTuningTableSourceFromNoteTable(noteTable: number): TuningTableSource {
-		const index =
-			noteTable >= 0 && noteTable <= 3 ? noteTable : 2;
-		return `pt3-${index}` as TuningTableSource;
-	}
-
-	private getDefaultChipFrequency(): number {
-		const schema = getChipByType('ay')?.schema;
-		const value = getDefaultSettingValue(schema, 'chipFrequency');
-		return typeof value === 'number' ? value : 0;
 	}
 
 	private splitModuleSections(lines: string[]): string[][] {
@@ -210,12 +190,11 @@ class VT2Converter {
 			throw new Error('TurboSound file must contain at least 2 modules');
 		}
 
-		const defaultChipFrequency = this.getDefaultChipFrequency();
 		const firstModuleLines = moduleSections[0];
 		const secondModuleLines = moduleSections[1];
 
-		const module1 = this.parseModule(firstModuleLines, defaultChipFrequency);
-		const module2 = this.parseModule(secondModuleLines, defaultChipFrequency);
+		const module1 = this.parseModule(firstModuleLines);
+		const module2 = this.parseModule(secondModuleLines);
 
 		const tables1 = this.parseTables(firstModuleLines);
 		const samples1 = this.parseSamples(firstModuleLines);
@@ -225,29 +204,14 @@ class VT2Converter {
 		const samples2 = this.parseSamples(secondModuleLines);
 		const patterns2 = this.parsePatterns(secondModuleLines);
 
-		const tuningTableSource = this.getTuningTableSourceFromNoteTable(module1.noteTable);
-		const tuningTable = getTuningTableForSource(
-			tuningTableSource,
-			module1.chipFrequency
-		);
+		const tuningTable =
+			module1.noteTable >= 0 && module1.noteTable < PT3TuneTables.length
+				? PT3TuneTables[module1.noteTable]
+				: PT3TuneTables[2];
 
-		const song1 = this.createSongFromModule(
-			module1,
-			patterns1,
-			samples1,
-			tables1,
-			tuningTable,
-			tuningTableSource
-		);
+		const song1 = this.createSongFromModule(module1, patterns1, samples1, tables1, tuningTable);
 
-		const song2 = this.createSongFromModule(
-			module2,
-			patterns2,
-			samples2,
-			tables2,
-			tuningTable,
-			tuningTableSource
-		);
+		const song2 = this.createSongFromModule(module2, patterns2, samples2, tables2, tuningTable);
 
 		return new Project(
 			module1.title,
@@ -264,12 +228,10 @@ class VT2Converter {
 		patterns: VT2Pattern[],
 		samples: VT2Sample[],
 		tables: VT2Table[],
-		tuningTable: number[],
-		tuningTableSource: TuningTableSource
+		tuningTable: number[]
 	): Song {
 		const song = new Song();
 		song.tuningTable = tuningTable;
-		song.tuningTableSource = tuningTableSource;
 		song.initialSpeed = module.speed;
 		const chipVariant = this.detectChipType(module);
 		song.chipType = chipVariant === 'AY' || chipVariant === 'YM' ? 'ay' : undefined;
@@ -349,12 +311,10 @@ class VT2Converter {
 		patterns: VT2Pattern[],
 		instruments: Instrument[],
 		tables: Table[],
-		tuningTable: number[],
-		tuningTableSource: TuningTableSource
+		tuningTable: number[]
 	): Project {
 		const song = new Song();
 		song.tuningTable = tuningTable;
-		song.tuningTableSource = tuningTableSource;
 		song.instruments = this.initializeInstrumentsArray(instruments);
 		song.initialSpeed = module.speed;
 
@@ -391,7 +351,7 @@ class VT2Converter {
 		return 'AY';
 	}
 
-	private parseModule(lines: string[], defaultChipFrequency: number): VT2Module {
+	private parseModule(lines: string[]): VT2Module {
 		const module: VT2Module = {
 			title: '',
 			author: '',
@@ -400,7 +360,7 @@ class VT2Converter {
 			playOrder: [],
 			loopPoint: 0,
 			noteTable: 0,
-			chipFrequency: defaultChipFrequency,
+			chipFrequency: 1773400,
 			interruptFrequency: 50
 		};
 
@@ -432,7 +392,7 @@ class VT2Converter {
 					module.noteTable = parseInt(value) || 0;
 					break;
 				case 'ChipFreq':
-					module.chipFrequency = parseInt(value) || defaultChipFrequency;
+					module.chipFrequency = parseInt(value) || 1773400;
 					break;
 				case 'IntFreq':
 					module.interruptFrequency = (parseInt(value) || 50000) / 1000;

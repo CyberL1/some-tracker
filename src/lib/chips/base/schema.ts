@@ -11,7 +11,7 @@ export interface ChipField {
 	allowZeroValue?: boolean;
 }
 
-export type SettingType = 'text' | 'number' | 'select' | 'toggle' | 'tuningTable';
+export type SettingType = 'text' | 'number' | 'select' | 'toggle';
 
 export interface SettingOption {
 	label: string;
@@ -28,8 +28,6 @@ export interface ChipSetting {
 	notifyAudioService?: boolean;
 }
 
-export type TuningTableSourceId = string;
-
 export interface ChipSchema {
 	chipType: string;
 	template: string;
@@ -39,7 +37,6 @@ export interface ChipSchema {
 	channelLabels?: string[];
 	settings?: ChipSetting[];
 	defaultTuningTable?: number[];
-	defaultTuningTableSource?: TuningTableSourceId;
 	defaultChipVariant?: string;
 }
 
@@ -55,14 +52,6 @@ export function applySchemaDefaults<T extends object>(target: T, schema: ChipSch
 			}
 		}
 	}
-}
-
-export function getDefaultSettingValue(
-	schema: ChipSchema | undefined,
-	key: string
-): unknown {
-	const setting = schema?.settings?.find((s) => s.key === key);
-	return setting?.defaultValue;
 }
 
 export function getDefaultForFieldType(

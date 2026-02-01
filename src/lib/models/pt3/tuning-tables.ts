@@ -49,65 +49,8 @@ export const PT3ToneTable_3: number[] = [
 ];
 
 export const PT3TuneTables: number[][] = [
-	PT3ToneTable_0,
-	PT3ToneTable_1,
-	PT3ToneTable_2,
-	PT3ToneTable_3
+	PT3ToneTable_0, // Table #0 of Pro Tracker 3.4x - 3.5x
+	PT3ToneTable_1, // Table #1 of Pro Tracker 3.3x - 3.5x
+	PT3ToneTable_2, // Table #2 of Pro Tracker 3.4x - 3.5x
+	PT3ToneTable_3 // Table #3 of Pro Tracker 3.4x - 3.5x
 ];
-
-export type TuningTableSource = 'pt3-0' | 'pt3-1' | 'pt3-2' | 'pt3-3' | 'custom';
-
-const PT3_SOURCE_INDEX: TuningTableSource[] = ['pt3-0', 'pt3-1', 'pt3-2', 'pt3-3'];
-
-const A4_NOTE_INDEX = 45;
-const VT_NOTE_COUNT = 96;
-
-export function generateTuningTable12TET(
-	clockHz: number,
-	a4Frequency: number = 440
-): number[] {
-	const table: number[] = [];
-	for (let i = 0; i < VT_NOTE_COUNT; i++) {
-		const f = a4Frequency * Math.pow(2, (i - A4_NOTE_INDEX) / 12);
-		const periodf = (clockHz / 16) / f;
-		const period = Math.max(1, Math.min(4095, Math.round(periodf)));
-		table.push(period * 16);
-	}
-	return table;
-}
-
-function arraysEqual(a: number[], b: number[]): boolean {
-	if (a.length !== b.length) return false;
-	for (let i = 0; i < a.length; i++) {
-		if (a[i] !== b[i]) return false;
-	}
-	return true;
-}
-
-function normalizedPT3Table(index: number): number[] {
-	return PT3TuneTables[index].map((v) => v * 16);
-}
-
-export function inferTuningTableSource(tuningTable: number[]): TuningTableSource {
-	for (let i = 0; i < PT3TuneTables.length; i++) {
-		if (
-			arraysEqual(tuningTable, PT3TuneTables[i]) ||
-			arraysEqual(tuningTable, normalizedPT3Table(i))
-		) {
-			return PT3_SOURCE_INDEX[i];
-		}
-	}
-	return 'custom';
-}
-
-export function getTuningTableForSource(
-	source: TuningTableSource,
-	clockHz: number,
-	a4Frequency: number = 440
-): number[] {
-	if (source === 'custom') {
-		return generateTuningTable12TET(clockHz, a4Frequency);
-	}
-	const index = PT3_SOURCE_INDEX.indexOf(source);
-	return index >= 0 ? normalizedPT3Table(index) : normalizedPT3Table(2);
-}

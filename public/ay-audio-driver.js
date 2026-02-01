@@ -170,8 +170,8 @@ class AYAudioDriver {
 			state.channelSoundEnabled[channelIndex] = true;
 			const noteValue = row.note.name - 2 + (row.note.octave - 1) * 12;
 			if (noteValue >= 0 && noteValue < state.currentTuningTable.length) {
-				const period = Math.round(state.currentTuningTable[noteValue] / 16);
-				registerState.channels[channelIndex].tone = period;
+				const regValue = state.currentTuningTable[noteValue];
+				registerState.channels[channelIndex].tone = regValue;
 			}
 			if (state.instrumentPositions) {
 				state.instrumentPositions[channelIndex] = 0;
@@ -512,7 +512,7 @@ class AYAudioDriver {
 			const currentNote = state.channelCurrentNotes[channelIndex];
 			let noteTone = 0;
 			if (currentNote >= 0 && currentNote < state.currentTuningTable.length) {
-				noteTone = Math.round(state.currentTuningTable[currentNote] / 16);
+				noteTone = state.currentTuningTable[currentNote];
 			}
 
 			if (noteTone === 0) {

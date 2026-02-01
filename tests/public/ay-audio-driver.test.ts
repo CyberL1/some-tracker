@@ -344,7 +344,7 @@ describe('AYAudioDriver', () => {
 				forceEnvelopeShapeWrite: false
 			};
 			driver.processInstruments(state, registerState);
-			expect(registerState.channels[0].tone).toBe(Math.round(500 / 16));
+			expect(registerState.channels[0].tone).toBe(500);
 			expect(registerState.channels[0].volume).toBe(15);
 			expect(registerState.channels[0].mixer.tone).toBe(true);
 			expect(registerState.channels[0].mixer.noise).toBe(false);
