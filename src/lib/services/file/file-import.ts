@@ -14,6 +14,12 @@ import {
 } from '../../models/song';
 import { getChipByType } from '../../chips/registry';
 import type { ChipSchema } from '../../chips/base/schema';
+import { getDefaultSettingValue } from '../../chips/base/schema';
+import {
+	getTuningTableForSource,
+	inferTuningTableSource,
+	type TuningTableSource
+} from '../../models/pt3/tuning-tables';
 
 function reconstructProject(data: any): Project {
 	const songs = data.songs?.map((songData: any) => reconstructSong(songData)) || [];
@@ -45,7 +51,8 @@ function reconstructSong(data: any): Song {
 	song.patterns = data.patterns?.map((patternData: any) =>
 		reconstructPattern(patternData, schema)
 	) || [new Pattern(0, 64, schema)];
-	song.tuningTable = data.tuningTable || song.tuningTable;
+	song.tuningTable = data.tuningTable?.length ? data.tuningTable : song.tuningTable;
+	song.tuningTableSource = data.tuningTableSource as TuningTableSource | undefined;
 	song.initialSpeed = data.initialSpeed ?? 3;
 	const instruments =
 		data.instruments?.map((instData: any) => reconstructInstrument(instData)) || [];
@@ -61,8 +68,21 @@ function reconstructSong(data: any): Song {
 	if (songRecord.interruptFrequency === undefined) {
 		songRecord.interruptFrequency = 50;
 	}
-	if (schema?.defaultTuningTable && !data.tuningTable) {
+	if (!data.tuningTableSource && song.tuningTable?.length) {
+		song.tuningTableSource = inferTuningTableSource(song.tuningTable);
+	}
+	const defaultClock = getDefaultSettingValue(schema, 'chipFrequency');
+	const clockHz = (song.chipFrequency ?? defaultClock) as number | undefined;
+	if (
+		typeof clockHz === 'number' &&
+		song.tuningTableSource &&
+		song.tuningTableSource !== 'custom'
+	) {
+		song.tuningTable = getTuningTableForSource(song.tuningTableSource, clockHz);
+	}
+	if (schema?.defaultTuningTable && !data.tuningTable?.length) {
 		song.tuningTable = schema.defaultTuningTable;
+		song.tuningTableSource = (schema.defaultTuningTableSource as TuningTableSource) ?? 'pt3-2';
 	}
 	if (schema?.defaultChipVariant !== undefined && songRecord.chipVariant === undefined) {
 		songRecord.chipVariant = schema.defaultChipVariant;

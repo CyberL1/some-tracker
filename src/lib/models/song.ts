@@ -1,5 +1,6 @@
 import type { ChipSchema, ChipField } from '../chips/base/schema';
 import { getDefaultForFieldType } from '../chips/base/schema';
+import type { TuningTableSource } from './pt3/tuning-tables';
 
 enum NoteName {
 	None = 0,
@@ -152,6 +153,7 @@ class Pattern {
 class Song {
 	public patterns: Pattern[];
 	public tuningTable: number[];
+	public tuningTableSource?: TuningTableSource;
 	public initialSpeed: number;
 	public instruments: Instrument[];
 	public chipType?: string;

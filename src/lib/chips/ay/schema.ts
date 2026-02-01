@@ -1,9 +1,15 @@
 import type { ChipSchema } from '../base/schema';
-import { PT3TuneTables } from '../../models/pt3/tuning-tables';
+import {
+	getTuningTableForSource,
+	type TuningTableSource
+} from '../../models/pt3/tuning-tables';
+
+const DEFAULT_AY_CLOCK = 1773400;
 
 export const AY_CHIP_SCHEMA: ChipSchema = {
 	chipType: 'ay',
-	defaultTuningTable: PT3TuneTables[2],
+	defaultTuningTable: getTuningTableForSource('pt3-2', DEFAULT_AY_CLOCK),
+	defaultTuningTableSource: 'pt3-2',
 	defaultChipVariant: 'AY',
 	globalTemplate: '{envelopeValue} {envelopeEffect} {noiseValue}',
 	globalFields: {
@@ -119,6 +125,20 @@ export const AY_CHIP_SCHEMA: ChipSchema = {
 			defaultValue: 'ABC',
 			group: 'chip',
 			notifyAudioService: true
+		},
+		{
+			key: 'tuningTableSource',
+			label: 'Tuning Table',
+			type: 'tuningTable',
+			options: [
+				{ label: 'PT3 Table 0', value: 'pt3-0' as TuningTableSource },
+				{ label: 'PT3 Table 1', value: 'pt3-1' as TuningTableSource },
+				{ label: 'PT3 Table 2', value: 'pt3-2' as TuningTableSource },
+				{ label: 'PT3 Table 3', value: 'pt3-3' as TuningTableSource },
+				{ label: 'Custom (12TET from frequency)', value: 'custom' as TuningTableSource }
+			],
+			defaultValue: 'pt3-2',
+			group: 'chip'
 		}
 	]
 };
