@@ -2052,6 +2052,7 @@
 		if (currentPatternOrderIndex !== lastPatternOrderIndexFromPlayback) {
 			userManuallyChangedPattern = true;
 			lastManualPatternChangeTime = performance.now();
+			const indexToApply = currentPatternOrderIndex;
 
 			if (services.audioService.playing) {
 				if (initAllChips) {
@@ -2063,33 +2064,29 @@
 								if (processor.changePatternDuringPlayback) {
 									processor.changePatternDuringPlayback(
 										0,
-										currentPatternOrderIndex,
+										indexToApply,
 										undefined,
 										speed
 									);
 								} else {
-									processor.playFromRow(0, currentPatternOrderIndex, speed);
+									processor.playFromRow(0, indexToApply, speed);
 								}
 							});
 						});
 					});
 				} else {
-					const pattern = findOrCreatePattern(patternOrder[currentPatternOrderIndex]);
+					const pattern = findOrCreatePattern(patternOrder[indexToApply]);
 					services.audioService.chipProcessors.forEach((processor, index) => {
 						const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
 						if (processor.changePatternDuringPlayback) {
-							processor.changePatternDuringPlayback(
-								0,
-								currentPatternOrderIndex,
-								pattern,
-								speed
-							);
+							processor.changePatternDuringPlayback(0, indexToApply, pattern, speed);
 						} else {
-							processor.playFromRow(0, currentPatternOrderIndex, speed);
+							processor.playFromRow(0, indexToApply, speed);
 						}
 					});
 				}
 			}
+			lastPatternOrderIndexFromPlayback = indexToApply;
 		}
 	});
 
@@ -2115,9 +2112,16 @@
 				services.audioService.getPlayPatternId() === null
 			) {
 				if (currentPatternOrderIndexUpdate !== currentPatternOrderIndex) {
-					currentPatternOrderIndex = currentPatternOrderIndexUpdate;
-					lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
-					userManuallyChangedPattern = false;
+					const recentlyChangedManually =
+						userManuallyChangedPattern &&
+						now - lastManualPatternChangeTime <= MANUAL_PATTERN_CHANGE_TIMEOUT_MS;
+					if (recentlyChangedManually) {
+						lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
+					} else {
+						currentPatternOrderIndex = currentPatternOrderIndexUpdate;
+						lastPatternOrderIndexFromPlayback = currentPatternOrderIndexUpdate;
+						userManuallyChangedPattern = false;
+					}
 				} else if (
 					userManuallyChangedPattern &&
 					now - lastManualPatternChangeTime > MANUAL_PATTERN_CHANGE_TIMEOUT_MS
