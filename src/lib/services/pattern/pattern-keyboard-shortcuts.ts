@@ -52,7 +52,11 @@ export interface PatternKeyboardShortcutsContext {
 	onClearSelection: () => void;
 	onSetSelectionAnchor: (row: number, column: number) => void;
 	onExtendSelection: (row: number, column: number) => void;
-	onIncrementFieldValue: (delta: number, isOctaveIncrement?: boolean) => void;
+	onIncrementFieldValue: (
+		delta: number,
+		isOctaveIncrement?: boolean,
+		keyForPreview?: string
+	) => void;
 	selectionStartRow: number | null;
 	selectionStartColumn: number | null;
 	selectionEndRow: number | null;
@@ -66,7 +70,11 @@ export interface KeyboardShortcutResult {
 	shouldPreventDefault: boolean;
 }
 
-function dispatchCommandAction(action: string, ctx: PatternKeyboardShortcutsContext): boolean {
+function dispatchCommandAction(
+	action: string,
+	ctx: PatternKeyboardShortcutsContext,
+	event?: KeyboardEvent
+): boolean {
 	switch (action) {
 		case ACTION_UNDO:
 			ctx.onUndo();
@@ -109,22 +117,22 @@ function dispatchCommandAction(action: string, ctx: PatternKeyboardShortcutsCont
 			return true;
 		case ACTION_INCREMENT_VALUE:
 			if (!ctx.isPlaying) {
-				ctx.onIncrementFieldValue(1, false);
+				ctx.onIncrementFieldValue(1, false, event?.key);
 			}
 			return true;
 		case ACTION_DECREMENT_VALUE:
 			if (!ctx.isPlaying) {
-				ctx.onIncrementFieldValue(-1, false);
+				ctx.onIncrementFieldValue(-1, false, event?.key);
 			}
 			return true;
 		case ACTION_TRANSPOSE_OCTAVE_UP:
 			if (!ctx.isPlaying) {
-				ctx.onIncrementFieldValue(1, true);
+				ctx.onIncrementFieldValue(1, true, event?.key);
 			}
 			return true;
 		case ACTION_TRANSPOSE_OCTAVE_DOWN:
 			if (!ctx.isPlaying) {
-				ctx.onIncrementFieldValue(-1, true);
+				ctx.onIncrementFieldValue(-1, true, event?.key);
 			}
 			return true;
 		case ACTION_TOGGLE_PLAYBACK:
@@ -154,7 +162,7 @@ export class PatternKeyboardShortcutsService {
 				return { handled: false, shouldPreventDefault: false };
 			}
 			if (PATTERN_EDITOR_ACTION_IDS.has(action)) {
-				const result = dispatchCommandAction(action, shortcutsContext);
+				const result = dispatchCommandAction(action, shortcutsContext, event);
 				if (result) {
 					return { handled: true, shouldPreventDefault: true };
 				}
@@ -431,13 +439,13 @@ export class PatternKeyboardShortcutsService {
 			case '+':
 			case '=':
 				if (!shortcutsContext.isPlaying) {
-					shortcutsContext.onIncrementFieldValue(1, isModifier);
+					shortcutsContext.onIncrementFieldValue(1, isModifier, event.key);
 				}
 				return { handled: true, shouldPreventDefault: true };
 			case '-':
 			case '_':
 				if (!shortcutsContext.isPlaying) {
-					shortcutsContext.onIncrementFieldValue(-1, isModifier);
+					shortcutsContext.onIncrementFieldValue(-1, isModifier, event.key);
 				}
 				return { handled: true, shouldPreventDefault: true };
 		}

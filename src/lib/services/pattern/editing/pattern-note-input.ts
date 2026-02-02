@@ -30,7 +30,6 @@ export class PatternNoteInput {
 		'0': { noteName: NoteName.DSharp, octaveOffset: 2 },
 		p: { noteName: NoteName.E, octaveOffset: 2 },
 		'[': { noteName: NoteName.F, octaveOffset: 2 },
-		']': { noteName: NoteName.G, octaveOffset: 2 },
 		z: { noteName: NoteName.C, octaveOffset: 0 },
 		s: { noteName: NoteName.CSharp, octaveOffset: 0 },
 		x: { noteName: NoteName.D, octaveOffset: 0 },

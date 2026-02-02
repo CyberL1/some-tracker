@@ -971,8 +971,12 @@
 				selectionEndColumn = column;
 				draw();
 			},
-			onIncrementFieldValue: (delta: number, isOctaveIncrement?: boolean) => {
-				incrementFieldValue(delta, isOctaveIncrement);
+			onIncrementFieldValue: (
+				delta: number,
+				isOctaveIncrement?: boolean,
+				keyForPreview?: string
+			) => {
+				incrementFieldValue(delta, isOctaveIncrement, keyForPreview);
 			},
 			selectionStartRow,
 			selectionStartColumn,
@@ -1706,7 +1710,11 @@
 		}
 	}
 
-	function incrementFieldValue(delta: number, isOctaveIncrement = false): void {
+	function incrementFieldValue(
+		delta: number,
+		isOctaveIncrement = false,
+		keyForPreview?: string
+	): void {
 		const patternId = patternOrder[currentPatternOrderIndex];
 		const originalPattern = findOrCreatePattern(patternId);
 		let pattern = originalPattern;
@@ -1867,6 +1875,7 @@
 			const previewChannel =
 				fieldInfo.fieldKey === 'envelopeValue' ? 0 : fieldInfo.channelIndex;
 			const shouldPreview =
+				keyForPreview === undefined &&
 				!playbackStore.isPlaying &&
 				previewChannel >= 0 &&
 				(fieldInfo.channelIndex >= 0 || fieldInfo.fieldKey === 'envelopeValue');
