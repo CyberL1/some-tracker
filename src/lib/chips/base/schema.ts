@@ -26,6 +26,12 @@ export interface ChipSetting {
 	defaultValue?: unknown;
 	group?: string;
 	notifyAudioService?: boolean;
+	min?: number;
+	max?: number;
+	step?: number;
+	computedHint?: (value: unknown, context: Record<string, unknown>) => string;
+	fullWidth?: boolean;
+	dependsOn?: string[];
 }
 
 export interface ChipSchema {

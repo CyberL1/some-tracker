@@ -232,7 +232,8 @@ class VT2Converter {
 	): Song {
 		const song = new Song();
 		song.tuningTable = tuningTable;
-		song.initialSpeed = module.speed;
+		song.initialSpeed =
+			module.speed >= 1 && module.speed <= 255 ? module.speed : 3;
 		const chipVariant = this.detectChipType(module);
 		song.chipType = chipVariant === 'AY' || chipVariant === 'YM' ? 'ay' : undefined;
 		song.chipVariant = chipVariant;
@@ -316,7 +317,8 @@ class VT2Converter {
 		const song = new Song();
 		song.tuningTable = tuningTable;
 		song.instruments = this.initializeInstrumentsArray(instruments);
-		song.initialSpeed = module.speed;
+		song.initialSpeed =
+			module.speed >= 1 && module.speed <= 255 ? module.speed : 3;
 
 		song.patterns = patterns.map((vt2Pattern) => {
 			const pattern = new Pattern(vt2Pattern.id, vt2Pattern.rows.length);
@@ -381,7 +383,7 @@ class VT2Converter {
 					module.version = value;
 					break;
 				case 'Speed':
-					module.speed = parseInt(value) || 6;
+					module.speed = parseInt(value) || 3;
 					break;
 				case 'PlayOrder':
 					const { patternOrder, loopPoint } = this.parsePlayOrder(value);

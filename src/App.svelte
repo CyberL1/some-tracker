@@ -96,7 +96,8 @@
 
 	let projectSettings = $state({
 		title: '',
-		author: ''
+		author: '',
+		initialSpeed: 3
 	});
 
 	let projectInitialized = $state(false);
@@ -109,7 +110,8 @@
 
 			projectSettings = {
 				title: newProject.name,
-				author: newProject.author
+				author: newProject.author,
+				initialSpeed: newProject.songs[0]?.initialSpeed ?? 3
 			};
 			songs = newProject.songs;
 			patternOrder = newProject.patternOrder;
@@ -307,7 +309,8 @@
 
 				projectSettings = {
 					title: newProject.name,
-					author: newProject.author
+					author: newProject.author,
+					initialSpeed: newProject.songs[0]?.initialSpeed ?? 3
 				};
 				songs = newProject.songs;
 				patternOrder = newProject.patternOrder;
@@ -454,7 +457,8 @@
 
 				projectSettings = {
 					title: importedProject.name,
-					author: importedProject.author
+					author: importedProject.author,
+					initialSpeed: importedProject.songs[0]?.initialSpeed ?? 3
 				};
 				songs = importedProject.songs;
 				patternOrder = importedProject.patternOrder;

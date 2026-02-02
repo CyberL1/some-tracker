@@ -9,10 +9,12 @@
 
 	let {
 		value = $bindable(),
-		options
+		options,
+		onchange
 	}: {
 		value: number;
 		options: SelectOption[];
+		onchange?: () => void;
 	} = $props();
 
 	let selectedOption = $state<string>('');
@@ -40,6 +42,7 @@
 			const option = options.find((opt) => opt.label === selectedOption);
 			if (option) {
 				value = option.value;
+				onchange?.();
 			}
 		}
 	}
@@ -47,6 +50,7 @@
 	function handleCustomValueChange() {
 		if (isCustom) {
 			value = customValue;
+			onchange?.();
 		}
 	}
 

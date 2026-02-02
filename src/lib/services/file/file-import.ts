@@ -46,7 +46,6 @@ function reconstructSong(data: any): Song {
 		reconstructPattern(patternData, schema)
 	) || [new Pattern(0, 64, schema)];
 	song.tuningTable = data.tuningTable || song.tuningTable;
-	song.initialSpeed = data.initialSpeed ?? 3;
 	const instruments =
 		data.instruments?.map((instData: any) => reconstructInstrument(instData)) || [];
 	song.instruments =
@@ -67,6 +66,13 @@ function reconstructSong(data: any): Song {
 	if (schema?.defaultChipVariant !== undefined && songRecord.chipVariant === undefined) {
 		songRecord.chipVariant = schema.defaultChipVariant;
 	}
+	const loadedSpeed = data.initialSpeed;
+	song.initialSpeed =
+		typeof loadedSpeed === 'number' &&
+		loadedSpeed >= 1 &&
+		loadedSpeed <= 255
+			? loadedSpeed
+			: 3;
 	return song;
 }
 

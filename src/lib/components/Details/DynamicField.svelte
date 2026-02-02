@@ -6,23 +6,21 @@
 	let {
 		setting,
 		value = $bindable(),
-		onChange
+		onChange,
+		context = {},
+		hintOverride = undefined
 	}: {
 		setting: ChipSetting;
 		value: unknown;
 		onChange?: (key: string, newValue: unknown, setting: ChipSetting) => void;
+		context?: Record<string, unknown>;
+		hintOverride?: string | null;
 	} = $props();
 
 	function handleChange(newValue: unknown) {
 		value = newValue;
 		onChange?.(setting.key, newValue, setting);
 	}
-
-	$effect(() => {
-		if (setting.type === 'text' || setting.type === 'select' || setting.type === 'number') {
-			onChange?.(setting.key, value, setting);
-		}
-	});
 
 	const selectOptions = $derived(
 		setting.type === 'select' && setting.options
@@ -31,6 +29,14 @@
 					value: typeof opt.value === 'number' ? opt.value : parseFloat(String(opt.value))
 				}))
 			: []
+	);
+
+	const hint = $derived(
+		hintOverride !== undefined
+			? hintOverride
+			: setting.computedHint
+				? setting.computedHint(value, context)
+				: null
 	);
 </script>
 
@@ -48,7 +54,27 @@
 		{String(value)}
 	</button>
 {:else if setting.type === 'select' && setting.options}
-	<Select bind:value={value as number} options={selectOptions} />
+	<Select
+		bind:value={value as number}
+		options={selectOptions}
+		onchange={() => onChange?.(setting.key, value, setting)} />
 {:else if setting.type === 'number'}
-	<Input bind:value={value as string} type="number" />
+	<div class="flex min-w-0 flex-1 items-center gap-2">
+		<div class="shrink-0">
+			<Input
+				bind:value={value as string}
+				type="number"
+				min={setting.min}
+				max={setting.max}
+				step={setting.step}
+				oninput={() => onChange?.(setting.key, value, setting)}
+				onchange={() => onChange?.(setting.key, value, setting)} />
+		</div>
+		{#if hint}
+			<span class="shrink-0 text-xs text-[var(--color-app-text-muted)]">{hint}</span>
+		{/if}
+	</div>
+{/if}
+{#if setting.type !== 'number' && hint}
+	<span class="text-xs text-[var(--color-app-text-muted)]">{hint}</span>
 {/if}
