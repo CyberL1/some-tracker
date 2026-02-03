@@ -10,11 +10,13 @@
 	let {
 		value = $bindable(),
 		options,
-		onchange
+		onchange,
+		showCustomOption = true
 	}: {
 		value: number;
 		options: SelectOption[];
 		onchange?: () => void;
+		showCustomOption?: boolean;
 	} = $props();
 
 	let selectedOption = $state<string>('');
@@ -85,7 +87,9 @@
 			{#each options as option}
 				<option value={option.label}>{option.label}</option>
 			{/each}
-			<option value="Custom">Custom</option>
+			{#if showCustomOption}
+				<option value="Custom">Custom</option>
+			{/if}
 		</select>
 		<div class="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 cursor-pointer">
 			<IconCarbonChevronDown class="h-3 w-3 text-[var(--color-app-text-muted)]" />

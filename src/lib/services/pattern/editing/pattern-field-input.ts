@@ -13,9 +13,9 @@ export class PatternFieldInput {
 		fieldInfo: FieldInfo,
 		key: string
 	): { updatedPattern: Pattern; shouldMoveNext: boolean } | null {
-		if (fieldInfo.fieldKey === 'envelopeValue' && context.schema.chipType === 'ay') {
+		if (fieldInfo.fieldKey === 'envelopeValue' && context.tuningTable) {
 			const envelopeAsNote = editorStateStore.get().envelopeAsNote;
-			if (envelopeAsNote && context.tuningTable) {
+			if (envelopeAsNote) {
 				const noteInputResult = PatternEnvelopeNoteInput.handleEnvelopeNoteInput(
 					context,
 					fieldInfo,

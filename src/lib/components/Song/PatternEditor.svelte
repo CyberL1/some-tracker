@@ -85,6 +85,7 @@
 		chip,
 		chipProcessor,
 		tuningTable,
+		tuningTableVersion = 0,
 		speed,
 		instruments,
 		tables = []
@@ -103,6 +104,7 @@
 		chip: Chip;
 		chipProcessor: ChipProcessor;
 		tuningTable: number[];
+		tuningTableVersion?: number;
 		speed: number;
 		instruments: Instrument[];
 		tables?: import('../../models/project').Table[];
@@ -136,11 +138,17 @@
 
 	let previousEnvelopeAsNote: boolean | undefined;
 	let previousDecimalRowNumbers: boolean | undefined;
+	let previousTuningTable: number[] | undefined;
+	let previousTuningTableVersion: number | undefined;
 
 	$effect(() => {
 		const formatterWithOpts = formatter as { tuningTable?: number[]; envelopeAsNote?: boolean };
 		if ('envelopeAsNote' in formatterWithOpts) {
 			formatterWithOpts.tuningTable = tuningTable;
+			const versionChanged = tuningTableVersion !== previousTuningTableVersion;
+			if (versionChanged) {
+				previousTuningTableVersion = tuningTableVersion;
+			}
 			const newEnvelopeAsNote = editorStateStore.get().envelopeAsNote;
 
 			const result = EnvelopeModeService.handleModeChange(
@@ -152,9 +160,16 @@
 			formatterWithOpts.envelopeAsNote = newEnvelopeAsNote;
 			previousEnvelopeAsNote = newEnvelopeAsNote;
 
-			if (result.shouldRedraw) {
+			const tuningTableChanged = tuningTable !== previousTuningTable;
+			if (tuningTableChanged) {
+				previousTuningTable = tuningTable;
+			}
+
+			if (result.shouldRedraw || tuningTableChanged || versionChanged) {
+				if (result.shouldRedraw) {
+					patterns = result.updatedPatterns;
+				}
 				clearAllCaches();
-				patterns = result.updatedPatterns;
 				untrack(() => {
 					if (ctx && renderer && textParser) {
 						draw();

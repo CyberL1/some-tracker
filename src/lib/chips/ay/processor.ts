@@ -108,6 +108,14 @@ export class AYProcessor
 				}
 			})
 		);
+
+		this.settingsUnsubscribers.push(
+			chipSettings.subscribe('tuningTable', (value) => {
+				if (Array.isArray(value) && value.length > 0) {
+					this.sendInitTuningTable(value as number[]);
+				}
+			})
+		);
 	}
 
 	unsubscribeFromSettings(): void {

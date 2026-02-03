@@ -33,7 +33,10 @@ export class ProjectService {
 	}
 
 	private applyChipDefaults(song: Song, schema: ChipSchema): void {
-		if (schema.defaultTuningTable) {
+		if (schema.resolveTuningTable) {
+			const record = song as unknown as Record<string, unknown>;
+			song.tuningTable = schema.resolveTuningTable(record);
+		} else if (schema.defaultTuningTable) {
 			song.tuningTable = schema.defaultTuningTable;
 		}
 		if (schema.defaultChipVariant !== undefined) {

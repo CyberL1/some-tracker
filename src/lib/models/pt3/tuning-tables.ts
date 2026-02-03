@@ -48,9 +48,37 @@ export const PT3ToneTable_3: number[] = [
 	0x001a, 0x0018, 0x0017, 0x0016, 0x0014, 0x0013, 0x0012, 0x0011, 0x0010, 0x000f, 0x000e, 0x000d
 ];
 
-export const PT3TuneTables: number[][] = [
-	PT3ToneTable_0, // Table #0 of Pro Tracker 3.4x - 3.5x
-	PT3ToneTable_1, // Table #1 of Pro Tracker 3.3x - 3.5x
-	PT3ToneTable_2, // Table #2 of Pro Tracker 3.4x - 3.5x
-	PT3ToneTable_3 // Table #3 of Pro Tracker 3.4x - 3.5x
+// Table #4 Natural Cmaj/Am (Vortex Tracker II PT3NoteTable_NATURAL)
+export const PT3ToneTable_4: number[] = [
+	2880, 2700, 2560, 2400, 2304, 2160, 2025, 1920, 1800, 1728, 1620, 1536, 1440, 1350, 1280, 1200,
+	1152, 1080, 1013, 960, 900, 864, 810, 768, 720, 675, 640, 600, 576, 540, 506, 480, 450, 432,
+	405, 384, 360, 338, 320, 300, 288, 270, 253, 240, 225, 216, 203, 192, 180, 169, 160, 150, 144,
+	135, 127, 120, 113, 108, 101, 96, 90, 84, 80, 75, 72, 68, 63, 60, 56, 54, 51, 48, 45, 42, 40,
+	38, 36, 34, 32, 30, 28, 27, 25, 24, 23, 21, 20, 19, 18, 17, 16, 15, 14, 14, 13, 12
 ];
+
+export const PT3TuneTables: number[][] = [
+	PT3ToneTable_0,
+	PT3ToneTable_1,
+	PT3ToneTable_2,
+	PT3ToneTable_3,
+	PT3ToneTable_4
+];
+
+const A4_NOTE_INDEX = 45;
+const TABLE_LENGTH = 96;
+const MIN_PERIOD = 1;
+const MAX_PERIOD = 4095;
+
+export function generate12TETTuningTable(chipFrequencyHz: number, a4Hz: number = 440): number[] {
+	const result: number[] = [];
+	for (let i = 0; i < TABLE_LENGTH; i++) {
+		const freqHz = a4Hz * Math.pow(2, (i - A4_NOTE_INDEX) / 12);
+		const periodF = chipFrequencyHz / 16 / freqHz;
+		let period = Math.round(periodF);
+		if (period > MAX_PERIOD) period = MAX_PERIOD;
+		if (period < MIN_PERIOD) period = MIN_PERIOD;
+		result.push(period);
+	}
+	return result;
+}

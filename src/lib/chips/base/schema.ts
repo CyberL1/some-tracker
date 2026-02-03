@@ -32,6 +32,9 @@ export interface ChipSetting {
 	computedHint?: (value: unknown, context: Record<string, unknown>) => string;
 	fullWidth?: boolean;
 	dependsOn?: string[];
+	dynamicOption?: { value: number; label: (context: Record<string, unknown>) => string };
+	showWhen?: { key: string; value: unknown };
+	startNewRow?: boolean;
 }
 
 export interface ChipSchema {
@@ -44,6 +47,8 @@ export interface ChipSchema {
 	settings?: ChipSetting[];
 	defaultTuningTable?: number[];
 	defaultChipVariant?: string;
+	resolveTuningTable?: (song: Record<string, unknown>) => number[];
+	tuningTableSettingKeys?: string[];
 }
 
 export function applySchemaDefaults<T extends object>(target: T, schema: ChipSchema): void {

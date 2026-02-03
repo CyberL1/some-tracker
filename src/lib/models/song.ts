@@ -158,6 +158,8 @@ class Song {
 	public chipVariant?: string;
 	public chipFrequency?: number;
 	public interruptFrequency: number;
+	public tuningTableIndex?: number;
+	public a4TuningHz?: number;
 	private schema?: ChipSchema;
 
 	constructor(schema?: ChipSchema) {

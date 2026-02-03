@@ -50,7 +50,7 @@ export class PatternDeleteHandler {
 			return this.handleEffectFieldDelete(context, fieldInfo);
 		}
 
-		if (fieldInfo.fieldKey === 'envelopeValue' && context.schema.chipType === 'ay') {
+		if (fieldInfo.fieldKey === 'envelopeValue' && context.tuningTable) {
 			// Special handling for envelope value when displayed as note
 			const updatedPattern = PatternValueUpdates.updateFieldValue(context, fieldInfo, 0);
 			return { updatedPattern, shouldMoveNext: false };

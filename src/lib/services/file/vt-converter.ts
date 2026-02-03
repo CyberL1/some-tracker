@@ -9,7 +9,7 @@ import {
 	Instrument,
 	InstrumentRow
 } from '../../models/song';
-import { PT3TuneTables } from '../../models/pt3/tuning-tables';
+import { PT3TuneTables, generate12TETTuningTable } from '../../models/pt3/tuning-tables';
 
 interface VT2Module {
 	title: string;
@@ -19,6 +19,7 @@ interface VT2Module {
 	playOrder: number[];
 	loopPoint?: number;
 	noteTable: number;
+	customNoteTable?: number[];
 	chipFrequency: number;
 	interruptFrequency: number;
 }
@@ -148,17 +149,15 @@ class VT2Converter {
 			);
 		});
 
-		const tuningTable =
-			module.noteTable >= 0 && module.noteTable < PT3TuneTables.length
-				? PT3TuneTables[module.noteTable]
-				: PT3TuneTables[2];
-
+		const { tuningTable, tuningTableIndex, a4TuningHz } = this.resolveTuningTable(module);
 		return this.convertSingleChip(
 			module,
 			patterns,
 			convertedInstruments,
 			convertedTables,
-			tuningTable
+			tuningTable,
+			tuningTableIndex,
+			a4TuningHz
 		);
 	}
 
@@ -204,14 +203,26 @@ class VT2Converter {
 		const samples2 = this.parseSamples(secondModuleLines);
 		const patterns2 = this.parsePatterns(secondModuleLines);
 
-		const tuningTable =
-			module1.noteTable >= 0 && module1.noteTable < PT3TuneTables.length
-				? PT3TuneTables[module1.noteTable]
-				: PT3TuneTables[2];
+		const { tuningTable, tuningTableIndex, a4TuningHz } = this.resolveTuningTable(module1);
 
-		const song1 = this.createSongFromModule(module1, patterns1, samples1, tables1, tuningTable);
-
-		const song2 = this.createSongFromModule(module2, patterns2, samples2, tables2, tuningTable);
+		const song1 = this.createSongFromModule(
+			module1,
+			patterns1,
+			samples1,
+			tables1,
+			tuningTable,
+			tuningTableIndex,
+			a4TuningHz
+		);
+		const song2 = this.createSongFromModule(
+			module2,
+			patterns2,
+			samples2,
+			tables2,
+			tuningTable,
+			tuningTableIndex,
+			a4TuningHz
+		);
 
 		return new Project(
 			module1.title,
@@ -223,17 +234,54 @@ class VT2Converter {
 		);
 	}
 
+	private resolveTuningTable(module: VT2Module): {
+		tuningTable: number[];
+		tuningTableIndex: number;
+		a4TuningHz: number;
+	} {
+		if (module.noteTable >= 0 && module.noteTable < PT3TuneTables.length) {
+			return {
+				tuningTable: [...PT3TuneTables[module.noteTable]],
+				tuningTableIndex: module.noteTable,
+				a4TuningHz: 440
+			};
+		}
+		if (module.noteTable === 5) {
+			if (
+				module.customNoteTable &&
+				module.customNoteTable.length === 96 &&
+				module.customNoteTable.every((n) => n >= 1 && n <= 4095)
+			) {
+				return {
+					tuningTable: [...module.customNoteTable],
+					tuningTableIndex: 5,
+					a4TuningHz: 440
+				};
+			}
+			const table = generate12TETTuningTable(module.chipFrequency, 440);
+			return { tuningTable: table, tuningTableIndex: 5, a4TuningHz: 440 };
+		}
+		return {
+			tuningTable: [...PT3TuneTables[2]],
+			tuningTableIndex: 2,
+			a4TuningHz: 440
+		};
+	}
+
 	private createSongFromModule(
 		module: VT2Module,
 		patterns: VT2Pattern[],
 		samples: VT2Sample[],
 		tables: VT2Table[],
-		tuningTable: number[]
+		tuningTable: number[],
+		tuningTableIndex: number,
+		a4TuningHz: number
 	): Song {
 		const song = new Song();
 		song.tuningTable = tuningTable;
-		song.initialSpeed =
-			module.speed >= 1 && module.speed <= 255 ? module.speed : 3;
+		song.tuningTableIndex = tuningTableIndex;
+		song.a4TuningHz = a4TuningHz;
+		song.initialSpeed = module.speed >= 1 && module.speed <= 255 ? module.speed : 3;
 		const chipVariant = this.detectChipType(module);
 		song.chipType = chipVariant === 'AY' || chipVariant === 'YM' ? 'ay' : undefined;
 		song.chipVariant = chipVariant;
@@ -312,13 +360,16 @@ class VT2Converter {
 		patterns: VT2Pattern[],
 		instruments: Instrument[],
 		tables: Table[],
-		tuningTable: number[]
+		tuningTable: number[],
+		tuningTableIndex: number,
+		a4TuningHz: number
 	): Project {
 		const song = new Song();
 		song.tuningTable = tuningTable;
+		song.tuningTableIndex = tuningTableIndex;
+		song.a4TuningHz = a4TuningHz;
 		song.instruments = this.initializeInstrumentsArray(instruments);
-		song.initialSpeed =
-			module.speed >= 1 && module.speed <= 255 ? module.speed : 3;
+		song.initialSpeed = module.speed >= 1 && module.speed <= 255 ? module.speed : 3;
 
 		song.patterns = patterns.map((vt2Pattern) => {
 			const pattern = new Pattern(vt2Pattern.id, vt2Pattern.rows.length);
@@ -393,6 +444,13 @@ class VT2Converter {
 				case 'NoteTable':
 					module.noteTable = parseInt(value) || 0;
 					break;
+				case 'CustomNoteTable': {
+					const parts = value.split(',').map((p) => parseInt(p.trim(), 10));
+					if (parts.length >= 96 && parts.every((n) => !Number.isNaN(n))) {
+						module.customNoteTable = parts.slice(0, 96);
+					}
+					break;
+				}
 				case 'ChipFreq':
 					module.chipFrequency = parseInt(value) || 1773400;
 					break;

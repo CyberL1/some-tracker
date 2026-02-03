@@ -98,9 +98,11 @@ describe('ProjectService', () => {
 			const mockChip = createMockChip();
 			mockChip.schema = {
 				...mockChip.schema,
+				chipType: 'other',
 				defaultTuningTable,
 				defaultChipVariant
 			};
+			mockChip.type = 'other';
 
 			const project = await projectService.resetProject(mockChip);
 

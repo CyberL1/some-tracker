@@ -53,6 +53,7 @@
 	let sharedSelectedRow = $state(0);
 	let songViewContainer: HTMLDivElement;
 	let patternEditors: PatternEditor[] = $state([]);
+	let tuningTableVersion = $state(0);
 	let rightPanelActiveTabId = $state('instruments');
 	let isRightPanelExpanded = $state(false);
 	let selectedColumn = $state(0);
@@ -453,6 +454,7 @@
 								{getSpeedForPlayPattern}
 								speed={song.initialSpeed}
 								tuningTable={song.tuningTable}
+								{tuningTableVersion}
 								instruments={song.instruments}
 								{tables}
 								chip={chipProcessors[i].chip}
@@ -476,7 +478,13 @@
 							bind:isExpanded={isRightPanelExpanded}
 							chip={chipProcessors[0].chip} />
 					{:else if tabId === 'details'}
-						<DetailsView {chipProcessors} bind:values={projectSettings} {songs} />
+						<DetailsView
+							{chipProcessors}
+							bind:values={projectSettings}
+							{songs}
+							onChipSettingsApplied={() => {
+								tuningTableVersion++;
+							}} />
 					{/if}
 				{/snippet}
 			</TabView>

@@ -178,8 +178,7 @@ export class PatternEditorTextParser {
 
 			const isEnvelopeAsNote =
 				segment.fieldKey === 'envelopeValue' &&
-				this.schema.chipType === 'ay' &&
-				(this.formatter as any).envelopeAsNote;
+				(this.formatter as { envelopeAsNote?: boolean }).envelopeAsNote;
 			const isAtomic = field?.selectable === 'atomic' || isEnvelopeAsNote;
 
 			if (isAtomic && i === segment.start) {

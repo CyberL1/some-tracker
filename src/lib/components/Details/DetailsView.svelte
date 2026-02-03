@@ -15,11 +15,13 @@
 	let {
 		chipProcessors,
 		values = $bindable(),
-		songs = []
+		songs = [],
+		onChipSettingsApplied
 	}: {
 		chipProcessors: ChipProcessor[];
 		values: Record<string, unknown>;
 		songs?: Song[];
+		onChipSettingsApplied?: () => void;
 	} = $props();
 
 	const services: { audioService: AudioService } = getContext('container');
@@ -74,6 +76,15 @@
 		...new Set(projectSettings.flatMap((s) => s.dependsOn ?? []))
 	] as string[]);
 
+	let chipSettingOverrides = $state<Record<string, Record<string, unknown>>>({});
+	let previousSongsRef = $state<Song[] | undefined>(undefined);
+	$effect(() => {
+		if (songs !== previousSongsRef) {
+			previousSongsRef = songs;
+			chipSettingOverrides = {};
+		}
+	});
+
 	let projectContextState = $state<Record<string, unknown>>({});
 	$effect(() => {
 		for (const key of projectContextKeys) {
@@ -101,20 +112,47 @@
 		}
 	}
 
+	function resolveAndPushTuningTable(chipType: string) {
+		const chip = getChipByType(chipType);
+		if (!chip?.schema.resolveTuningTable) return;
+		const songsOfType = songs.filter((s) => s.chipType === chipType);
+		if (songsOfType.length === 0) return;
+		const song = songsOfType[0];
+		const record = song as unknown as Record<string, unknown>;
+		const table = chip.schema.resolveTuningTable(record);
+		for (const s of songsOfType) {
+			s.tuningTable = table;
+		}
+		services.audioService.chipSettings.set('tuningTable', [...table]);
+	}
+
 	function handleChipSettingChange(
 		chipType: string,
 		key: string,
 		value: unknown,
 		setting: ChipSetting
 	) {
-		const normalized =
-			setting.type === 'number' ? Number(value) || setting.defaultValue : value;
+		let normalized = setting.type === 'number' ? Number(value) || setting.defaultValue : value;
+		if (setting.type === 'number' && setting.min !== undefined && setting.max !== undefined) {
+			const n = Number(normalized);
+			normalized = Math.min(setting.max, Math.max(setting.min, n));
+		}
 		const songsOfType = songs.filter((s) => s.chipType === chipType);
 		for (const song of songsOfType) {
 			(song as unknown as Record<string, unknown>)[key] = normalized;
 		}
+		chipSettingOverrides[chipType] = {
+			...(chipSettingOverrides[chipType] ?? {}),
+			[key]: normalized
+		};
 		if (projectContextKeys.includes(key)) {
 			projectContextState[key] = Number(normalized);
+		}
+
+		const chip = getChipByType(chipType);
+		if (chip?.schema.tuningTableSettingKeys?.includes(key)) {
+			resolveAndPushTuningTable(chipType);
+			onChipSettingsApplied?.();
 		}
 
 		if (setting.notifyAudioService) {
@@ -144,6 +182,9 @@
 						services.audioService.chipSettings.set(s.key, value);
 					}
 				});
+			if (group.chip?.schema.resolveTuningTable) {
+				resolveAndPushTuningTable(group.chipType);
+			}
 		});
 	});
 </script>
@@ -189,31 +230,50 @@
 					{#key songs}
 						<div class="flex flex-wrap gap-2">
 							{#each chipSettings as setting}
-								{@const currentValue =
+								{#if setting.startNewRow}
+									<div class="h-0 min-h-0 w-full basis-full" aria-hidden="true">
+									</div>
+								{/if}
+								{@const baseValue =
 									getChipSettingValue(group.chipType, setting.key) ??
 									setting.defaultValue}
+								{@const currentValue =
+									chipSettingOverrides[group.chipType]?.[setting.key] ??
+									baseValue}
 								{@const context = Object.fromEntries(
 									chipSettings.map((s) => [
 										s.key,
-										getChipSettingValue(group.chipType, s.key) ?? s.defaultValue
+										chipSettingOverrides[group.chipType]?.[s.key] ??
+											getChipSettingValue(group.chipType, s.key) ??
+											s.defaultValue
 									])
 								)}
-								<div
-									class={setting.fullWidth
-										? 'w-full basis-full'
-										: setting.type === 'toggle'
-											? ''
-											: 'flex-1'}>
-									<CardElement label={setting.label}>
-										<DynamicField
-											{setting}
-											value={currentValue}
-											{context}
-											onChange={(key, value, s) => {
-												handleChipSettingChange(group.chipType, key, value, s);
-											}} />
-									</CardElement>
-								</div>
+								{@const settingVisible =
+									!setting.showWhen ||
+									context[setting.showWhen.key] == setting.showWhen.value}
+								{#if settingVisible}
+									<div
+										class={setting.fullWidth
+											? 'w-full basis-full'
+											: setting.type === 'toggle'
+												? ''
+												: 'flex-1'}>
+										<CardElement label={setting.label}>
+											<DynamicField
+												{setting}
+												value={currentValue}
+												{context}
+												onChange={(key, value, s) => {
+													handleChipSettingChange(
+														group.chipType,
+														key,
+														value,
+														s
+													);
+												}} />
+										</CardElement>
+									</div>
+								{/if}
 							{/each}
 						</div>
 					{/key}
@@ -225,7 +285,9 @@
 	{#if chipsByType.length === 0 || chipsByType.every((g) => (g.chip.schema.settings?.filter((s) => s.group === 'chip') || []).length === 0)}
 		{#if projectSettings.length === PROJECT_FIELDS.length}
 			<div class="flex h-full items-center justify-center">
-				<p class="text-sm text-[var(--color-app-text-muted)]">No chip-specific settings available</p>
+				<p class="text-sm text-[var(--color-app-text-muted)]">
+					No chip-specific settings available
+				</p>
 			</div>
 		{/if}
 	{/if}
