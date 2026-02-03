@@ -32,6 +32,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.positionUpdateThrottleMs = 16;
 		this.pendingPositionUpdate = null;
 		this.stereoLayout = 'ABC';
+		this.nextPatternRequested = false;
+		this.pendingNextPattern = null;
 	}
 
 	async handleMessage(event) {
@@ -161,7 +163,17 @@ class AyumiProcessor extends AudioWorkletProcessor {
 	}
 
 	handleSetPatternData(data) {
+		if (data.patternOrderIndex !== this.state.currentPatternOrderIndex) {
+			this.pendingNextPattern = {
+				pattern: data.pattern,
+				orderIndex: data.patternOrderIndex
+			};
+			this.nextPatternRequested = false;
+			return;
+		}
+
 		this.state.setPattern(data.pattern, data.patternOrderIndex);
+		this.pendingNextPattern = null;
 
 		if (this.pendingRowAfterPatternChange !== null) {
 			this.state.currentRow = this.pendingRowAfterPatternChange;
@@ -243,6 +255,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			return;
 		}
 
+		this.pendingNextPattern = null;
+		this.nextPatternRequested = false;
 		let patternChanged = false;
 
 		if (patternOrderIndex !== undefined) {
@@ -291,6 +305,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 
 		this.paused = false;
+		this.pendingNextPattern = null;
+		this.nextPatternRequested = false;
 		this.fadeInSamples = Math.floor(sampleRate * this.fadeInDuration);
 		this.registerState.reset();
 		if (this.ayumiEngine) {
@@ -326,6 +342,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 
 		this.paused = false;
+		this.pendingNextPattern = null;
+		this.nextPatternRequested = false;
 		this.fadeInSamples = Math.floor(sampleRate * this.fadeInDuration);
 		this.registerState.reset();
 		if (this.ayumiEngine) {
@@ -406,6 +424,8 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 		this.state.reset();
 		this.state.currentPattern = null;
+		this.pendingNextPattern = null;
+		this.nextPatternRequested = false;
 		this.handleStopPreview();
 	}
 
@@ -500,6 +520,23 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					this.state.tickAccumulator >= 1.0
 				) {
 					if (this.state.currentTick === 0) {
+						const lastRow =
+							this.state.currentRow === this.state.currentPattern.length - 1;
+						if (
+							lastRow &&
+							!this.nextPatternRequested &&
+							this.state.patternOrder.length > 0
+						) {
+							this.nextPatternRequested = true;
+							const nextIndex =
+								(this.state.currentPatternOrderIndex + 1) %
+								this.state.patternOrder.length;
+							this.port.postMessage({
+								type: 'request_pattern',
+								patternOrderIndex: nextIndex
+							});
+						}
+
 						this.patternProcessor.parsePatternRow(
 							this.state.currentPattern,
 							this.state.currentRow,
@@ -541,11 +578,24 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 					const needsPatternChange = this.state.advancePosition();
 					if (needsPatternChange) {
-						this.state.currentPattern = null;
-						this.port.postMessage({
-							type: 'request_pattern',
-							patternOrderIndex: this.state.currentPatternOrderIndex
-						});
+						this.nextPatternRequested = false;
+						if (
+							this.pendingNextPattern &&
+							this.pendingNextPattern.orderIndex ===
+								this.state.currentPatternOrderIndex
+						) {
+							this.state.setPattern(
+								this.pendingNextPattern.pattern,
+								this.pendingNextPattern.orderIndex
+							);
+							this.pendingNextPattern = null;
+						} else {
+							this.state.currentPattern = null;
+							this.port.postMessage({
+								type: 'request_pattern',
+								patternOrderIndex: this.state.currentPatternOrderIndex
+							});
+						}
 					}
 
 					this.state.tickAccumulator -= 1.0;

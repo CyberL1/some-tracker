@@ -5,7 +5,7 @@
 	import { handleFileImport } from './lib/services/file/file-import';
 	import { handleFileExport } from './lib/services/file/file-export';
 	import { Project, Table } from './lib/models/project';
-	import type { Song } from './lib/models/song';
+	import { Pattern, type Song } from './lib/models/song';
 	import PatternEditor from './lib/components/Song/PatternEditor.svelte';
 	import ModalContainer from './lib/components/Modal/ModalContainer.svelte';
 	import ConfirmModal from './lib/components/Modal/ConfirmModal.svelte';
@@ -345,21 +345,15 @@
 
 				const newSong = await projectService.createNewSong(AY_CHIP);
 				if (songs.length > 0 && patternOrder.length > 0) {
-					const firstPatternId = patternOrder[0];
-					const firstPattern = songs[0].patterns.find((p) => p.id === firstPatternId);
-					const refLength = firstPattern?.length ?? 64;
-					if (newSong.patterns[0].length !== refLength) {
-						const schema = container.audioService.chipProcessors[0].chip.schema;
-						const resized = PatternService.resizePattern(
-							newSong.patterns[0],
-							refLength,
-							schema
-						);
-						newSong.patterns = PatternService.updatePatternInArray(
-							newSong.patterns,
-							resized
-						);
-					}
+					const refSong = songs[0];
+					const schema =
+						container.audioService.chipProcessors[0].chip.schema ?? newSong.getSchema();
+					const uniquePatternIds = [...new Set(patternOrder)];
+					newSong.patterns = uniquePatternIds.map((id) => {
+						const refPattern = refSong.patterns.find((p) => p.id === id);
+						const length = refPattern?.length ?? 64;
+						return new Pattern(id, length, schema);
+					});
 				}
 				songs = [...songs, newSong];
 

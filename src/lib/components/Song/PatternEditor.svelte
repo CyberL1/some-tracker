@@ -2066,14 +2066,15 @@
 	let userManuallyChangedPattern = $state(false);
 	let lastManualPatternChangeTime = 0;
 	let lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
+	let lastAppliedPlaybackOrderIndex: number | undefined = undefined;
+	let lastAppliedPlaybackRow: number | undefined = undefined;
 
 	$effect(() => {
 		if (currentPatternOrderIndex !== lastPatternOrderIndexFromPlayback) {
-			userManuallyChangedPattern = true;
-			lastManualPatternChangeTime = performance.now();
 			const indexToApply = currentPatternOrderIndex;
 
-			if (services.audioService.playing) {
+			if (userManuallyChangedPattern && services.audioService.playing) {
+				lastManualPatternChangeTime = performance.now();
 				if (initAllChips) {
 					initAllChips();
 					requestAnimationFrame(() => {
@@ -2105,7 +2106,9 @@
 					});
 				}
 			}
+
 			lastPatternOrderIndexFromPlayback = indexToApply;
+			userManuallyChangedPattern = false;
 		}
 	});
 
@@ -2133,7 +2136,22 @@
 					playbackRafId = null;
 					const pending = pendingPlaybackPosition;
 					pendingPlaybackPosition = null;
-					if (!pending || !services.audioService.playing) return;
+					if (!pending || !services.audioService.playing) {
+						lastAppliedPlaybackOrderIndex = undefined;
+						lastAppliedPlaybackRow = undefined;
+						return;
+					}
+
+					const isStale =
+						lastAppliedPlaybackOrderIndex !== undefined &&
+						(pending.orderIndex ?? lastAppliedPlaybackOrderIndex) ===
+							lastAppliedPlaybackOrderIndex &&
+						pending.row < (lastAppliedPlaybackRow ?? -1);
+					if (isStale) return;
+
+					lastAppliedPlaybackOrderIndex =
+						pending.orderIndex ?? lastAppliedPlaybackOrderIndex;
+					lastAppliedPlaybackRow = pending.row;
 
 					selectedRow = pending.row;
 					if (
@@ -2161,6 +2179,7 @@
 							lastPatternOrderIndexFromPlayback = pending.orderIndex;
 						}
 					}
+					draw();
 				});
 			}
 		};
