@@ -8,10 +8,7 @@ export function noteToEnvelopePeriod(noteIndex: number, tuningTable: number[]): 
 	return Math.round(tuningTable[noteIndex] / 16);
 }
 
-export function envelopePeriodToNote(
-	envelopePeriod: number,
-	tuningTable: number[]
-): number | null {
+export function envelopePeriodToNote(envelopePeriod: number, tuningTable: number[]): number | null {
 	if (envelopePeriod === 0) {
 		return null;
 	}
