@@ -512,6 +512,8 @@
 			}
 
 			initAllChips?.();
+			lastAppliedPlaybackOrderIndex = undefined;
+			lastAppliedPlaybackRow = undefined;
 			services.audioService.playFromRow(
 				selectedRow,
 				currentPatternOrderIndex,
@@ -536,6 +538,8 @@
 			}
 
 			initAllChipsForPlayPattern?.();
+			lastAppliedPlaybackOrderIndex = undefined;
+			lastAppliedPlaybackRow = undefined;
 			services.audioService.playFromRow(0, 0, getSpeedForPlayPattern ?? getSpeedForChip);
 		} catch (error) {
 			console.error('Error during play pattern:', error);
@@ -557,6 +561,8 @@
 				}
 
 				initAllChips?.();
+				lastAppliedPlaybackOrderIndex = undefined;
+				lastAppliedPlaybackRow = undefined;
 				services.audioService.play();
 			}
 		} catch (error) {
