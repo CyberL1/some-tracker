@@ -178,6 +178,11 @@ function reconstructInstrumentRow(data: any): InstrumentRow {
 }
 
 export class FileImportService {
+	static reconstructFromJson(json: string): Project {
+		const data = JSON.parse(json);
+		return reconstructProject(data);
+	}
+
 	static async decompressData(blob: Blob): Promise<string> {
 		const stream = blob.stream();
 		const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));

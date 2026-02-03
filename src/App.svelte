@@ -37,6 +37,7 @@
 	import { keybindingsStore } from './lib/stores/keybindings.svelte';
 	import { ShortcutString } from './lib/utils/shortcut-string';
 	import { ACTION_APPLY_SCRIPT } from './lib/config/keybindings';
+	import { autobackupService } from './lib/services/backup/autobackup-service';
 
 	settingsStore.init();
 	keybindingsStore.init();
@@ -118,7 +119,56 @@
 			tables = newProject.tables;
 
 			projectInitialized = true;
+
+			const backup = await autobackupService.getAutobackup();
+			if (backup) {
+				container.audioService.clearChipProcessors();
+				for (const _ of backup.songs) {
+					await container.audioService.addChipProcessor(AY_CHIP);
+				}
+				projectSettings = {
+					title: backup.name,
+					author: backup.author,
+					initialSpeed: backup.songs[0]?.initialSpeed ?? 3
+				};
+				songs = backup.songs;
+				patternOrder = backup.patternOrder;
+				tables = backup.tables;
+			}
 		})();
+	});
+
+	function getCurrentProject(): Project {
+		return new Project(
+			projectSettings.title,
+			projectSettings.author,
+			songs,
+			0,
+			patternOrder,
+			tables
+		);
+	}
+
+	$effect(() => {
+		if (!projectInitialized) return;
+		projectSettings;
+		songs;
+		patternOrder;
+		tables;
+		autobackupService.saveAutobackup(getCurrentProject());
+	});
+
+	$effect(() => {
+		if (!projectInitialized) return;
+		function saveOnUnload() {
+			autobackupService.saveAutobackup(getCurrentProject());
+		}
+		window.addEventListener('beforeunload', saveOnUnload);
+		window.addEventListener('pagehide', saveOnUnload);
+		return () => {
+			window.removeEventListener('beforeunload', saveOnUnload);
+			window.removeEventListener('pagehide', saveOnUnload);
+		};
 	});
 
 	$effect(() => {
@@ -304,6 +354,8 @@
 			if (data.action === 'new-project') {
 				playbackStore.isPlaying = false;
 				container.audioService.stop();
+
+				await autobackupService.clearAutobackup();
 
 				const newProject = await projectService.resetProject(AY_CHIP);
 
