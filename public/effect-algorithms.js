@@ -61,7 +61,10 @@ class EffectAlgorithms {
 		if (counter > 0) {
 			const newCounter = counter - 1;
 			if (newCounter === 0) {
-				if ((step >= 0 && currentSliding >= delta) || (step < 0 && currentSliding <= delta)) {
+				if (
+					(step >= 0 && currentSliding >= delta) ||
+					(step < 0 && currentSliding <= delta)
+				) {
 					return {
 						counter: 0,
 						currentSliding: 0,
@@ -160,12 +163,12 @@ class EffectAlgorithms {
 				if (tableLength > 0) {
 					newPosition = position + 1;
 					if (newPosition >= tableLength) {
-						newPosition =
-							tableLoop >= 0 && tableLoop < tableLength ? tableLoop : 0;
+						newPosition = tableLoop >= 0 && tableLoop < tableLength ? tableLoop : 0;
 					}
 				}
+				const nextCounter = delay > 0 ? delay : 1;
 				return {
-					counter: delay,
+					counter: nextCounter,
 					position: newPosition
 				};
 			}

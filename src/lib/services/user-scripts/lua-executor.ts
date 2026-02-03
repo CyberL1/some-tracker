@@ -32,7 +32,6 @@ export class LuaExecutor {
 	}
 
 	private static normalizeRows(rows: any[]): ScriptRowData[] {
-
 		//ay for now
 		return rows.map((row) => ({
 			rowIndex: row.rowIndex ?? 0,
@@ -48,7 +47,8 @@ export class LuaExecutor {
 					? {
 							effect: row.envelopeEffect.effect ?? 0,
 							delay: row.envelopeEffect.delay ?? 0,
-							parameter: row.envelopeEffect.parameter ?? 0
+							parameter: row.envelopeEffect.parameter ?? 0,
+							tableIndex: row.envelopeEffect.tableIndex
 						}
 					: null,
 			effect:
@@ -56,7 +56,8 @@ export class LuaExecutor {
 					? {
 							effect: row.effect.effect ?? 0,
 							delay: row.effect.delay ?? 0,
-							parameter: row.effect.parameter ?? 0
+							parameter: row.effect.parameter ?? 0,
+							tableIndex: row.effect.tableIndex
 						}
 					: null
 		}));

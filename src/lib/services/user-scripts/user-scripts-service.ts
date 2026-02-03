@@ -1,12 +1,7 @@
 import type { Pattern } from '../../models/song';
 import type { SelectionBounds } from '../pattern/selection-bounds-service';
 import type { PatternConverter } from '../../chips/base/adapter';
-import type {
-	ScriptRowData,
-	ScriptContext,
-	ScriptResult,
-	UserScript
-} from './types';
+import type { ScriptRowData, ScriptContext, ScriptResult, UserScript } from './types';
 import { isEffectLike, toNumber } from '../../utils/type-guards';
 import { LuaExecutor } from './lua-executor';
 
@@ -28,7 +23,11 @@ export class UserScriptsService {
 			const envelopeEffectValue = patternRow?.envelopeEffect;
 			const envelopeEffect = isEffectLike(envelopeEffectValue) ? envelopeEffectValue : null;
 
-			for (let channelIndex = 0; channelIndex < genericPattern.channels.length; channelIndex++) {
+			for (
+				let channelIndex = 0;
+				channelIndex < genericPattern.channels.length;
+				channelIndex++
+			) {
 				if (!selectedChannels.has(channelIndex)) continue;
 
 				const channel = genericPattern.channels[channelIndex];
@@ -49,14 +48,16 @@ export class UserScriptsService {
 						? {
 								effect: envelopeEffect.effect,
 								delay: envelopeEffect.delay,
-								parameter: envelopeEffect.parameter
+								parameter: envelopeEffect.parameter,
+								tableIndex: envelopeEffect.tableIndex
 							}
 						: null,
 					effect: effect
 						? {
 								effect: effect.effect,
 								delay: effect.delay,
-								parameter: effect.parameter
+								parameter: effect.parameter,
+								tableIndex: effect.tableIndex
 							}
 						: null
 				});
@@ -108,7 +109,8 @@ export class UserScriptsService {
 				row.effect = {
 					effect: rowData.effect.effect,
 					delay: rowData.effect.delay,
-					parameter: rowData.effect.parameter
+					parameter: rowData.effect.parameter,
+					tableIndex: rowData.effect.tableIndex
 				};
 			}
 
@@ -120,7 +122,8 @@ export class UserScriptsService {
 						patternRow.envelopeEffect = {
 							effect: rowData.envelopeEffect.effect,
 							delay: rowData.envelopeEffect.delay,
-							parameter: rowData.envelopeEffect.parameter
+							parameter: rowData.envelopeEffect.parameter,
+							tableIndex: rowData.envelopeEffect.tableIndex
 						} as Record<string, unknown>;
 					} else {
 						patternRow.envelopeEffect = null;
@@ -137,10 +140,7 @@ export class UserScriptsService {
 		return LuaExecutor.execute(script.code, context);
 	}
 
-	static async runScript(
-		script: UserScript,
-		context: ScriptExtractionContext
-	): Promise<Pattern> {
+	static async runScript(script: UserScript, context: ScriptExtractionContext): Promise<Pattern> {
 		const scriptContext = this.createScriptContext(context);
 		const result = await this.executeScript(script, scriptContext);
 		return this.applyScriptResult(context.pattern, result, context.converter);

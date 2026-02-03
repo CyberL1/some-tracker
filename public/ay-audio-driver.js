@@ -264,7 +264,11 @@ class AYAudioDriver {
 		const PORTAMENTO = 'P'.charCodeAt(0);
 		const ON_OFF = 6;
 
-		const hasTableIndex = effect.tableIndex !== undefined && effect.tableIndex >= 0;
+		const hasTableIndex =
+			'tableIndex' in effect &&
+			effect.tableIndex !== undefined &&
+			effect.tableIndex !== null &&
+			effect.tableIndex >= 0;
 
 		if (hasTableIndex) {
 			this._initEnvelopeEffectTable(state, effect);
@@ -490,7 +494,8 @@ class AYAudioDriver {
 			const effectiveRows = hasRows ? instrument.rows : [defaultInstrumentRow];
 			const effectiveRowsLength = effectiveRows.length;
 			const effectiveLoop = hasRows ? instrument.loop : 0;
-			const instrumentRow = effectiveRows[state.instrumentPositions[channelIndex] % effectiveRowsLength];
+			const instrumentRow =
+				effectiveRows[state.instrumentPositions[channelIndex] % effectiveRowsLength];
 			if (!instrumentRow) {
 				registerState.channels[channelIndex].mixer.tone = false;
 				registerState.channels[channelIndex].mixer.noise = false;
@@ -701,8 +706,7 @@ class AYAudioDriver {
 		if (state.envelopeArpeggioCounter > 0) {
 			const tableIndex = state.envelopeEffectTable;
 			const ARPEGGIO = 'A'.charCodeAt(0);
-			const isArpeggioTable =
-				tableIndex >= 0 && state.envelopeEffectType === ARPEGGIO;
+			const isArpeggioTable = tableIndex >= 0 && state.envelopeEffectType === ARPEGGIO;
 
 			let result;
 			let semitoneOffset;
@@ -744,7 +748,6 @@ class AYAudioDriver {
 
 			const baseEnvelopePeriod = state.envelopeBaseValue;
 			if (baseEnvelopePeriod > 0) {
-
 				const baseNoteIndex = this.envelopePeriodToNote(
 					baseEnvelopePeriod,
 					state.currentTuningTable

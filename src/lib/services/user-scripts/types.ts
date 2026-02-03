@@ -11,11 +11,13 @@ export interface ScriptRowData {
 		effect: number;
 		delay: number;
 		parameter: number;
+		tableIndex?: number;
 	} | null;
 	effect: {
 		effect: number;
 		delay: number;
 		parameter: number;
+		tableIndex?: number;
 	} | null;
 }
 
