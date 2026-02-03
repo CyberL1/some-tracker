@@ -68,11 +68,7 @@ function reconstructSong(data: any): Song {
 	}
 	const loadedSpeed = data.initialSpeed;
 	song.initialSpeed =
-		typeof loadedSpeed === 'number' &&
-		loadedSpeed >= 1 &&
-		loadedSpeed <= 255
-			? loadedSpeed
-			: 3;
+		typeof loadedSpeed === 'number' && loadedSpeed >= 1 && loadedSpeed <= 255 ? loadedSpeed : 3;
 	return song;
 }
 
@@ -119,7 +115,7 @@ function reconstructNote(data: any): Note {
 }
 
 function reconstructEffect(data: any): Effect {
-	return new Effect(data.effect ?? 0, data.delay ?? 0, data.parameter ?? 0);
+	return new Effect(data.effect ?? 0, data.delay ?? 0, data.parameter ?? 0, data.tableIndex);
 }
 
 function reconstructPatternRow(data: any, schema?: ChipSchema): any {
