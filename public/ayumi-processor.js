@@ -34,6 +34,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.stereoLayout = 'ABC';
 		this.nextPatternRequested = false;
 		this.pendingNextPattern = null;
+		this.prefetchLeadRows = 8;
 	}
 
 	async handleMessage(event) {
@@ -520,13 +521,18 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					this.state.tickAccumulator >= 1.0
 				) {
 					if (this.state.currentTick === 0) {
-						const lastRow =
-							this.state.currentRow === this.state.currentPattern.length - 1;
-						if (
-							lastRow &&
+						const patternLength = this.state.currentPattern.length;
+						const rowsFromEnd = patternLength - 1 - this.state.currentRow;
+						const effectiveLead = Math.min(
+							this.prefetchLeadRows,
+							Math.max(0, patternLength - 1)
+						);
+						const shouldPrefetch =
+							rowsFromEnd >= 0 &&
+							rowsFromEnd <= effectiveLead &&
 							!this.nextPatternRequested &&
-							this.state.patternOrder.length > 0
-						) {
+							this.state.patternOrder.length > 0;
+						if (shouldPrefetch) {
 							this.nextPatternRequested = true;
 							const nextIndex =
 								(this.state.currentPatternOrderIndex + 1) %
