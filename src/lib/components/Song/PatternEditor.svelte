@@ -2098,6 +2098,8 @@
 	let playbackRafId: number | null = null;
 	let playbackStartTime = 0;
 	let lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
+	let userJustChangedPattern = false;
+	const USER_PATTERN_CHANGE_GRACE_MS = 800;
 
 	$effect(() => {
 		if (
@@ -2105,6 +2107,7 @@
 			services.audioService.playing
 		) {
 			const indexToApply = currentPatternOrderIndex;
+			userJustChangedPattern = true;
 			pendingPlaybackPosition = null;
 			playbackStartTime = performance.now();
 			if (playbackRafId !== null) {
@@ -2112,6 +2115,9 @@
 				playbackRafId = null;
 			}
 			selectedRow = 0;
+			const timeoutId = window.setTimeout(() => {
+				userJustChangedPattern = false;
+			}, USER_PATTERN_CHANGE_GRACE_MS);
 			if (initAllChips) {
 				initAllChips();
 				requestAnimationFrame(() => {
@@ -2143,6 +2149,7 @@
 				});
 			}
 			lastPatternOrderIndexFromPlayback = indexToApply;
+			return () => clearTimeout(timeoutId);
 		}
 	});
 
@@ -2189,6 +2196,7 @@
 						return;
 					}
 					if (
+						userJustChangedPattern &&
 						pending.orderIndex !== undefined &&
 						pending.orderIndex !== currentPatternOrderIndex
 					) {
@@ -2209,6 +2217,9 @@
 						) {
 							currentPatternOrderIndex = pending.orderIndex;
 							lastPatternOrderIndexFromPlayback = pending.orderIndex;
+						}
+						if (pending.orderIndex === currentPatternOrderIndex) {
+							userJustChangedPattern = false;
 						}
 						console.log('[tracker] applied', {
 							row: pending.row,
