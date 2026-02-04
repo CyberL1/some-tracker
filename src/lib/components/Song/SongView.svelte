@@ -333,7 +333,9 @@
 					{lineHeight}
 					{songPatterns}
 					{songs}
-					onPatternCreated={handlePatternCreated} />
+					onPatternCreated={handlePatternCreated}
+					onPatternSelect={(index) =>
+						patternEditors[0]?.markPatternChangeFromUser?.(index)} />
 			</Card>
 		</div>
 		<div

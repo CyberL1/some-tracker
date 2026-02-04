@@ -241,8 +241,6 @@
 	let renderer: PatternEditorRenderer | null = $state(null);
 	let lastVisibleRowsCache: VisibleRowsCache | null = null;
 
-	const MANUAL_PATTERN_CHANGE_TIMEOUT_MS = 1000;
-
 	let currentPattern = $derived.by(() => {
 		const patternId = patternOrder[currentPatternOrderIndex];
 		return findOrCreatePattern(patternId);
@@ -362,14 +360,17 @@
 	export function resetToBeginning() {
 		selectedRow = 0;
 		currentPatternOrderIndex = 0;
-		userManuallyChangedPattern = false;
 	}
 
 	export function setPatternOrderIndex(index: number) {
 		if (index >= 0 && index < patternOrder.length) {
 			currentPatternOrderIndex = index;
-			userManuallyChangedPattern = true;
-			lastManualPatternChangeTime = performance.now();
+			pendingPlaybackPosition = null;
+			playbackStartTime = performance.now();
+			if (playbackRafId !== null) {
+				cancelAnimationFrame(playbackRafId);
+				playbackRafId = null;
+			}
 		}
 	}
 
@@ -514,8 +515,12 @@
 			}
 
 			initAllChips?.();
-			lastAppliedPlaybackOrderIndex = undefined;
-			lastAppliedPlaybackRow = undefined;
+			pendingPlaybackPosition = null;
+			playbackStartTime = performance.now();
+			if (playbackRafId !== null) {
+				cancelAnimationFrame(playbackRafId);
+				playbackRafId = null;
+			}
 			services.audioService.playFromRow(
 				selectedRow,
 				currentPatternOrderIndex,
@@ -540,8 +545,12 @@
 			}
 
 			initAllChipsForPlayPattern?.();
-			lastAppliedPlaybackOrderIndex = undefined;
-			lastAppliedPlaybackRow = undefined;
+			pendingPlaybackPosition = null;
+			playbackStartTime = performance.now();
+			if (playbackRafId !== null) {
+				cancelAnimationFrame(playbackRafId);
+				playbackRafId = null;
+			}
 			services.audioService.playFromRow(0, 0, getSpeedForPlayPattern ?? getSpeedForChip);
 		} catch (error) {
 			console.error('Error during play pattern:', error);
@@ -563,8 +572,13 @@
 				}
 
 				initAllChips?.();
-				lastAppliedPlaybackOrderIndex = undefined;
-				lastAppliedPlaybackRow = undefined;
+				pendingPlaybackPosition = null;
+				playbackStartTime = performance.now();
+				if (playbackRafId !== null) {
+					cancelAnimationFrame(playbackRafId);
+					playbackRafId = null;
+				}
+				selectedRow = 0;
 				services.audioService.play();
 			}
 		} catch (error) {
@@ -874,8 +888,12 @@
 		selectedRow = navigationState.selectedRow;
 		if (currentPatternOrderIndex !== navigationState.currentPatternOrderIndex) {
 			currentPatternOrderIndex = navigationState.currentPatternOrderIndex;
-			userManuallyChangedPattern = true;
-			lastManualPatternChangeTime = performance.now();
+			pendingPlaybackPosition = null;
+			playbackStartTime = performance.now();
+			if (playbackRafId !== null) {
+				cancelAnimationFrame(playbackRafId);
+				playbackRafId = null;
+			}
 		}
 
 		const updatedPattern = currentPattern || ensurePatternExists();
@@ -977,6 +995,13 @@
 			},
 			onSetCurrentPatternOrderIndex: (index: number) => {
 				currentPatternOrderIndex = index;
+				selectedRow = 0;
+				pendingPlaybackPosition = null;
+				playbackStartTime = performance.now();
+				if (playbackRafId !== null) {
+					cancelAnimationFrame(playbackRafId);
+					playbackRafId = null;
+				}
 			},
 			onClearSelection: () => {
 				selectionStartRow = null;
@@ -2071,54 +2096,64 @@
 		timestamp: number;
 	} | null = null;
 	let playbackRafId: number | null = null;
-	let userManuallyChangedPattern = $state(false);
-	let lastManualPatternChangeTime = 0;
+	let playbackStartTime = 0;
 	let lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
-	let lastAppliedPlaybackOrderIndex: number | undefined = undefined;
-	let lastAppliedPlaybackRow: number | undefined = undefined;
 
 	$effect(() => {
-		if (currentPatternOrderIndex !== lastPatternOrderIndexFromPlayback) {
+		if (
+			currentPatternOrderIndex !== lastPatternOrderIndexFromPlayback &&
+			services.audioService.playing
+		) {
 			const indexToApply = currentPatternOrderIndex;
-
-			if (userManuallyChangedPattern && services.audioService.playing) {
-				lastManualPatternChangeTime = performance.now();
-				if (initAllChips) {
-					initAllChips();
+			pendingPlaybackPosition = null;
+			playbackStartTime = performance.now();
+			if (playbackRafId !== null) {
+				cancelAnimationFrame(playbackRafId);
+				playbackRafId = null;
+			}
+			selectedRow = 0;
+			if (initAllChips) {
+				initAllChips();
+				requestAnimationFrame(() => {
 					requestAnimationFrame(() => {
-						requestAnimationFrame(() => {
-							services.audioService.chipProcessors.forEach((processor, index) => {
-								const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
-								if (processor.changePatternDuringPlayback) {
-									processor.changePatternDuringPlayback(
-										0,
-										indexToApply,
-										undefined,
-										speed
-									);
-								} else {
-									processor.playFromRow(0, indexToApply, speed);
-								}
-							});
+						services.audioService.chipProcessors.forEach((processor, index) => {
+							const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+							if (processor.changePatternDuringPlayback) {
+								processor.changePatternDuringPlayback(
+									0,
+									indexToApply,
+									undefined,
+									speed
+								);
+							} else {
+								processor.playFromRow(0, indexToApply, speed);
+							}
 						});
 					});
-				} else {
-					const pattern = findOrCreatePattern(patternOrder[indexToApply]);
-					services.audioService.chipProcessors.forEach((processor, index) => {
-						const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
-						if (processor.changePatternDuringPlayback) {
-							processor.changePatternDuringPlayback(0, indexToApply, pattern, speed);
-						} else {
-							processor.playFromRow(0, indexToApply, speed);
-						}
-					});
-				}
+				});
+			} else {
+				const pattern = findOrCreatePattern(patternOrder[indexToApply]);
+				services.audioService.chipProcessors.forEach((processor, index) => {
+					const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+					if (processor.changePatternDuringPlayback) {
+						processor.changePatternDuringPlayback(0, indexToApply, pattern, speed);
+					} else {
+						processor.playFromRow(0, indexToApply, speed);
+					}
+				});
 			}
-
 			lastPatternOrderIndexFromPlayback = indexToApply;
-			userManuallyChangedPattern = false;
 		}
 	});
+
+	export function markPatternChangeFromUser(selectedIndex?: number): void {
+		pendingPlaybackPosition = null;
+		playbackStartTime = performance.now();
+		if (playbackRafId !== null) {
+			cancelAnimationFrame(playbackRafId);
+			playbackRafId = null;
+		}
+	}
 
 	$effect(() => {
 		if (!chipProcessor) return;
@@ -2132,11 +2167,10 @@
 		) => {
 			if (!services.audioService.playing) return;
 
-			const now = performance.now();
 			pendingPlaybackPosition = {
 				row: currentRow,
 				orderIndex: currentPatternOrderIndexUpdate,
-				timestamp: now
+				timestamp: performance.now()
 			};
 
 			if (playbackRafId === null) {
@@ -2144,22 +2178,8 @@
 					playbackRafId = null;
 					const pending = pendingPlaybackPosition;
 					pendingPlaybackPosition = null;
-					if (!pending || !services.audioService.playing) {
-						lastAppliedPlaybackOrderIndex = undefined;
-						lastAppliedPlaybackRow = undefined;
-						return;
-					}
-
-					const isStale =
-						lastAppliedPlaybackOrderIndex !== undefined &&
-						(pending.orderIndex ?? lastAppliedPlaybackOrderIndex) ===
-							lastAppliedPlaybackOrderIndex &&
-						pending.row < (lastAppliedPlaybackRow ?? -1);
-					if (isStale) return;
-
-					lastAppliedPlaybackOrderIndex =
-						pending.orderIndex ?? lastAppliedPlaybackOrderIndex;
-					lastAppliedPlaybackRow = pending.row;
+					if (!pending || !services.audioService.playing) return;
+					if (pending.timestamp < playbackStartTime) return;
 
 					if (isPlaybackMaster) {
 						selectedRow = pending.row;
@@ -2167,26 +2187,8 @@
 							pending.orderIndex !== undefined &&
 							services.audioService.getPlayPatternId() === null
 						) {
-							if (pending.orderIndex !== currentPatternOrderIndex) {
-								const recentlyChangedManually =
-									userManuallyChangedPattern &&
-									pending.timestamp - lastManualPatternChangeTime <=
-										MANUAL_PATTERN_CHANGE_TIMEOUT_MS;
-								if (recentlyChangedManually) {
-									lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
-								} else {
-									currentPatternOrderIndex = pending.orderIndex;
-									lastPatternOrderIndexFromPlayback = pending.orderIndex;
-									userManuallyChangedPattern = false;
-								}
-							} else if (
-								userManuallyChangedPattern &&
-								pending.timestamp - lastManualPatternChangeTime >
-									MANUAL_PATTERN_CHANGE_TIMEOUT_MS
-							) {
-								userManuallyChangedPattern = false;
-								lastPatternOrderIndexFromPlayback = pending.orderIndex;
-							}
+							currentPatternOrderIndex = pending.orderIndex;
+							lastPatternOrderIndexFromPlayback = pending.orderIndex;
 						}
 					}
 					draw();

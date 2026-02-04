@@ -202,6 +202,17 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			this.audioDriver.processInstruments(this.state, this.registerState);
 			this.ayumiEngine.applyRegisterState(this.registerState);
 		}
+
+		if (!this.paused) {
+			this.port.postMessage({
+				type: 'position_update',
+				currentRow: this.state.currentRow,
+				currentTick: this.state.currentTick,
+				currentPatternOrderIndex: this.state.currentPatternOrderIndex
+			});
+			this.lastPositionUpdateTime = 0;
+			this.pendingPositionUpdate = null;
+		}
 	}
 
 	handleUpdateAyFrequency(data) {
@@ -258,6 +269,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 
 		this.pendingNextPattern = null;
 		this.nextPatternRequested = false;
+		this.pendingPositionUpdate = null;
 		let patternChanged = false;
 
 		if (patternOrderIndex !== undefined) {
@@ -272,7 +284,6 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					type: 'request_pattern',
 					patternOrderIndex: patternOrderIndex
 				});
-				// Store pending row to be applied when pattern arrives
 				if (row !== undefined) {
 					this.pendingRowAfterPatternChange = row;
 				}
@@ -282,21 +293,25 @@ class AyumiProcessor extends AudioWorkletProcessor {
 			patternChanged = true;
 		}
 
-		// Handle speed changes
 		if (speed !== undefined && speed !== null && speed > 0) {
 			this.state.setSpeed(speed);
 		}
 
-		// Handle row changes - row clamping is now handled in TrackerState.setPattern
 		if (row !== undefined && (patternChanged || this.state.currentPattern)) {
 			this.state.currentRow = row;
 			this.state.currentTick = 0;
 			this.state.tickAccumulator = 1.0;
 		} else if (row !== undefined && !patternChanged) {
-			// If we're changing pattern order but don't have the pattern yet,
-			// store the row to be applied when the pattern arrives
 			this.pendingRowAfterPatternChange = row;
 		}
+
+		this.port.postMessage({
+			type: 'position_update',
+			currentRow: this.state.currentRow,
+			currentTick: this.state.currentTick,
+			currentPatternOrderIndex: this.state.currentPatternOrderIndex
+		});
+		this.lastPositionUpdateTime = 0;
 	}
 
 	handlePlay({ startPatternOrderIndex, initialSpeed }) {
@@ -334,6 +349,15 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		if (initialSpeed !== undefined) {
 			this.state.setSpeed(initialSpeed);
 		}
+
+		this.port.postMessage({
+			type: 'position_update',
+			currentRow: this.state.currentRow,
+			currentTick: this.state.currentTick,
+			currentPatternOrderIndex: this.state.currentPatternOrderIndex
+		});
+		this.lastPositionUpdateTime = 0;
+		this.pendingPositionUpdate = null;
 	}
 
 	handlePlayFromRow({ row, patternOrderIndex, speed }) {
@@ -379,6 +403,15 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		if (speed !== undefined && speed !== null && speed > 0) {
 			this.state.setSpeed(speed);
 		}
+
+		this.port.postMessage({
+			type: 'position_update',
+			currentRow: this.state.currentRow,
+			currentTick: this.state.currentTick,
+			currentPatternOrderIndex: this.state.currentPatternOrderIndex
+		});
+		this.lastPositionUpdateTime = 0;
+		this.pendingPositionUpdate = null;
 
 		if (
 			this.state.currentPattern &&
@@ -595,6 +628,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 								this.pendingNextPattern.orderIndex
 							);
 							this.pendingNextPattern = null;
+							this.port.postMessage({
+								type: 'position_update',
+								currentRow: this.state.currentRow,
+								currentTick: this.state.currentTick,
+								currentPatternOrderIndex: this.state.currentPatternOrderIndex
+							});
+							this.lastPositionUpdateTime = 0;
+							this.pendingPositionUpdate = null;
 						} else {
 							this.state.currentPattern = null;
 							this.port.postMessage({

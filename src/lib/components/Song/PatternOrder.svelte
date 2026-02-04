@@ -25,6 +25,7 @@
 		songPatterns?: Pattern[];
 		songs?: any[];
 		onPatternCreated?: (pattern: Pattern) => void;
+		onPatternSelect?: (index: number) => void;
 	}
 
 	let {
@@ -35,7 +36,8 @@
 		canvasHeight = 600,
 		songPatterns = [],
 		songs = [],
-		onPatternCreated
+		onPatternCreated,
+		onPatternSelect
 	}: Props = $props();
 
 	const FONT_SIZE = 14;
@@ -194,9 +196,10 @@
 
 		if (isDragging && dropTargetIndex !== null && draggedIndex !== dropTargetIndex) {
 			const dropY = centerY - (currentPatternOrderIndex - dropTargetIndex) * CELL_HEIGHT;
-			const indicatorY = dropTargetIndex > (draggedIndex ?? -1)
-				? dropY + CELL_HEIGHT / 2
-				: dropY - CELL_HEIGHT / 2;
+			const indicatorY =
+				dropTargetIndex > (draggedIndex ?? -1)
+					? dropY + CELL_HEIGHT / 2
+					: dropY - CELL_HEIGHT / 2;
 			renderer.drawDropIndicator(indicatorY);
 		}
 
@@ -274,16 +277,34 @@
 	function handleMouseUp(event: MouseEvent): void {
 		const wasDragging = isDragging;
 
-		if (isDragging && draggedIndex !== null && dropTargetIndex !== null && draggedIndex !== dropTargetIndex) {
-			const result = PatternService.movePatternInOrder(patternOrder, draggedIndex, dropTargetIndex);
+		if (
+			isDragging &&
+			draggedIndex !== null &&
+			dropTargetIndex !== null &&
+			draggedIndex !== dropTargetIndex
+		) {
+			const result = PatternService.movePatternInOrder(
+				patternOrder,
+				draggedIndex,
+				dropTargetIndex
+			);
 			patternOrder = result.newPatternOrder;
 
 			if (currentPatternOrderIndex === draggedIndex) {
 				currentPatternOrderIndex = dropTargetIndex;
-			} else if (draggedIndex < currentPatternOrderIndex && dropTargetIndex >= currentPatternOrderIndex) {
+				onPatternSelect?.(dropTargetIndex);
+			} else if (
+				draggedIndex < currentPatternOrderIndex &&
+				dropTargetIndex >= currentPatternOrderIndex
+			) {
 				currentPatternOrderIndex--;
-			} else if (draggedIndex > currentPatternOrderIndex && dropTargetIndex <= currentPatternOrderIndex) {
+				onPatternSelect?.(currentPatternOrderIndex);
+			} else if (
+				draggedIndex > currentPatternOrderIndex &&
+				dropTargetIndex <= currentPatternOrderIndex
+			) {
 				currentPatternOrderIndex++;
+				onPatternSelect?.(currentPatternOrderIndex);
 			}
 
 			afterPatternOperation();
@@ -434,6 +455,7 @@
 	function switchPattern(index: number): void {
 		currentPatternOrderIndex = index;
 		selectedRow = 0;
+		onPatternSelect?.(index);
 
 		if (lastMouseY !== null && lastMouseX !== null) {
 			updateCursor(lastMouseY, lastMouseX);
@@ -471,7 +493,9 @@
 
 		if (isDragging && draggedIndex !== null) {
 			const centerY = canvasHeight / 2;
-			const newDropTargetIndex = Math.round(currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT);
+			const newDropTargetIndex = Math.round(
+				currentPatternOrderIndex + (y - centerY) / CELL_HEIGHT
+			);
 
 			if (newDropTargetIndex >= 0 && newDropTargetIndex < patternOrder.length) {
 				if (dropTargetIndex !== newDropTargetIndex) {
@@ -516,6 +540,7 @@
 		patternOrder = result.newPatternOrder;
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
+		onPatternSelect?.(result.insertIndex);
 
 		afterPatternOperation();
 	}
@@ -531,6 +556,7 @@
 			result.newPatternOrder.length
 		);
 		selectedRow = 0;
+		onPatternSelect?.(currentPatternOrderIndex);
 
 		afterPatternOperation();
 	}
@@ -564,6 +590,7 @@
 		patternOrder = result.newPatternOrder;
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
+		onPatternSelect?.(result.insertIndex);
 
 		const clonedPattern = result.newPatterns[result.newPatternId];
 		if (clonedPattern) {
