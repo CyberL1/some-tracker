@@ -277,6 +277,10 @@ export class AYProcessor
 
 		switch (message.type) {
 			case 'position_update':
+				console.log('[ayumi] position_update', {
+					currentRow: message.currentRow,
+					currentPatternOrderIndex: message.currentPatternOrderIndex
+				});
 				this.onPositionUpdate?.(message.currentRow, message.currentPatternOrderIndex);
 				break;
 			case 'request_pattern':
