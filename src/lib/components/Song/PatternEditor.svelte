@@ -76,6 +76,7 @@
 		currentPatternOrderIndex = $bindable(0),
 		selectedRow = $bindable(0),
 		isActive = false,
+		isPlaybackMaster = false,
 		onfocus,
 		onaction,
 		initAllChips,
@@ -95,6 +96,7 @@
 		currentPatternOrderIndex: number;
 		selectedRow: number;
 		isActive?: boolean;
+		isPlaybackMaster?: boolean;
 		onfocus?: () => void;
 		onaction?: (data: { action: string }) => void;
 		initAllChips?: () => void;
@@ -2159,30 +2161,32 @@
 						pending.orderIndex ?? lastAppliedPlaybackOrderIndex;
 					lastAppliedPlaybackRow = pending.row;
 
-					selectedRow = pending.row;
-					if (
-						pending.orderIndex !== undefined &&
-						services.audioService.getPlayPatternId() === null
-					) {
-						if (pending.orderIndex !== currentPatternOrderIndex) {
-							const recentlyChangedManually =
-								userManuallyChangedPattern &&
-								pending.timestamp - lastManualPatternChangeTime <=
-									MANUAL_PATTERN_CHANGE_TIMEOUT_MS;
-							if (recentlyChangedManually) {
-								lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
-							} else {
-								currentPatternOrderIndex = pending.orderIndex;
-								lastPatternOrderIndexFromPlayback = pending.orderIndex;
-								userManuallyChangedPattern = false;
-							}
-						} else if (
-							userManuallyChangedPattern &&
-							pending.timestamp - lastManualPatternChangeTime >
-								MANUAL_PATTERN_CHANGE_TIMEOUT_MS
+					if (isPlaybackMaster) {
+						selectedRow = pending.row;
+						if (
+							pending.orderIndex !== undefined &&
+							services.audioService.getPlayPatternId() === null
 						) {
-							userManuallyChangedPattern = false;
-							lastPatternOrderIndexFromPlayback = pending.orderIndex;
+							if (pending.orderIndex !== currentPatternOrderIndex) {
+								const recentlyChangedManually =
+									userManuallyChangedPattern &&
+									pending.timestamp - lastManualPatternChangeTime <=
+										MANUAL_PATTERN_CHANGE_TIMEOUT_MS;
+								if (recentlyChangedManually) {
+									lastPatternOrderIndexFromPlayback = currentPatternOrderIndex;
+								} else {
+									currentPatternOrderIndex = pending.orderIndex;
+									lastPatternOrderIndexFromPlayback = pending.orderIndex;
+									userManuallyChangedPattern = false;
+								}
+							} else if (
+								userManuallyChangedPattern &&
+								pending.timestamp - lastManualPatternChangeTime >
+									MANUAL_PATTERN_CHANGE_TIMEOUT_MS
+							) {
+								userManuallyChangedPattern = false;
+								lastPatternOrderIndexFromPlayback = pending.orderIndex;
+							}
 						}
 					}
 					draw();

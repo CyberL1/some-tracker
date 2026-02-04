@@ -443,6 +443,7 @@
 								bind:currentPatternOrderIndex={sharedPatternOrderIndex}
 								bind:selectedRow={sharedSelectedRow}
 								isActive={activeEditorIndex === i}
+								isPlaybackMaster={i === 0}
 								onfocus={() => {
 									activeEditorIndex = i;
 									patternEditor = patternEditors[i];
