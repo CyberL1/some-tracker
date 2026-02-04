@@ -11,8 +11,11 @@
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
 	import IconCarbonMaximize from '~icons/carbon/maximize';
 	import IconCarbonMinimize from '~icons/carbon/minimize';
+	import IconCarbonSave from '~icons/carbon/save';
+	import IconCarbonDocumentImport from '~icons/carbon/document-import';
 	import TableEditor from './TableEditor.svelte';
 	import Card from '../Card/Card.svelte';
+	import { downloadJson, pickFileAsText } from '../../utils/file-download';
 	import EditableIdField from '../EditableIdField/EditableIdField.svelte';
 	import { getContext, tick } from 'svelte';
 	import type { AudioService } from '../../services/audio/audio-service';
@@ -166,6 +169,52 @@
 		return null;
 	}
 
+	function saveTable(): void {
+		if (tables.length === 0) return;
+		const table = tables[selectedTableIndex];
+		if (!table) return;
+		downloadJson(`table-${tableIdToDisplayChar(table.id)}.json`, {
+			id: table.id,
+			name: table.name,
+			loop: table.loop,
+			rows: table.rows
+		});
+	}
+
+	async function loadTable(): Promise<void> {
+		if (tables.length === 0) return;
+		try {
+			const text = await pickFileAsText();
+			const parsed: unknown = JSON.parse(text);
+			const item = Array.isArray(parsed) ? parsed[0] : parsed;
+			if (
+				item == null ||
+				typeof item !== 'object' ||
+				!Array.isArray((item as Record<string, unknown>).rows)
+			) {
+				throw new Error('Invalid format: expected a table object');
+			}
+			const o = item as Record<string, unknown>;
+			const rows = (o.rows as number[]).map((n) => (typeof n === 'number' ? n : 0));
+			const loop = typeof o.loop === 'number' ? o.loop : 0;
+			const name = o.name != null ? String(o.name) : '';
+			const currentId = tables[selectedTableIndex]?.id ?? 0;
+			const replacement = new TableModel(
+				currentId,
+				rows,
+				loop,
+				name || `Table ${tableIdToDisplayChar(currentId)}`
+			);
+			tables[selectedTableIndex] = replacement;
+			tables = [...tables];
+			services.audioService.updateTables(tables);
+		} catch (err) {
+			if ((err as Error).message !== 'No file selected') {
+				alert('Failed to load table: ' + (err as Error).message);
+			}
+		}
+	}
+
 	const hexIcon = $derived(asHex ? IconCarbonHexagonSolid : IconCarbonHexagonOutline);
 	const expandIcon = $derived(isExpanded ? IconCarbonMinimize : IconCarbonMaximize);
 
@@ -286,6 +335,25 @@
 							: 'Add new table'}>
 						<IconCarbonAdd class="h-4 w-4" />
 						<span>Add</span>
+					</button>
+				</div>
+				<div
+					class="flex items-center gap-2 border-t border-[var(--color-app-border)] px-2 py-1.5">
+					<button
+						class="flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1.5 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={saveTable}
+						disabled={tables.length === 0}
+						title="Save selected table to JSON file">
+						<IconCarbonSave class="h-3.5 w-3.5" />
+						<span>Save</span>
+					</button>
+					<button
+						class="flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1.5 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={loadTable}
+						disabled={tables.length === 0}
+						title="Load table from JSON file into selected slot">
+						<IconCarbonDocumentImport class="h-3.5 w-3.5" />
+						<span>Load</span>
 					</button>
 				</div>
 			</div>

@@ -8,7 +8,7 @@
 	import Button from '../Button/Button.svelte';
 	import IconCarbonAdd from '~icons/carbon/add';
 	import IconCarbonDocumentImport from '~icons/carbon/document-import';
-	import { downloadFile } from '../../utils/file-download';
+	import { downloadJson, pickFileAsText } from '../../utils/file-download';
 	import { appearanceSettings } from '../../config/settings';
 	import type { Settings } from './types';
 	import SettingField from './SettingField.svelte';
@@ -114,33 +114,24 @@
 		if (!theme) return;
 
 		const filename = `${theme.name.replace(/\s+/g, '-').toLowerCase()}.json`;
-		const blob = new Blob([exportData], { type: 'application/json' });
-		downloadFile(blob, filename);
+		downloadJson(filename, JSON.parse(exportData));
 	}
 
 	async function handleImportTheme() {
-		const input = document.createElement('input');
-		input.type = 'file';
-		input.accept = '.json';
-		input.onchange = async (e) => {
-			const file = (e.target as HTMLInputElement).files?.[0];
-			if (!file) return;
-
-			try {
-				const text = await file.text();
-				const theme = themeStore.importTheme(text);
-				if (!theme) {
-					alert('Failed to import theme. Invalid format.');
-					return;
-				}
-
-				themeStore.addCustomTheme(theme);
-				handleThemeSelect(theme.id);
-			} catch (error) {
-				alert('Failed to import theme: ' + (error as Error).message);
+		try {
+			const text = await pickFileAsText();
+			const theme = themeStore.importTheme(text);
+			if (!theme) {
+				alert('Failed to import theme. Invalid format.');
+				return;
 			}
-		};
-		input.click();
+			themeStore.addCustomTheme(theme);
+			handleThemeSelect(theme.id);
+		} catch (err) {
+			if ((err as Error).message !== 'No file selected') {
+				alert('Failed to import theme: ' + (err as Error).message);
+			}
+		}
 	}
 </script>
 

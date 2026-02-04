@@ -10,7 +10,10 @@
 	import IconCarbonTrashCan from '~icons/carbon/trash-can';
 	import IconCarbonMaximize from '~icons/carbon/maximize';
 	import IconCarbonMinimize from '~icons/carbon/minimize';
+	import IconCarbonSave from '~icons/carbon/save';
+	import IconCarbonDocumentImport from '~icons/carbon/document-import';
 	import Card from '../Card/Card.svelte';
+	import { downloadJson, pickFileAsText } from '../../utils/file-download';
 	import EditableIdField from '../EditableIdField/EditableIdField.svelte';
 	import { getContext, tick, untrack } from 'svelte';
 	import type { AudioService } from '../../services/audio/audio-service';
@@ -253,6 +256,64 @@
 		editingInstrumentIdValue = '';
 	}
 
+	function saveInstrument(): void {
+		if (songs.length === 0 || instruments.length === 0) return;
+		const inst = instruments[selectedInstrumentIndex];
+		if (!inst) return;
+		downloadJson(`instrument-${inst.id}.json`, {
+			id: inst.id,
+			name: inst.name,
+			loop: inst.loop,
+			rows: inst.rows.map((r) => ({ ...r }))
+		});
+	}
+
+	async function loadInstrument(): Promise<void> {
+		if (songs.length === 0 || instruments.length === 0) return;
+		try {
+			const text = await pickFileAsText();
+			const parsed: unknown = JSON.parse(text);
+			const item = Array.isArray(parsed) ? parsed[0] : parsed;
+			if (
+				item == null ||
+				typeof item !== 'object' ||
+				!Array.isArray((item as Record<string, unknown>).rows)
+			) {
+				throw new Error('Invalid format: expected an instrument object');
+			}
+			const o = item as Record<string, unknown>;
+			const rows = (o.rows as Record<string, unknown>[]).map((r) => new InstrumentRow(r));
+			const loop = typeof o.loop === 'number' ? o.loop : 0;
+			const name = o.name != null ? String(o.name) : '';
+			const currentId = instruments[selectedInstrumentIndex]?.id ?? '01';
+			const replacement = new InstrumentModel(
+				currentId,
+				rows,
+				loop,
+				name || `Instrument ${currentId}`
+			);
+			for (const song of songs) {
+				const idx = song.instruments.findIndex((inst) => inst.id === currentId);
+				if (idx >= 0) {
+					song.instruments[idx] = new InstrumentModel(
+						currentId,
+						replacement.rows.map((r) => new InstrumentRow({ ...r })),
+						replacement.loop,
+						replacement.name
+					);
+					song.instruments = [...song.instruments];
+				}
+			}
+			songs = [...songs];
+			services.audioService.updateInstruments(songs[0].instruments);
+			requestPatternRedraw?.();
+		} catch (err) {
+			if ((err as Error).message !== 'No file selected') {
+				alert('Failed to load instrument: ' + (err as Error).message);
+			}
+		}
+	}
+
 	function getInstrumentIdError(index: number, id: string): string | null {
 		const normalizedId = normalizeInstrumentId(id);
 		if (!isValidInstrumentId(normalizedId)) {
@@ -383,6 +444,25 @@
 							: 'Add new instrument'}>
 						<IconCarbonAdd class="h-4 w-4" />
 						<span>Add</span>
+					</button>
+				</div>
+				<div
+					class="flex items-center gap-2 border-t border-[var(--color-app-border)] px-2 py-1.5">
+					<button
+						class="flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1.5 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={saveInstrument}
+						disabled={instruments.length === 0}
+						title="Save selected instrument to JSON file">
+						<IconCarbonSave class="h-3.5 w-3.5" />
+						<span>Save</span>
+					</button>
+					<button
+						class="flex cursor-pointer items-center gap-1.5 rounded border border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] px-2 py-1.5 text-xs text-[var(--color-app-text-tertiary)] transition-colors hover:bg-[var(--color-app-surface-hover)] hover:text-[var(--color-app-text-primary)]"
+						onclick={loadInstrument}
+						disabled={songs.length === 0 || instruments.length === 0}
+						title="Load instrument from JSON file into selected slot">
+						<IconCarbonDocumentImport class="h-3.5 w-3.5" />
+						<span>Load</span>
 					</button>
 				</div>
 			</div>
