@@ -2187,12 +2187,6 @@
 					pendingPlaybackPosition = null;
 					if (!pending || !services.audioService.playing) return;
 					if (pending.timestamp < playbackStartTime) {
-						if (isPlaybackMaster) {
-							console.log('[tracker] discarded (before playback start)', {
-								row: pending.row,
-								patternOrderIndex: pending.orderIndex
-							});
-						}
 						return;
 					}
 					if (
@@ -2200,12 +2194,6 @@
 						pending.orderIndex !== undefined &&
 						pending.orderIndex !== currentPatternOrderIndex
 					) {
-						if (isPlaybackMaster) {
-							console.log('[tracker] discarded (stale pattern, user moved)', {
-								pendingPattern: pending.orderIndex,
-								userPattern: currentPatternOrderIndex
-							});
-						}
 						return;
 					}
 
@@ -2221,11 +2209,6 @@
 						if (pending.orderIndex === currentPatternOrderIndex) {
 							userJustChangedPattern = false;
 						}
-						console.log('[tracker] applied', {
-							row: pending.row,
-							patternOrderIndex: pending.orderIndex,
-							timestamp: pending.timestamp
-						});
 					}
 					draw();
 				});

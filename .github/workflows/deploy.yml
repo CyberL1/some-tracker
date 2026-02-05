@@ -23,6 +23,14 @@ jobs:
         with:
           submodules: true
 
+      - name: Update submodules (HTTPS for CI)
+        run: |
+          git config submodule.external/ayumi.url https://github.com/paator/ayumi.git
+          git submodule update --init --recursive external/ayumi
+
+      - name: Verify submodule
+        run: test -f external/ayumi/ayumi.c || (echo "Submodule external/ayumi not present" && exit 1)
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
