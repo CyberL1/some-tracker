@@ -185,6 +185,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.state.setPattern(data.pattern, data.patternOrderIndex);
 		this.pendingNextPattern = null;
 
+		const hadPendingRow = this.pendingRowAfterPatternChange !== null;
 		if (this.pendingRowAfterPatternChange !== null) {
 			this.state.currentRow = this.pendingRowAfterPatternChange;
 			this.state.currentTick = 0;
@@ -193,6 +194,7 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		}
 
 		if (
+			hadPendingRow &&
 			!this.paused &&
 			this.state.currentPattern &&
 			this.state.currentPattern.length > 0 &&
