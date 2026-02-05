@@ -87,7 +87,7 @@ export const settingsItems: SettingsItem[] = [
 	},
 	{
 		label: 'Show Oscilloscopes',
-		description: 'Display per-channel waveform oscilloscopes above the status bar',
+		description: 'Display per-channel waveform oscilloscopes',
 		type: 'toggle',
 		defaultValue: true,
 		setting: 'showOscilloscopes',
