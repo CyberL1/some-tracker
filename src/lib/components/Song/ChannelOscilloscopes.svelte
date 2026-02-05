@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { waveformStore } from '../../stores/waveform.svelte';
 
+	const triggerWidth = 0.1;
+
 	let {
 		channelLabels = ['A', 'B', 'C'],
 		height = 80,
@@ -18,8 +20,8 @@
 	const channels = $derived(waveformStore.channels);
 	let canvasEls: (HTMLCanvasElement | null)[] = $state([]);
 
-	function dcOffset(samples: Float32Array): number {
-		if (samples.length === 0) return 0;
+	function dcAndRange(samples: Float32Array): { dc: number; min: number; max: number } {
+		if (samples.length === 0) return { dc: 0, min: 0, max: 0 };
 		let min = samples[0];
 		let max = samples[0];
 		for (let i = 1; i < samples.length; i++) {
@@ -27,11 +29,18 @@
 			if (v < min) min = v;
 			if (v > max) max = v;
 		}
-		return (min + max) / 2;
+		return { dc: (min + max) / 2, min, max };
 	}
 
-	function findFirstDownwardDCCrossing(samples: Float32Array, dc: number): number | null {
+	function findFirstDownwardDCCrossingAfterArm(
+		samples: Float32Array,
+		dc: number,
+		armThreshold: number
+	): number | null {
+		let armed = false;
 		for (let i = 0; i < samples.length - 1; i++) {
+			if (samples[i] >= armThreshold) armed = true;
+			if (!armed) continue;
 			const a = samples[i];
 			const b = samples[i + 1];
 			if (a >= dc && b < dc) {
@@ -42,14 +51,16 @@
 		return null;
 	}
 
-	function shiftBufferToDCCrossing(samples: Float32Array): Float32Array {
-		const dc = dcOffset(samples);
-		const crossing = findFirstDownwardDCCrossing(samples, dc);
+	function shiftBufferToDCCrossing(samples: Float32Array, width: number): Float32Array {
+		const { dc, min, max } = dcAndRange(samples);
+		const armThreshold = dc + (width * (max - min)) / 2;
+		const crossing = findFirstDownwardDCCrossingAfterArm(samples, dc, armThreshold);
 		if (crossing === null) return samples;
 		const n = samples.length;
+		const start = (((crossing - n / 2) % n) + n) % n;
 		const out = new Float32Array(n);
 		for (let i = 0; i < n; i++) {
-			const pos = (crossing + i) % n;
+			const pos = (start + i) % n;
 			const lo = Math.floor(pos);
 			const hi = (lo + 1) % n;
 			const frac = pos - lo;
@@ -84,7 +95,7 @@
 		const midY = height / 2;
 		const halfHeight = (height / 2) * 0.85;
 		const outWidth = Math.max(2, width - 2);
-		const aligned = shiftBufferToDCCrossing(samples);
+		const aligned = shiftBufferToDCCrossing(samples, triggerWidth);
 		const resampled = resampleToWidth(aligned, outWidth);
 		let min = resampled[0];
 		let max = resampled[0];
