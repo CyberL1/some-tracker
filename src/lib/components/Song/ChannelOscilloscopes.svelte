@@ -18,6 +18,46 @@
 	const channels = $derived(waveformStore.channels);
 	let canvasEls: (HTMLCanvasElement | null)[] = $state([]);
 
+	function dcOffset(samples: Float32Array): number {
+		if (samples.length === 0) return 0;
+		let min = samples[0];
+		let max = samples[0];
+		for (let i = 1; i < samples.length; i++) {
+			const v = samples[i];
+			if (v < min) min = v;
+			if (v > max) max = v;
+		}
+		return (min + max) / 2;
+	}
+
+	function findFirstDownwardDCCrossing(samples: Float32Array, dc: number): number | null {
+		for (let i = 0; i < samples.length - 1; i++) {
+			const a = samples[i];
+			const b = samples[i + 1];
+			if (a >= dc && b < dc) {
+				const frac = a === b ? 0 : (a - dc) / (a - b);
+				return i + frac;
+			}
+		}
+		return null;
+	}
+
+	function shiftBufferToDCCrossing(samples: Float32Array): Float32Array {
+		const dc = dcOffset(samples);
+		const crossing = findFirstDownwardDCCrossing(samples, dc);
+		if (crossing === null) return samples;
+		const n = samples.length;
+		const out = new Float32Array(n);
+		for (let i = 0; i < n; i++) {
+			const pos = (crossing + i) % n;
+			const lo = Math.floor(pos);
+			const hi = (lo + 1) % n;
+			const frac = pos - lo;
+			out[i] = samples[lo] * (1 - frac) + samples[hi] * frac;
+		}
+		return out;
+	}
+
 	function resampleToWidth(samples: Float32Array, outWidth: number): Float32Array {
 		if (samples.length < 2 || outWidth < 2) return samples;
 		const out = new Float32Array(outWidth);
@@ -44,7 +84,8 @@
 		const midY = height / 2;
 		const halfHeight = (height / 2) * 0.85;
 		const outWidth = Math.max(2, width - 2);
-		const resampled = resampleToWidth(samples, outWidth);
+		const aligned = shiftBufferToDCCrossing(samples);
+		const resampled = resampleToWidth(aligned, outWidth);
 		let min = resampled[0];
 		let max = resampled[0];
 		for (let i = 1; i < resampled.length; i++) {
