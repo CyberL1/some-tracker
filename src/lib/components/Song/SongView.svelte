@@ -490,7 +490,10 @@
 				<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
 					{#snippet children(tabId)}
 						{#if tabId === 'tables'}
-							<TablesView bind:tables bind:isExpanded={isRightPanelExpanded} {songs} />
+							<TablesView
+								bind:tables
+								bind:isExpanded={isRightPanelExpanded}
+								{songs} />
 						{:else if tabId === 'instruments'}
 							<InstrumentsView
 								{songs}

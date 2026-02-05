@@ -12,16 +12,16 @@ import {
 
 describe('ayumi-constants', () => {
 	describe('constants', () => {
-		it('AYUMI_STRUCT_SIZE is 22904', () => {
-			expect(AYUMI_STRUCT_SIZE).toBe(22904);
+		it('AYUMI_STRUCT_SIZE is 22928', () => {
+			expect(AYUMI_STRUCT_SIZE).toBe(22928);
 		});
 
-		it('AYUMI_STRUCT_LEFT_OFFSET is struct size minus 16', () => {
-			expect(AYUMI_STRUCT_LEFT_OFFSET).toBe(AYUMI_STRUCT_SIZE - 16);
+		it('AYUMI_STRUCT_LEFT_OFFSET is struct size minus 40', () => {
+			expect(AYUMI_STRUCT_LEFT_OFFSET).toBe(AYUMI_STRUCT_SIZE - 40);
 		});
 
-		it('AYUMI_STRUCT_RIGHT_OFFSET is struct size minus 8', () => {
-			expect(AYUMI_STRUCT_RIGHT_OFFSET).toBe(AYUMI_STRUCT_SIZE - 8);
+		it('AYUMI_STRUCT_RIGHT_OFFSET is struct size minus 32', () => {
+			expect(AYUMI_STRUCT_RIGHT_OFFSET).toBe(AYUMI_STRUCT_SIZE - 32);
 		});
 
 		it('DEFAULT_SONG_HZ is 50', () => {

@@ -5,7 +5,7 @@ import type { ChipRenderer } from '../base/renderer';
 
 const SAMPLE_RATE = 44100;
 const DEFAULT_SPEED = 6;
-const AYUMI_STRUCT_SIZE = 22904;
+const AYUMI_STRUCT_SIZE = 22928;
 const AYUMI_STRUCT_LEFT_OFFSET = 22888;
 const AYUMI_STRUCT_RIGHT_OFFSET = 22896;
 const DEFAULT_AYM_FREQUENCY = 1773400;
