@@ -26,7 +26,8 @@ enum EffectType {
 	SamplePosition = 4,
 	OrnamentPosition = 5,
 	OnOff = 6,
-	Speed = 'S'.charCodeAt(0)
+	Speed = 'S'.charCodeAt(0),
+	Vibrato = 'V'.charCodeAt(0)
 }
 
 class Note {

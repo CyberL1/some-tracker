@@ -54,6 +54,12 @@ class AyumiState extends TrackerState {
 		this.envelopeEffectTableCounter = 0;
 		this.envelopeEffectTableDelay = 1;
 		this.envelopeEffectType = 0;
+		this.envelopeVibratoSpeed = 1;
+		this.envelopeVibratoDepth = 0;
+		this.envelopeVibratoDelay = 0;
+		this.envelopeVibratoCounter = 0;
+		this.envelopeVibratoPosition = 0;
+		this.envelopeVibratoSliding = 0;
 	}
 
 	setWasmModule(module, ptr, wasmBuffer) {
@@ -128,6 +134,12 @@ class AyumiState extends TrackerState {
 		this.envelopeEffectTableCounter = 0;
 		this.envelopeEffectTableDelay = 1;
 		this.envelopeEffectType = 0;
+		this.envelopeVibratoSpeed = 1;
+		this.envelopeVibratoDepth = 0;
+		this.envelopeVibratoDelay = 0;
+		this.envelopeVibratoCounter = 0;
+		this.envelopeVibratoPosition = 0;
+		this.envelopeVibratoSliding = 0;
 	}
 }
 
