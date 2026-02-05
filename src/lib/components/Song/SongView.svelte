@@ -27,7 +27,9 @@
 	import Input from '../Input/Input.svelte';
 	import { playbackStore } from '../../stores/playback.svelte';
 	import StatusBar from './StatusBar.svelte';
+	import ChannelOscilloscopes from './ChannelOscilloscopes.svelte';
 	import { PatternService } from '../../services/pattern/pattern-service';
+	import { settingsStore } from '../../stores/settings.svelte';
 
 	let {
 		songs = $bindable(),
@@ -481,29 +483,41 @@
 			{/if}
 		</div>
 		<div
-			class="relative z-10 h-full shrink-0 border-l border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] transition-all duration-300 {isRightPanelExpanded
+			class="relative z-10 flex h-full shrink-0 flex-col border-l border-[var(--color-app-border)] bg-[var(--color-app-surface-secondary)] transition-all duration-300 {isRightPanelExpanded
 				? 'w-[1200px]'
 				: 'w-[32rem]'}">
-			<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
-				{#snippet children(tabId)}
-					{#if tabId === 'tables'}
-						<TablesView bind:tables bind:isExpanded={isRightPanelExpanded} {songs} />
-					{:else if tabId === 'instruments'}
-						<InstrumentsView
-							{songs}
-							bind:isExpanded={isRightPanelExpanded}
-							chip={chipProcessors[0].chip} />
-					{:else if tabId === 'details'}
-						<DetailsView
-							{chipProcessors}
-							bind:values={projectSettings}
-							{songs}
-							onChipSettingsApplied={() => {
-								tuningTableVersion++;
-							}} />
-					{/if}
-				{/snippet}
-			</TabView>
+			<div class="min-h-0 flex-1 overflow-hidden">
+				<TabView tabs={rightPanelTabs} bind:activeTabId={rightPanelActiveTabId}>
+					{#snippet children(tabId)}
+						{#if tabId === 'tables'}
+							<TablesView bind:tables bind:isExpanded={isRightPanelExpanded} {songs} />
+						{:else if tabId === 'instruments'}
+							<InstrumentsView
+								{songs}
+								bind:isExpanded={isRightPanelExpanded}
+								chip={chipProcessors[0].chip} />
+						{:else if tabId === 'details'}
+							<DetailsView
+								{chipProcessors}
+								bind:values={projectSettings}
+								{songs}
+								onChipSettingsApplied={() => {
+									tuningTableVersion++;
+								}} />
+						{/if}
+					{/snippet}
+				</TabView>
+			</div>
+			{#if songs.length > 0 && activeEditorIndex < songs.length && settingsStore.get().showOscilloscopes}
+				<div class="shrink-0 border-t border-[var(--color-app-border)]">
+					<ChannelOscilloscopes
+						channelLabels={songs.flatMap((_, i) =>
+							(chipProcessors[i]?.chip.schema.channelLabels ?? ['A', 'B', 'C']).map(
+								(l) => (songs.length > 1 ? `${i + 1}${l}` : l)
+							)
+						)} />
+				</div>
+			{/if}
 		</div>
 	</div>
 	{#if songs.length > 0 && activeEditorIndex < songs.length}

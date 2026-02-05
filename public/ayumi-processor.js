@@ -2,6 +2,7 @@ import {
 	AYUMI_STRUCT_SIZE,
 	AYUMI_STRUCT_LEFT_OFFSET,
 	AYUMI_STRUCT_RIGHT_OFFSET,
+	AYUMI_STRUCT_CHANNEL_OUT_OFFSET,
 	getPanSettingsForLayout,
 	DEFAULT_AYM_FREQUENCY
 } from './ayumi-constants.js';
@@ -35,6 +36,14 @@ class AyumiProcessor extends AudioWorkletProcessor {
 		this.nextPatternRequested = false;
 		this.pendingNextPattern = null;
 		this.prefetchLeadRows = 8;
+		this.channelWaveformBuf = [
+			new Float32Array(512),
+			new Float32Array(512),
+			new Float32Array(512)
+		];
+		this.channelWaveformWriteIndex = 0;
+		this.waveformPostCounter = 0;
+		this.waveformPostInterval = 6;
 	}
 
 	async handleMessage(event) {
@@ -654,9 +663,16 @@ class AyumiProcessor extends AudioWorkletProcessor {
 				const { wasmModule, ayumiPtr } = this.state;
 				const leftOffset = ayumiPtr + AYUMI_STRUCT_LEFT_OFFSET;
 				const rightOffset = ayumiPtr + AYUMI_STRUCT_RIGHT_OFFSET;
+				const channelOutOffset = ayumiPtr + AYUMI_STRUCT_CHANNEL_OUT_OFFSET;
 
 				const leftValue = new Float64Array(wasmModule.memory.buffer, leftOffset, 1)[0];
 				const rightValue = new Float64Array(wasmModule.memory.buffer, rightOffset, 1)[0];
+
+				const channelOut = new Float64Array(wasmModule.memory.buffer, channelOutOffset, 3);
+				const wi = this.channelWaveformWriteIndex;
+				for (let ch = 0; ch < 3; ch++) {
+					this.channelWaveformBuf[ch][(wi + i) % 512] = channelOut[ch];
+				}
 
 				// Apply fade-in if needed
 				if (this.fadeInSamples > 0) {
@@ -669,6 +685,21 @@ class AyumiProcessor extends AudioWorkletProcessor {
 					leftChannel[i] = leftValue;
 					rightChannel[i] = rightValue;
 				}
+			}
+
+			this.channelWaveformWriteIndex = (this.channelWaveformWriteIndex + numSamples) % 512;
+			this.waveformPostCounter++;
+			if (this.waveformPostCounter >= this.waveformPostInterval) {
+				this.waveformPostCounter = 0;
+				const wi = this.channelWaveformWriteIndex;
+				const channels = this.channelWaveformBuf.map((buf) => {
+					const out = new Float32Array(512);
+					for (let j = 0; j < 512; j++) {
+						out[j] = buf[(wi + j) % 512];
+					}
+					return out;
+				});
+				this.port.postMessage({ type: 'channel_waveform', channels });
 			}
 
 			if (this.pendingPositionUpdate && !this.paused) {

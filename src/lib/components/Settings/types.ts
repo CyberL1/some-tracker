@@ -7,6 +7,7 @@ export interface Settings {
 	uiFontFamily: string;
 	channelSeparatorWidth: number;
 	decimalRowNumbers: boolean;
+	showOscilloscopes: boolean;
 }
 
 export interface SettingsItem {

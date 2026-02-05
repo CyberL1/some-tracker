@@ -3,6 +3,7 @@ import type { Chip } from '../../chips/types';
 import type { Table } from '../../models/project';
 import { ChipSettings } from './chip-settings';
 import { channelMuteStore } from '../../stores/channel-mute.svelte';
+import { waveformStore } from '../../stores/waveform.svelte';
 
 export class AudioService {
 	private _audioContext: AudioContext | null = new AudioContext();
@@ -45,6 +46,7 @@ export class AudioService {
 		}
 
 		const processor = this.createChipProcessor(chip);
+		const chipIndex = this.chipProcessors.length;
 		this.chipProcessors.push(processor);
 
 		if (this.hasSettingsSubscription(processor)) {
@@ -61,6 +63,13 @@ export class AudioService {
 		const audioNode = this.createAudioNode();
 
 		processor.initialize(wasmBuffer, audioNode);
+
+		const processorWithWaveform = processor as {
+			setWaveformCallback?: (cb: (channels: Float32Array[]) => void) => void;
+		};
+		processorWithWaveform.setWaveformCallback?.((channels: Float32Array[]) => {
+			if (this._isPlaying) waveformStore.setChannels(chipIndex, channels);
+		});
 	}
 
 	play() {
@@ -96,6 +105,8 @@ export class AudioService {
 		if (!this._isPlaying) return;
 
 		this._isPlaying = false;
+
+		waveformStore.clear();
 
 		this.chipProcessors.forEach((chipProcessor) => {
 			chipProcessor.stop();

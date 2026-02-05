@@ -22,7 +22,16 @@ type RequestPatternMessage = {
 	patternOrderIndex: number;
 };
 
-type WorkletMessage = PositionUpdateMessage | RequestPatternMessage | SpeedUpdateMessage;
+type ChannelWaveformMessage = {
+	type: 'channel_waveform';
+	channels: Float32Array[];
+};
+
+type WorkletMessage =
+	| PositionUpdateMessage
+	| RequestPatternMessage
+	| SpeedUpdateMessage
+	| ChannelWaveformMessage;
 
 interface SpeedUpdateMessage {
 	type: 'speed_update';
@@ -69,6 +78,7 @@ export class AYProcessor
 	private onPositionUpdate?: (currentRow: number, currentPatternOrderIndex?: number) => void;
 	private onPatternRequest?: (patternOrderIndex: number) => void;
 	private onSpeedUpdate?: (speed: number) => void;
+	private waveformCallback?: (channels: Float32Array[]) => void;
 	private commandQueue: WorkletCommand[] = [];
 	private settingsUnsubscribers: (() => void)[] = [];
 
@@ -160,6 +170,10 @@ export class AYProcessor
 		this.onPositionUpdate = onPositionUpdate;
 		this.onPatternRequest = onPatternRequest;
 		this.onSpeedUpdate = onSpeedUpdate;
+	}
+
+	setWaveformCallback(callback: (channels: Float32Array[]) => void): void {
+		this.waveformCallback = callback;
 	}
 
 	play(): void {
@@ -288,6 +302,9 @@ export class AYProcessor
 				break;
 			case 'speed_update':
 				this.onSpeedUpdate?.(message.speed);
+				break;
+			case 'channel_waveform':
+				this.waveformCallback?.(message.channels);
 				break;
 			default:
 				console.warn('Unhandled message:', message);

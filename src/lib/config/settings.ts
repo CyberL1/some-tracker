@@ -84,6 +84,14 @@ export const settingsItems: SettingsItem[] = [
 		defaultValue: false,
 		setting: 'decimalRowNumbers',
 		category: 'appearance'
+	},
+	{
+		label: 'Show Oscilloscopes',
+		description: 'Display per-channel waveform oscilloscopes above the status bar',
+		type: 'toggle',
+		defaultValue: true,
+		setting: 'showOscilloscopes',
+		category: 'appearance'
 	}
 ];
 
