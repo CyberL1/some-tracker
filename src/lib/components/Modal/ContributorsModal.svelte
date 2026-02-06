@@ -11,7 +11,7 @@
 		'Testers: phase-mod',
 		'Ayumi emulator by Peter Sovietov',
 		'Bitphase logo by Grongy',
-		'Special thanks to Otomata Labs, Megus, Jammer, e!ghtbm, Tomarkus, KK, AceMan, MoV, Jakim',
+		'Special thanks to Otomata Labs, Megus, Jammer, Tygrys, e!ghtbm, Tomarkus, arabek, MmcM, nq, KK, AceMan, MaV, Jakim, LiSU, Volutar',
 		"and everyone else I've forgot to mention",
 		'Thank you for using Bitphase'
 	];
