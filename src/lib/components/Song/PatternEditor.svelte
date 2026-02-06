@@ -2118,35 +2118,37 @@
 			const timeoutId = window.setTimeout(() => {
 				userJustChangedPattern = false;
 			}, USER_PATTERN_CHANGE_GRACE_MS);
-			if (initAllChips) {
-				initAllChips();
-				requestAnimationFrame(() => {
+			if (isPlaybackMaster) {
+				if (initAllChips) {
+					initAllChips();
 					requestAnimationFrame(() => {
-						services.audioService.chipProcessors.forEach((processor, index) => {
-							const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
-							if (processor.changePatternDuringPlayback) {
-								processor.changePatternDuringPlayback(
-									0,
-									indexToApply,
-									undefined,
-									speed
-								);
-							} else {
-								processor.playFromRow(0, indexToApply, speed);
-							}
+						requestAnimationFrame(() => {
+							services.audioService.chipProcessors.forEach((processor, index) => {
+								const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+								if (processor.changePatternDuringPlayback) {
+									processor.changePatternDuringPlayback(
+										0,
+										indexToApply,
+										undefined,
+										speed
+									);
+								} else {
+									processor.playFromRow(0, indexToApply, speed);
+								}
+							});
 						});
 					});
-				});
-			} else {
-				const pattern = findOrCreatePattern(patternOrder[indexToApply]);
-				services.audioService.chipProcessors.forEach((processor, index) => {
-					const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
-					if (processor.changePatternDuringPlayback) {
-						processor.changePatternDuringPlayback(0, indexToApply, pattern, speed);
-					} else {
-						processor.playFromRow(0, indexToApply, speed);
-					}
-				});
+				} else {
+					const pattern = findOrCreatePattern(patternOrder[indexToApply]);
+					services.audioService.chipProcessors.forEach((processor, index) => {
+						const speed = getSpeedForChip ? getSpeedForChip(index) : undefined;
+						if (processor.changePatternDuringPlayback) {
+							processor.changePatternDuringPlayback(0, indexToApply, pattern, speed);
+						} else {
+							processor.playFromRow(0, indexToApply, speed);
+						}
+					});
+				}
 			}
 			lastPatternOrderIndexFromPlayback = indexToApply;
 			return () => clearTimeout(timeoutId);
