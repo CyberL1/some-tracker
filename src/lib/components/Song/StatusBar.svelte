@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Pattern } from '../../models/song';
 	import type { Chip } from '../../chips/types';
+	import { playbackStore } from '../../stores/playback.svelte';
 
 	let {
 		pattern,
@@ -139,6 +140,25 @@
 		);
 	});
 
+	let secondsTick = $state(0);
+	let baseTime = $state(0);
+	let baseTimestamp = $state(0);
+
+	$effect(() => {
+		const id = setInterval(() => {
+			secondsTick++;
+		}, 1000);
+		return () => clearInterval(id);
+	});
+
+	$effect(() => {
+		selectedRow;
+		currentPatternOrderIndex;
+		playbackStore.isPlaying;
+		baseTime = currentTime;
+		baseTimestamp = Date.now();
+	});
+
 	function formatTime(seconds: number): string {
 		const minutes = Math.floor(seconds / 60);
 		const secs = Math.floor(seconds % 60);
@@ -254,6 +274,7 @@
 	});
 
 	const maxTime = $derived.by(() => {
+		void playbackStore.isPlaying;
 		if (patternOrder.length === 0) {
 			return 0;
 		}
@@ -274,6 +295,13 @@
 			interruptFrequency
 		);
 	});
+
+	const displayedTime = $derived.by(() => {
+		if (!playbackStore.isPlaying) return currentTime;
+		void secondsTick;
+		const elapsed = baseTime + (Date.now() - baseTimestamp) / 1000;
+		return Math.min(elapsed, maxTime);
+	});
 </script>
 
 <div
@@ -285,6 +313,6 @@
 		Tick: {sampleCounter} / {maxSampleCounter}
 	</div>
 	<div class="shrink-0">
-		Time: {formatTime(currentTime)} / {formatTime(maxTime)}
+		Time: {formatTime(displayedTime)} / {formatTime(maxTime)}
 	</div>
 </div>
