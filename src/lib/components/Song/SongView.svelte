@@ -34,6 +34,7 @@
 	let {
 		songs = $bindable(),
 		patternOrder = $bindable(),
+		patternOrderColors = $bindable(),
 		chipProcessors,
 		patternEditor = $bindable(),
 		tables = $bindable(),
@@ -43,6 +44,7 @@
 	}: {
 		songs: Song[];
 		patternOrder: number[];
+		patternOrderColors: Record<number, string>;
 		chipProcessors: ChipProcessor[];
 		patternEditor?: PatternEditor | null;
 		tables: Table[];
@@ -332,6 +334,7 @@
 						bind:patterns={patternsRecord}
 						bind:selectedRow={sharedSelectedRow}
 						bind:patternOrder
+						bind:patternOrderColors
 						canvasHeight={patternOrderHeight}
 						{lineHeight}
 						{songPatterns}

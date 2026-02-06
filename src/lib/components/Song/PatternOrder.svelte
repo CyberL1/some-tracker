@@ -14,12 +14,15 @@
 	import PatternOrderButton from './PatternOrderButton.svelte';
 	import { ContextMenu } from '../Menu';
 	import type { MenuItem } from '../Menu/types';
+	import { open } from '../../services/modal/modal-service';
+	import ColorPickerModal from '../Modal/ColorPickerModal.svelte';
 
 	interface Props {
 		currentPatternOrderIndex: number;
 		patterns: Record<number, Pattern>;
 		selectedRow: number;
 		patternOrder: number[];
+		patternOrderColors?: Record<number, string>;
 		canvasHeight?: number;
 		lineHeight?: number;
 		songPatterns?: Pattern[];
@@ -33,6 +36,7 @@
 		patterns = $bindable(),
 		selectedRow = $bindable(),
 		patternOrder = $bindable(),
+		patternOrderColors = $bindable({}),
 		canvasHeight = 600,
 		songPatterns = [],
 		songs = [],
@@ -78,6 +82,7 @@
 		}
 
 		const sizeChanged = canvasHeight !== lastCanvasHeight;
+		const colorsChanged = patternOrderColors;
 		const orderChanged =
 			currentPatternOrderIndex !== lastDrawnOrderIndex ||
 			patternOrder.length !== lastPatternOrderLength ||
@@ -87,7 +92,7 @@
 			setupCanvas();
 		}
 
-		if (orderChanged) {
+		if (orderChanged || colorsChanged) {
 			lastDrawnOrderIndex = currentPatternOrderIndex;
 			lastPatternOrderLength = patternOrder.length;
 			lastCanvasHeight = canvasHeight;
@@ -140,6 +145,42 @@
 		return unsubscribe;
 	});
 
+	function shiftColorsAfterRemove(removedIndex: number): void {
+		const next: Record<number, string> = {};
+		for (const key of Object.keys(patternOrderColors).map(Number)) {
+			if (key < removedIndex) next[key] = patternOrderColors[key];
+			else if (key > removedIndex) next[key - 1] = patternOrderColors[key];
+		}
+		patternOrderColors = next;
+	}
+
+	function shiftColorsAfterAdd(insertedIndex: number): void {
+		const next: Record<number, string> = {};
+		for (const key of Object.keys(patternOrderColors).map(Number)) {
+			if (key < insertedIndex) next[key] = patternOrderColors[key];
+			else next[key + 1] = patternOrderColors[key];
+		}
+		patternOrderColors = next;
+	}
+
+	function moveColor(fromIndex: number, toIndex: number): void {
+		if (fromIndex === toIndex) return;
+		const saved = patternOrderColors[fromIndex];
+		const next: Record<number, string> = {};
+		for (const key of Object.keys(patternOrderColors).map(Number)) {
+			if (key === fromIndex) continue;
+			let target = key;
+			if (fromIndex < toIndex) {
+				if (key > fromIndex && key <= toIndex) target = key - 1;
+			} else {
+				if (key >= toIndex && key < fromIndex) target = key + 1;
+			}
+			next[target] = patternOrderColors[key];
+		}
+		if (saved !== undefined) next[toIndex] = saved;
+		patternOrderColors = next;
+	}
+
 	function getVisibleRange() {
 		const visibleCount = Math.floor(canvasHeight / CELL_HEIGHT);
 		const halfVisible = Math.floor(visibleCount / 2);
@@ -190,7 +231,8 @@
 				isEditing,
 				editingValue: editingPatternValue,
 				index: i,
-				isDragging: isDraggingThis
+				isDragging: isDraggingThis,
+				orderIndexColor: patternOrderColors[i]
 			});
 		}
 
@@ -289,6 +331,7 @@
 				dropTargetIndex
 			);
 			patternOrder = result.newPatternOrder;
+			moveColor(draggedIndex, dropTargetIndex);
 
 			if (currentPatternOrderIndex === draggedIndex) {
 				currentPatternOrderIndex = dropTargetIndex;
@@ -538,6 +581,7 @@
 
 		patterns = result.newPatterns;
 		patternOrder = result.newPatternOrder;
+		shiftColorsAfterAdd(result.insertIndex);
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
 		onPatternSelect?.(result.insertIndex);
@@ -549,6 +593,7 @@
 		const result = PatternService.removePatternAt(patternOrder, index);
 
 		patternOrder = result.newPatternOrder;
+		shiftColorsAfterRemove(index);
 
 		currentPatternOrderIndex = PatternService.calculateAdjustedIndex(
 			currentPatternOrderIndex,
@@ -588,6 +633,7 @@
 
 		patterns = result.newPatterns;
 		patternOrder = result.newPatternOrder;
+		shiftColorsAfterAdd(result.insertIndex);
 		currentPatternOrderIndex = result.insertIndex;
 		selectedRow = 0;
 		onPatternSelect?.(result.insertIndex);
@@ -663,6 +709,28 @@
 		const index = contextMenuPatternIndex;
 		closeContextMenu();
 
+		if (data.action === 'color-clear') {
+			const next = { ...patternOrderColors };
+			delete next[index];
+			patternOrderColors = next;
+			draw();
+			return;
+		}
+
+		if (data.action === 'color-picker') {
+			open(ColorPickerModal, {
+				initialColor: patternOrderColors[index] ?? '#808080'
+			})
+				.then((color: string | undefined) => {
+					if (color !== undefined) {
+						patternOrderColors = { ...patternOrderColors, [index]: color };
+						draw();
+					}
+				})
+				.catch(() => {});
+			return;
+		}
+
 		switch (data.action) {
 			case 'make-unique':
 				makePatternUniqueAtIndex(index);
@@ -681,29 +749,21 @@
 		}
 	}
 
-	const contextMenuItems: MenuItem[] = [
-		{
-			label: 'Make Unique',
-			type: 'normal',
-			action: 'make-unique'
-		},
-		{
-			label: 'Delete',
-			type: 'normal',
-			action: 'delete',
-			disabled: () => !canRemove
-		},
-		{
-			label: 'Add',
-			type: 'normal',
-			action: 'add'
-		},
-		{
-			label: 'Clone',
-			type: 'normal',
-			action: 'clone'
-		}
-	];
+	const contextMenuItems = $derived.by((): MenuItem[] => {
+		const base: MenuItem[] = [
+			{ label: 'Make Unique', type: 'normal', action: 'make-unique' },
+			{ label: 'Delete', type: 'normal', action: 'delete', disabled: () => !canRemove },
+			{ label: 'Add', type: 'normal', action: 'add' },
+			{ label: 'Clone', type: 'normal', action: 'clone' },
+			{ label: 'Color...', type: 'normal', action: 'color-picker' }
+		];
+		const hasCustomColor =
+			contextMenuPatternIndex !== null &&
+			patternOrderColors[contextMenuPatternIndex] !== undefined;
+		return hasCustomColor
+			? [...base, { label: 'Clear color', type: 'normal' as const, action: 'color-clear' }]
+			: base;
+	});
 </script>
 
 <div style="width: {canvasWidth}px; height: {canvasHeight}px;" class="relative overflow-hidden">

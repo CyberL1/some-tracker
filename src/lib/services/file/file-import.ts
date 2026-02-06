@@ -19,13 +19,24 @@ function reconstructProject(data: any): Project {
 	const songs = data.songs?.map((songData: any) => reconstructSong(songData)) || [];
 	const tables = data.tables?.map((tableData: any) => reconstructTable(tableData)) || [];
 
+	const patternOrderColors =
+		typeof data.patternOrderColors === 'object' && data.patternOrderColors !== null
+			? (Object.fromEntries(
+					Object.entries(data.patternOrderColors).map(([k, v]) => [
+						parseInt(k, 10),
+						typeof v === 'string' ? v : ''
+					])
+				) as Record<number, string>)
+			: {};
+
 	return new Project(
 		data.name || '',
 		data.author || '',
 		songs.length > 0 ? songs : [new Song()],
 		data.loopPointId || 0,
 		data.patternOrder || [0],
-		tables.length > 0 ? tables : [new Table(0, [], 0, 'Table 1')]
+		tables.length > 0 ? tables : [new Table(0, [], 0, 'Table 1')],
+		patternOrderColors
 	);
 }
 

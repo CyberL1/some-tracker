@@ -7,7 +7,8 @@ class Project {
 		public songs: Song[] = [],
 		public loopPointId: number = 0,
 		public patternOrder: number[] = [0],
-		public tables: Table[] = [new Table(0, [], 0, 'Table 1')]
+		public tables: Table[] = [new Table(0, [], 0, 'Table 1')],
+		public patternOrderColors: Record<number, string> = {}
 	) {}
 }
 

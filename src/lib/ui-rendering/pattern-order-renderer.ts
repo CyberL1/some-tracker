@@ -24,6 +24,21 @@ export interface PatternCell {
 	editingValue: string;
 	index: number;
 	isDragging?: boolean;
+	orderIndexColor?: string;
+}
+
+const CONTRAST_DARK = '#1a1a1a';
+const CONTRAST_LIGHT = '#f5f5f5';
+
+function getContrastingTextColor(hexBackground: string): string {
+	const hex = hexBackground.replace(/^#/, '');
+	if (hex.length !== 6) return CONTRAST_DARK;
+	const r = parseInt(hex.slice(0, 2), 16) / 255;
+	const g = parseInt(hex.slice(2, 4), 16) / 255;
+	const b = parseInt(hex.slice(4, 6), 16) / 255;
+	const linear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+	const luminance = 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
+	return luminance > 0.4 ? CONTRAST_DARK : CONTRAST_LIGHT;
 }
 
 export class PatternOrderRenderer extends BaseCanvasRenderer {
@@ -78,13 +93,16 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 	}
 
 	private drawCellBackground(cell: PatternCell, cellY: number): void {
+		const customColor = cell.orderIndexColor;
+		let fillColor: string;
 		if (cell.isSelected) {
+			fillColor = customColor ?? this.orderColors.orderSelected;
 			this.fillRect(
 				this.padding,
 				cellY,
 				this.cellWidth,
 				this.cellHeight,
-				this.orderColors.orderSelected
+				fillColor
 			);
 			this.strokeRectPixelPerfect(
 				this.padding,
@@ -94,12 +112,13 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 				this.orderColors.orderBorder
 			);
 		} else if (cell.isHovered) {
+			fillColor = customColor ?? this.orderColors.orderHovered;
 			this.fillRect(
 				this.padding,
 				cellY,
 				this.cellWidth,
 				this.cellHeight,
-				this.orderColors.orderHovered
+				fillColor
 			);
 			this.strokeRectPixelPerfect(
 				this.padding,
@@ -109,11 +128,12 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 				this.orderColors.orderBorder
 			);
 		} else {
-			const bgColor =
-				cell.index % 2 === 0
+			fillColor =
+				customColor ??
+				(cell.index % 2 === 0
 					? this.orderColors.orderBg
-					: this.orderColors.orderAlternate;
-			this.fillRect(this.padding, cellY, this.cellWidth, this.cellHeight, bgColor);
+					: this.orderColors.orderAlternate);
+			this.fillRect(this.padding, cellY, this.cellWidth, this.cellHeight, fillColor);
 			this.strokeRectPixelPerfect(
 				this.padding,
 				cellY,
@@ -135,9 +155,14 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 			patternText = cell.patternId.toString().padStart(2, '0');
 		}
 
-		const textColor = isEmpty
-			? this.orderColors.orderEmpty
-			: this.orderColors.orderText;
+		let textColor: string;
+		if (cell.orderIndexColor) {
+			textColor = getContrastingTextColor(cell.orderIndexColor);
+		} else {
+			textColor = isEmpty
+				? this.orderColors.orderEmpty
+				: this.orderColors.orderText;
+		}
 
 		this.setTextAlign('center');
 		this.setTextBaseline('middle');
@@ -168,7 +193,9 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 		const centerX = this.padding + this.cellWidth / 2;
 		const underlineX = centerX - charWidth;
 
-		const underlineColor = this.orderColors.orderText;
+		const underlineColor = cell.orderIndexColor
+			? getContrastingTextColor(cell.orderIndexColor)
+			: this.orderColors.orderText;
 		this.beginPath();
 		this.moveTo(underlineX, underlineY);
 		this.lineTo(underlineX + charWidth * 2, underlineY);
@@ -181,10 +208,13 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 	private drawCellSelectionIndicator(cell: PatternCell): void {
 		if (!cell.isSelected) return;
 
+		const indicatorColor = cell.orderIndexColor
+			? getContrastingTextColor(cell.orderIndexColor)
+			: this.orderColors.orderText;
 		this.save();
 		this.setTextAlign('left');
 		this.setTextBaseline('middle');
-		this.fillText('►', 2, cell.y, this.orderColors.orderText);
+		this.fillText('►', 2, cell.y, indicatorColor);
 		this.restore();
 		this.setTextAlign('center');
 		this.setTextBaseline('middle');

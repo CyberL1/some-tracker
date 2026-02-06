@@ -92,6 +92,7 @@
 
 	let songs = $state<Song[]>([]);
 	let patternOrder = $state<number[]>([]);
+	let patternOrderColors = $state<Record<number, string>>({});
 	let tables = $state<Table[]>([]);
 	let activeSongIndex = $state(0);
 
@@ -116,6 +117,7 @@
 			};
 			songs = newProject.songs;
 			patternOrder = newProject.patternOrder;
+			patternOrderColors = newProject.patternOrderColors ?? {};
 			tables = newProject.tables;
 
 			projectInitialized = true;
@@ -133,6 +135,7 @@
 				};
 				songs = backup.songs;
 				patternOrder = backup.patternOrder;
+				patternOrderColors = backup.patternOrderColors ?? {};
 				tables = backup.tables;
 			}
 		})();
@@ -145,7 +148,8 @@
 			songs,
 			0,
 			patternOrder,
-			tables
+			tables,
+			patternOrderColors
 		);
 	}
 
@@ -154,6 +158,7 @@
 		projectSettings;
 		songs;
 		patternOrder;
+		patternOrderColors;
 		tables;
 		autobackupService.saveAutobackup(getCurrentProject());
 	});
@@ -366,6 +371,7 @@
 				};
 				songs = newProject.songs;
 				patternOrder = newProject.patternOrder;
+				patternOrderColors = newProject.patternOrderColors ?? {};
 				tables = newProject.tables;
 
 				patternEditor?.resetToBeginning();
@@ -449,7 +455,8 @@
 					songs,
 					0,
 					patternOrder,
-					tables
+					tables,
+					patternOrderColors
 				);
 				await handleFileExport(data.action, currentProject);
 				return;
@@ -462,7 +469,8 @@
 					songs,
 					0,
 					patternOrder,
-					tables
+					tables,
+					patternOrderColors
 				);
 
 				const wavSettings = await open(WavExportSettingsModal, { project: currentProject });
@@ -483,7 +491,8 @@
 					songs,
 					0,
 					patternOrder,
-					tables
+					tables,
+					patternOrderColors
 				);
 
 				await open(ProgressModal, { project: currentProject, exportType: 'psg' });
@@ -508,6 +517,7 @@
 				};
 				songs = importedProject.songs;
 				patternOrder = importedProject.patternOrder;
+				patternOrderColors = importedProject.patternOrderColors ?? {};
 				tables = importedProject.tables;
 
 				patternEditor?.resetToBeginning();
@@ -546,6 +556,7 @@
 		<SongView
 			bind:songs
 			bind:patternOrder
+			bind:patternOrderColors
 			bind:patternEditor
 			bind:activeEditorIndex={activeSongIndex}
 			bind:tables
