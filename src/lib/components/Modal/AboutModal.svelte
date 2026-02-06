@@ -1,8 +1,10 @@
 <script lang="ts">
 	import Button from '../Button/Button.svelte';
+	import ContributorsModal from './ContributorsModal.svelte';
+	import { open } from '../../services/modal/modal-service';
 
 	let { resolve } = $props<{
-		resolve?: (value?: any) => void;
+		resolve?: (value?: unknown) => void;
 	}>();
 
 	const version = 'alpha-0.0.1';
@@ -11,6 +13,10 @@
 
 	function handleClose() {
 		resolve?.();
+	}
+
+	async function openContributors() {
+		await open(ContributorsModal, {});
 	}
 </script>
 
@@ -44,10 +50,12 @@
 		</div>
 
 		<div class="flex flex-col items-center gap-2">
-			<p class="text-center text-[var(--color-app-text-muted)]">
-				Bitphase by Pator and contributors<br />
-				Ayumi emulator by Peter Sovietov
-			</p>
+			<button
+				type="button"
+				class="cursor-pointer text-[var(--color-app-text-secondary)] hover:text-[var(--color-app-text-primary)] hover:underline"
+				onclick={openContributors}>
+				Credits
+			</button>
 			<a
 				href="https://github.com/paator/bitphase"
 				target="_blank"
