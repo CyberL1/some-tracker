@@ -48,6 +48,14 @@
 	let lastAppliedThemeId = $state<string | null>(null);
 
 	$effect(() => {
+		if ('serviceWorker' in navigator) {
+			window.addEventListener('load', () => {
+				navigator.serviceWorker.register('/sw.js');
+			});
+		}
+	});
+
+	$effect(() => {
 		const activeThemeId = themeStore.state.activeThemeId;
 		if (activeThemeId === lastAppliedThemeId) return;
 
