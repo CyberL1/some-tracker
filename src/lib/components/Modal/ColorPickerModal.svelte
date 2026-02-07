@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '../Button/Button.svelte';
+	import { parseHexColor } from '../../utils/hex-color';
 
 	let {
 		initialColor = '#808080',
@@ -14,15 +15,9 @@
 	let selectedColor = $state(initialColor);
 	let hexInputValue = $state(initialColor);
 
-	function parseHex(input: string): string | null {
-		const raw = input.replace(/^#/, '').trim();
-		if (raw.length !== 6 || !/^[0-9a-fA-F]+$/.test(raw)) return null;
-		return '#' + raw.toLowerCase();
-	}
-
 	function handleHexInput(e: Event) {
 		const value = (e.target as HTMLInputElement).value;
-		const hex = parseHex(value);
+		const hex = parseHexColor(value);
 		if (hex !== null) {
 			selectedColor = hex;
 			hexInputValue = hex;

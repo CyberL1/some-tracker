@@ -1,6 +1,7 @@
 import type { Pattern } from '../models/song';
 import type { getPatternOrderColors } from '../utils/pattern-order-colors';
 import type { getFonts } from '../utils/fonts';
+import { parseHexColor } from '../utils/hex-color';
 import { BaseCanvasRenderer, type BaseRenderOptions } from './base-canvas-renderer';
 
 export interface PatternOrderRenderOptions extends Omit<BaseRenderOptions, 'colors'> {
@@ -31,8 +32,9 @@ const CONTRAST_DARK = '#1a1a1a';
 const CONTRAST_LIGHT = '#f5f5f5';
 
 function getContrastingTextColor(hexBackground: string): string {
-	const hex = hexBackground.replace(/^#/, '');
-	if (hex.length !== 6) return CONTRAST_DARK;
+	const normalized = parseHexColor(hexBackground);
+	if (normalized === null) return CONTRAST_DARK;
+	const hex = normalized.replace(/^#/, '');
 	const r = parseInt(hex.slice(0, 2), 16) / 255;
 	const g = parseInt(hex.slice(2, 4), 16) / 255;
 	const b = parseInt(hex.slice(4, 6), 16) / 255;
@@ -93,7 +95,9 @@ export class PatternOrderRenderer extends BaseCanvasRenderer {
 	}
 
 	private drawCellBackground(cell: PatternCell, cellY: number): void {
-		const customColor = cell.orderIndexColor;
+		const customColor = cell.orderIndexColor
+			? parseHexColor(cell.orderIndexColor) ?? undefined
+			: undefined;
 		let fillColor: string;
 		if (cell.isSelected) {
 			fillColor = customColor ?? this.orderColors.orderSelected;
