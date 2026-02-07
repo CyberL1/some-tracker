@@ -1,0 +1,13 @@
+{
+  "name": "Bitphase",
+  "start_url": "/",
+  "display": "fullscreen",
+  "description": "A modern web-based chiptune tracker designed for creating music on retro sound chips",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
