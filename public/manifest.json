@@ -5,12 +5,7 @@
   "description": "A modern web-based chiptune tracker designed for creating music on retro sound chips",
   "icons": [
     {
-      "src": "https://placehold.co/192",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "https://placehold.co/512",
+      "src": "/logo-512.png",
       "type": "image/png",
       "sizes": "512x512"
     },
