@@ -30,6 +30,7 @@
 	import { channelMuteStore } from '../../stores/channel-mute.svelte';
 	import { PatternFieldDetection } from '../../services/pattern/editing/pattern-field-detection';
 	import { PatternValueUpdates } from '../../services/pattern/editing/pattern-value-updates';
+	import { PatternDeleteHandler } from '../../services/pattern/editing/pattern-delete-handler';
 	import { EffectField } from '../../services/pattern/editing/effect-field';
 	import { undoRedoStore } from '../../stores/undo-redo.svelte';
 	import { editorStateStore } from '../../stores/editor-state.svelte';
@@ -1472,19 +1473,6 @@
 		onaction?.(data);
 	}
 
-	function getDefaultValueForField(fieldType: string, fieldKey: string): string | number {
-		if (fieldType === 'note') {
-			return '---';
-		}
-		if (fieldKey === 'effect' || fieldKey === 'envelopeEffect') {
-			return { effect: 0, delay: 0, parameter: 0 } as unknown as string | number;
-		}
-		if (fieldType === 'hex' || fieldType === 'dec' || fieldType === 'symbol') {
-			return 0;
-		}
-		return '';
-	}
-
 	function createClipboardContext(): ClipboardContext {
 		const patternId = patternOrder[currentPatternOrderIndex];
 		const pattern = findOrCreatePattern(patternId);
@@ -1582,56 +1570,13 @@
 			}
 		}
 
+		const { createEditingContext } = createClipboardContext();
 		for (const { row, col } of cellsToDelete) {
-			const rowString = getPatternRowData(pattern, row);
-			const cellPositions = getCellPositions(rowString, row);
-			const segments = textParser ? textParser.parseRowString(rowString, row) : undefined;
-
-			const cell = cellPositions[col];
-			if (!cell.fieldKey) continue;
-
-			const fieldInfo = PatternFieldDetection.detectFieldAtCursor({
-				pattern,
-				selectedRow: row,
-				selectedColumn: col,
-				cellPositions,
-				segments,
-				converter,
-				formatter,
-				schema
-			});
-			if (!fieldInfo) continue;
-
-			const field = PatternValueUpdates.getFieldDefinition(
-				{
-					pattern,
-					selectedRow: row,
-					selectedColumn: col,
-					cellPositions,
-					segments,
-					converter,
-					formatter,
-					schema
-				},
-				cell.fieldKey
-			);
-			if (!field) continue;
-
-			const defaultValue = getDefaultValueForField(field.type, cell.fieldKey);
-			pattern = PatternValueUpdates.updateFieldValue(
-				{
-					pattern,
-					selectedRow: row,
-					selectedColumn: col,
-					cellPositions,
-					segments,
-					converter,
-					formatter,
-					schema
-				},
-				fieldInfo,
-				defaultValue
-			);
+			const context = createEditingContext(pattern, row, col);
+			const result = PatternDeleteHandler.handleDelete(context);
+			if (result) {
+				pattern = result.updatedPattern;
+			}
 		}
 
 		recordBulkPatternEdit(originalPattern, pattern);

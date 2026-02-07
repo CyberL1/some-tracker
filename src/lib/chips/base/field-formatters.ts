@@ -71,7 +71,7 @@ export function parseSymbol(
 ): number {
 	if (value === '.'.repeat(length)) return 0;
 
-	const cleaned = value.replace(/\./g, '').toUpperCase();
+	const cleaned = value.replace(/\./g, '0').toUpperCase();
 	if (cleaned === 'OFF') return ZERO_VALUE;
 	if (cleaned === '00' || cleaned === '0') return allowZeroValue === false ? 0 : ZERO_VALUE;
 
