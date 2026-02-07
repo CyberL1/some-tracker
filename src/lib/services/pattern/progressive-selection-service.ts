@@ -36,6 +36,39 @@ export class ProgressiveSelectionService {
 		const minCol = Math.min(selectionStartColumn!, selectionEndColumn!);
 		const maxCol = Math.max(selectionStartColumn!, selectionEndColumn!);
 
+		if (minCol < maxCol) {
+			const boundsUnion = this.getChannelsBoundsUnion(
+				pattern,
+				minCol,
+				maxCol,
+				getCellPositions,
+				getPatternRowData,
+				schema
+			);
+			if (boundsUnion) {
+				const isFullWidth =
+					minCol === boundsUnion.startColumn && maxCol === boundsUnion.endColumn;
+				if (isFullWidth) {
+					const isFullHeight =
+						minRow === 0 && maxRow === pattern.length - 1;
+					if (isFullHeight) {
+						return this.selectEntirePattern(
+							pattern,
+							getCellPositions,
+							getPatternRowData
+						);
+					}
+					return this.selectColumnRange(pattern, boundsUnion);
+				}
+				return {
+					startRow: minRow,
+					endRow: maxRow,
+					startColumn: boundsUnion.startColumn,
+					endColumn: boundsUnion.endColumn
+				};
+			}
+		}
+
 		const isEntireColumn = this.isEntireColumnSelected(pattern, minRow, maxRow, minCol, maxCol);
 
 		if (isEntireColumn) {
@@ -174,12 +207,57 @@ export class ProgressiveSelectionService {
 		pattern: Pattern,
 		channelBounds: { startColumn: number; endColumn: number }
 	): ProgressiveSelectionResult {
+		return this.selectColumnRange(pattern, channelBounds);
+	}
+
+	private static selectColumnRange(
+		pattern: Pattern,
+		bounds: { startColumn: number; endColumn: number }
+	): ProgressiveSelectionResult {
 		return {
 			startRow: 0,
 			endRow: pattern.length - 1,
-			startColumn: channelBounds.startColumn,
-			endColumn: channelBounds.endColumn
+			startColumn: bounds.startColumn,
+			endColumn: bounds.endColumn
 		};
+	}
+
+	private static getChannelsBoundsUnion(
+		pattern: Pattern,
+		minCol: number,
+		maxCol: number,
+		getCellPositions: (rowString: string, rowIndex: number) => any[],
+		getPatternRowData: (pattern: Pattern, rowIndex: number) => string,
+		schema: Chip['schema']
+	): { startColumn: number; endColumn: number } | null {
+		let startColumn: number | null = null;
+		let endColumn: number | null = null;
+
+		for (let col = minCol; col <= maxCol; col++) {
+			const channelBounds = this.getChannelBounds(
+				pattern,
+				col,
+				getCellPositions,
+				getPatternRowData,
+				schema
+			);
+			const bounds = channelBounds ?? this.getGlobalFieldsBounds(
+				pattern,
+				col,
+				getCellPositions,
+				getPatternRowData,
+				schema
+			);
+			if (bounds) {
+				startColumn =
+					startColumn === null ? bounds.startColumn : Math.min(startColumn, bounds.startColumn);
+				endColumn =
+					endColumn === null ? bounds.endColumn : Math.max(endColumn, bounds.endColumn);
+			}
+		}
+
+		if (startColumn === null || endColumn === null) return null;
+		return { startColumn, endColumn };
 	}
 
 	private static selectAllGlobalFields(

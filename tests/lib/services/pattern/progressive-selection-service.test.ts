@@ -184,4 +184,44 @@ describe('ProgressiveSelectionService', () => {
 		expect(result.startColumn).toBe(0);
 		expect(result.endColumn).toBe(20);
 	});
+
+	it('should expand to full width of channels when multi-column selection (first Ctrl+A)', () => {
+		const pattern = createMockPattern();
+		const result = ProgressiveSelectionService.selectAll(
+			pattern,
+			5,
+			10,
+			4,
+			20,
+			6,
+			mockGetCellPositions,
+			mockGetPatternRowData,
+			schema
+		);
+
+		expect(result.startRow).toBe(10);
+		expect(result.endRow).toBe(20);
+		expect(result.startColumn).toBe(3);
+		expect(result.endColumn).toBe(6);
+	});
+
+	it('should expand to full height when multi-column selection already full width (second Ctrl+A)', () => {
+		const pattern = createMockPattern();
+		const result = ProgressiveSelectionService.selectAll(
+			pattern,
+			5,
+			10,
+			3,
+			20,
+			6,
+			mockGetCellPositions,
+			mockGetPatternRowData,
+			schema
+		);
+
+		expect(result.startRow).toBe(0);
+		expect(result.endRow).toBe(63);
+		expect(result.startColumn).toBe(3);
+		expect(result.endColumn).toBe(6);
+	});
 });
