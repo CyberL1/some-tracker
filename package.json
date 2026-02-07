@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build:wasm": "bash build-wasm.sh",
+    "build:wasm": "node -e \"require('child_process').execSync(process.platform === 'win32' ? 'powershell -ExecutionPolicy Bypass -File build-wasm.ps1' : 'bash build-wasm.sh', {stdio: 'inherit'})\"",
     "dev": "pnpm build:wasm && vite",
     "build": "pnpm build:wasm && vite build",
     "preview": "vite preview",
