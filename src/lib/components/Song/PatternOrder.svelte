@@ -29,6 +29,8 @@
 		songs?: any[];
 		onPatternCreated?: (pattern: Pattern) => void;
 		onPatternSelect?: (index: number) => void;
+		onMakeUnique?: (index: number) => void;
+		onPatternOrderEdited?: () => void;
 	}
 
 	let {
@@ -41,7 +43,9 @@
 		songPatterns = [],
 		songs = [],
 		onPatternCreated,
-		onPatternSelect
+		onPatternSelect,
+		onMakeUnique,
+		onPatternOrderEdited
 	}: Props = $props();
 
 	const FONT_SIZE = 14;
@@ -433,6 +437,7 @@
 			if (result) {
 				patterns = result.newPatterns;
 				patternOrder = result.newPatternOrder;
+				onPatternOrderEdited?.();
 			}
 		}
 
@@ -647,6 +652,11 @@
 	}
 
 	function makePatternUniqueAtIndex(index: number): void {
+		if (songs.length > 1 && onMakeUnique) {
+			onMakeUnique(index);
+			return;
+		}
+
 		const targetPatternId = patternOrder[index];
 		const targetPattern = ensurePatternInRecord(targetPatternId);
 

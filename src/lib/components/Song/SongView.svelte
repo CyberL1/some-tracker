@@ -23,7 +23,7 @@
 	import IconCarbonChevronDown from '~icons/carbon/chevron-down';
 	import IconCarbonClose from '~icons/carbon/close';
 	import { PATTERN_EDITOR_CONSTANTS } from './types';
-	import { getContext, setContext } from 'svelte';
+	import { getContext, setContext, tick } from 'svelte';
 	import Input from '../Input/Input.svelte';
 	import { playbackStore } from '../../stores/playback.svelte';
 	import StatusBar from './StatusBar.svelte';
@@ -109,6 +109,21 @@
 				song.patterns = song.patterns.map((p) => (p.id === pattern.id ? pattern : p));
 			}
 		});
+	}
+
+	function handleMakeUnique(index: number): void {
+		const result = PatternService.makePatternUniqueMultiChip(
+			songs,
+			patternOrder,
+			index,
+			(i) => chipProcessors[i]?.chip?.schema
+		);
+		patternOrder = result.newPatternOrder;
+		songs = [...songs];
+		if (index === sharedPatternOrderIndex) {
+			sharedSelectedRow = 0;
+		}
+		patternEditors.forEach((editor) => editor?.requestRedraw?.());
 	}
 
 	function findLastSpeedCommand(
@@ -340,6 +355,11 @@
 						{songPatterns}
 						{songs}
 						onPatternCreated={handlePatternCreated}
+						onMakeUnique={handleMakeUnique}
+						onPatternOrderEdited={async () => {
+							await tick();
+							patternEditors.forEach((e) => e?.requestRedraw?.());
+						}}
 						onPatternSelect={(index) =>
 							patternEditors[0]?.markPatternChangeFromUser?.(index)} />
 				</Card>

@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { PatternService } from '../../../../src/lib/services/pattern/pattern-service';
-import { Pattern, Note, Effect, NoteName, EffectType } from '../../../../src/lib/models/song';
+import {
+	Pattern,
+	Note,
+	Effect,
+	NoteName,
+	EffectType,
+	Song
+} from '../../../../src/lib/models/song';
 
 describe('PatternService', () => {
 	describe('findNextAvailablePatternId', () => {
@@ -185,6 +192,73 @@ describe('PatternService', () => {
 			const result = PatternService.makePatternUnique(patterns, patternOrder, 0, null as any);
 
 			expect(result).toBeNull();
+		});
+	});
+
+	describe('findNextAvailablePatternIdFromSongs', () => {
+		it('should return 0 when songs have no patterns and order is empty', () => {
+			const songs = [new Song(), new Song()];
+			songs[0].patterns = [];
+			songs[1].patterns = [];
+			expect(PatternService.findNextAvailablePatternIdFromSongs(songs, [])).toBe(0);
+		});
+
+		it('should return next ID after all used in order and in any song', () => {
+			const song0 = new Song();
+			song0.patterns = [new Pattern(0), new Pattern(1)];
+			const song1 = new Song();
+			song1.patterns = [new Pattern(0), new Pattern(2)];
+			const songs = [song0, song1];
+			const patternOrder = [0, 1, 2];
+			expect(PatternService.findNextAvailablePatternIdFromSongs(songs, patternOrder)).toBe(3);
+		});
+	});
+
+	describe('makePatternUniqueMultiChip', () => {
+		it('should clone each song pattern at index to new ID and update order', () => {
+			const song0 = new Song();
+			const p0a = new Pattern(0, 4);
+			p0a.channels[0].rows[0].note = new Note(NoteName.C, 3);
+			song0.patterns = [p0a, new Pattern(1)];
+			const song1 = new Song();
+			const p1a = new Pattern(0, 4);
+			p1a.channels[0].rows[0].note = new Note(NoteName.D, 5);
+			song1.patterns = [p1a, new Pattern(1)];
+			const songs = [song0, song1];
+			const patternOrder = [0, 1];
+
+			const result = PatternService.makePatternUniqueMultiChip(
+				songs,
+				patternOrder,
+				0,
+				() => undefined
+			);
+
+			expect(result.newPatternOrder).toEqual([2, 1]);
+			expect(song0.patterns).toHaveLength(3);
+			expect(song1.patterns).toHaveLength(3);
+			const unique0 = song0.patterns.find((p) => p.id === 2);
+			const unique1 = song1.patterns.find((p) => p.id === 2);
+			expect(unique0).toBeDefined();
+			expect(unique1).toBeDefined();
+			expect(unique0!.channels[0].rows[0].note.name).toBe(NoteName.C);
+			expect(unique0!.channels[0].rows[0].note.octave).toBe(3);
+			expect(unique1!.channels[0].rows[0].note.name).toBe(NoteName.D);
+			expect(unique1!.channels[0].rows[0].note.octave).toBe(5);
+		});
+
+		it('should leave song without pattern at that id unchanged', () => {
+			const song0 = new Song();
+			song0.patterns = [new Pattern(0)];
+			const song1 = new Song();
+			song1.patterns = [];
+			const songs = [song0, song1];
+			const patternOrder = [0];
+
+			PatternService.makePatternUniqueMultiChip(songs, patternOrder, 0, () => undefined);
+
+			expect(song0.patterns).toHaveLength(2);
+			expect(song1.patterns).toHaveLength(0);
 		});
 	});
 
