@@ -4,6 +4,7 @@
 	import { themeService } from '../../services/theme/theme-service';
 	import Button from '../Button/Button.svelte';
 	import Input from '../Input/Input.svelte';
+	import HexColorInput from '../Input/HexColorInput.svelte';
 	import { FormField } from '../FormField';
 	import Portal from '../Modal/Portal.svelte';
 	import {
@@ -207,16 +208,7 @@
 					<div class="flex flex-col gap-3">
 						{#each patternEditorFields as field}
 							<FormField label={field.label}>
-								<div class="flex items-center gap-2">
-									<input
-										type="color"
-										bind:value={editedColors[field.key]}
-										class="h-8 w-16 cursor-pointer rounded border border-[var(--color-app-border)]" />
-									<Input
-										bind:value={editedColors[field.key]}
-										class="flex-1"
-										placeholder="#000000" />
-								</div>
+								<HexColorInput bind:value={editedColors[field.key]} class="flex-1" />
 							</FormField>
 						{/each}
 					</div>
@@ -229,16 +221,7 @@
 					<div class="flex flex-col gap-3">
 						{#each patternOrderFields as field}
 							<FormField label={field.label}>
-								<div class="flex items-center gap-2">
-									<input
-										type="color"
-										bind:value={editedColors[field.key]}
-										class="h-8 w-16 cursor-pointer rounded border border-[var(--color-app-border)]" />
-									<Input
-										bind:value={editedColors[field.key]}
-										class="flex-1"
-										placeholder="#000000" />
-								</div>
+								<HexColorInput bind:value={editedColors[field.key]} class="flex-1" />
 							</FormField>
 						{/each}
 					</div>
@@ -251,16 +234,7 @@
 					<div class="flex flex-col gap-3">
 						{#each appFields as field}
 							<FormField label={field.label}>
-								<div class="flex items-center gap-2">
-									<input
-										type="color"
-										bind:value={editedColors[field.key]}
-										class="h-8 w-16 cursor-pointer rounded border border-[var(--color-app-border)]" />
-									<Input
-										bind:value={editedColors[field.key]}
-										class="flex-1"
-										placeholder="#000000" />
-								</div>
+								<HexColorInput bind:value={editedColors[field.key]} class="flex-1" />
 							</FormField>
 						{/each}
 					</div>
