@@ -5,14 +5,9 @@
   "description": "A modern web-based chiptune tracker designed for creating music on retro sound chips",
   "icons": [
     {
-      "src": "/logo-512.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    },
-    {
       "src": "/logo.png",
       "type": "image/png",
-      "sizes": "600x536"
+      "sizes": "512x512"
     }
   ]
 }
