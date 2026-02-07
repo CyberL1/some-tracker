@@ -12,6 +12,36 @@
 	font-style: normal;
 }
 
+@font-face {
+	font-family: 'JetBrains Mono';
+	src: url('/fonts/JetBrainsMono.ttf') format('truetype');
+	font-weight: 300 700;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 300 700;
+	src: url('/fonts/Inter.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 300 700;
+	font-stretch: 100%;
+	src: url('/fonts/Roboto.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Open Sans';
+	font-style: normal;
+	font-weight: 300 700;
+	font-stretch: 100%;
+	src: url('/fonts/OpenSans.ttf') format('truetype');
+}
+
 @import 'tailwindcss';
 
 @theme {
