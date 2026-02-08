@@ -223,6 +223,10 @@ class AYAudioDriver {
 			state.envelopeSlideDelta = 0;
 			state.envelopeSlideDelay = 0;
 			state.envelopeSlideDelayCounter = 0;
+			state.envelopeVibratoCounter = 0;
+			state.envelopeVibratoSliding = 0;
+			state.envelopeArpeggioCounter = 0;
+			state.envelopeEffectTable = -1;
 			registerState.envelopePeriod = envelopeValueNum;
 		} else if (shapeSet && (envelopeValueNum === 0 || envelopeValueNum === null)) {
 			state.envelopeBaseValue = 0;
@@ -230,6 +234,12 @@ class AYAudioDriver {
 			state.envelopeSlideDelta = 0;
 			state.envelopeSlideDelay = 0;
 			state.envelopeSlideDelayCounter = 0;
+			if (envelopeValueNum === 0) {
+				state.envelopeVibratoCounter = 0;
+				state.envelopeVibratoSliding = 0;
+				state.envelopeArpeggioCounter = 0;
+				state.envelopeEffectTable = -1;
+			}
 			registerState.envelopePeriod = 0;
 		}
 
